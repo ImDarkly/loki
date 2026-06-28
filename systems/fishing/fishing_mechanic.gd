@@ -1,8 +1,10 @@
 extends Node3D
 
-enum State { IDLE, WAITING, REELING }
+enum State { IDLE, WAITING, BITE, REELING, SUCCESS, ESCAPE }
 
 signal bite_occurred(fish_position: Vector3)
+signal reel_success(quota: int)
+signal reel_failure()
 
 @export var min_cast_distance: float = 5.0
 @export var max_cast_distance: float = 15.0
@@ -15,10 +17,12 @@ signal bite_occurred(fish_position: Vector3)
 @export var zone_move_interval: float = 0.1
 @export var zone_move_amount: float = 15.0
 
+@export var min_reel_duration: float = 10.0
+@export var max_reel_duration: float = 20.0
+
 var current_state: State = State.IDLE
 var is_line_cast: bool = false
 var visual_line_node: MeshInstance3D = null
-var fish_node: Node3D = null
 var cast_target_position: Vector3
 
 var player_bar_position: float = 50.0
@@ -26,13 +30,18 @@ var green_zone_position: float = 50.0
 var green_zone_target: float = 50.0
 var green_zone_lerp_speed: float = 4.0
 
+var quota: int = 0
+var reel_duration: float = 0.0
+
 @onready var bite_timer: Timer = $BiteTimer
 @onready var bite_audio: AudioStreamPlayer = $BiteAudio
 @onready var green_zone_timer: Timer = $GreenZoneTimer
+@onready var reel_timer: Timer = $ReelTimer
 @onready var reel_meter: Control = $CanvasLayer/ReelMeter
 @onready var meter_bg: ColorRect = $CanvasLayer/ReelMeter/MeterBg
 @onready var green_zone_rect: ColorRect = $CanvasLayer/ReelMeter/GreenZone
 @onready var player_bar_rect: ColorRect = $CanvasLayer/ReelMeter/PlayerBar
+@onready var quota_label: Label = $CanvasLayer/QuotaLabel
 
 var original_line_vertices: PackedVector3Array = []
 var twitch_directions: PackedVector3Array = []
@@ -42,7 +51,7 @@ const LINE_SEGMENTS: int = 10
 
 
 func is_reeling() -> bool:
-	return current_state == State.REELING
+	return current_state in [State.BITE, State.REELING]
 
 
 func _ready() -> void:
@@ -53,6 +62,11 @@ func _ready() -> void:
 	green_zone_timer.wait_time = zone_move_interval
 	green_zone_timer.one_shot = false
 	green_zone_timer.timeout.connect(_on_green_zone_timer_timeout)
+
+	reel_timer.one_shot = true
+	reel_timer.timeout.connect(_on_reel_timer_timeout)
+
+	quota_label.text = "Quota: 0"
 
 	if not InputMap.has_action("reel"):
 		InputMap.add_action("reel")
@@ -67,6 +81,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if current_state == State.BITE:
+		if Input.is_action_just_pressed("reel"):
+			_enter_reeling()
+		return
+
 	if current_state != State.REELING:
 		return
 
@@ -110,19 +129,49 @@ func _enter_reeling() -> void:
 	current_state = State.REELING
 	player_bar_position = 50.0
 	green_zone_position = 50.0
+	green_zone_target = 50.0
 	green_zone_timer.start()
+	reel_duration = randf_range(min_reel_duration, max_reel_duration)
+	reel_timer.start(reel_duration)
 	reel_meter.visible = true
 
 
 func _exit_reeling() -> void:
 	green_zone_timer.stop()
+	reel_timer.stop()
 	reel_meter.visible = false
 
 
+func _is_bar_in_zone() -> bool:
+	var meter_height: float = reel_meter.size.y
+	if meter_height <= 0:
+		return false
+	var bar_y: float = (meter_height - 16.0) * (player_bar_position / 100.0)
+	var bar_center: float = bar_y + 8.0
+	var zone_y: float = meter_height * (green_zone_position / 100.0)
+	var zone_bottom: float = zone_y + meter_height * (green_zone_width / 100.0)
+	return bar_center >= zone_y and bar_center <= zone_bottom
+
+
+func _on_reel_timer_timeout() -> void:
+	if current_state != State.REELING:
+		return
+	if _is_bar_in_zone():
+		current_state = State.SUCCESS
+		quota += 1
+		quota_label.text = "Quota: %d" % quota
+		reel_success.emit(quota)
+	else:
+		current_state = State.ESCAPE
+		reel_failure.emit()
+	_exit_reeling()
+	print("Reel ended. State: %s, Quota: %d" % ["SUCCESS" if current_state == State.SUCCESS else "ESCAPE", quota])
+
+
 func cast(from_position: Vector3, forward_direction: Vector3) -> void:
-	if current_state == State.REELING:
+	if current_state in [State.BITE, State.REELING, State.SUCCESS, State.ESCAPE]:
 		_exit_reeling()
-	cleanup_fish()
+	$FishManager.cleanup()
 
 	current_state = State.WAITING
 	is_line_cast = true
@@ -139,35 +188,11 @@ func cast(from_position: Vector3, forward_direction: Vector3) -> void:
 
 
 func _on_bite_timer_timeout() -> void:
-	_enter_reeling()
+	current_state = State.BITE
 	_play_bite_feedback()
-	spawn_fish_placeholder(cast_target_position)
+	$FishManager.spawn(cast_target_position)
 	bite_occurred.emit(cast_target_position)
-	print("Bite! Fish spawned at %s" % cast_target_position)
-
-
-func spawn_fish_placeholder(position: Vector3) -> void:
-	if is_instance_valid(fish_node):
-		fish_node.queue_free()
-
-	fish_node = MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.3, 0.1, 0.5)
-
-	var mat := ORMMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.5, 0.0)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mesh.material = mat
-
-	fish_node.mesh = mesh
-	fish_node.position = position + Vector3(0, 0.05, 0)
-	get_tree().root.add_child(fish_node)
-
-
-func cleanup_fish() -> void:
-	if is_instance_valid(fish_node):
-		fish_node.queue_free()
-		fish_node = null
+	print("Bite! Click/Space to start reeling")
 
 
 func create_visual_line(start_pos: Vector3, end_pos: Vector3) -> void:
