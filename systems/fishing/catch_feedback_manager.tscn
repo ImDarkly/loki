@@ -11,6 +11,9 @@ layer = 129
 [node name="CatchAudio" type="AudioStreamPlayer" parent="CanvasLayer"]
 volume_db = -6.0
 
+[node name="EscapeAudio" type="AudioStreamPlayer" parent="CanvasLayer"]
+volume_db = -10.0
+
 [node name="CatchFeedbackLabel" type="Label" parent="CanvasLayer"]
 anchors_preset = 8
 anchor_left = 0.5

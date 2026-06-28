@@ -20,6 +20,8 @@ signal reel_failure()
 @export var min_reel_duration: float = 10.0
 @export var max_reel_duration: float = 20.0
 
+@export var bite_timeout_duration: float = 1.0
+
 var current_state: State = State.IDLE
 var is_line_cast: bool = false
 var visual_line_node: MeshInstance3D = null
@@ -37,6 +39,7 @@ var reel_duration: float = 0.0
 @onready var bite_audio: AudioStreamPlayer = $BiteAudio
 @onready var green_zone_timer: Timer = $GreenZoneTimer
 @onready var reel_timer: Timer = $ReelTimer
+@onready var bite_timeout_timer: Timer = $BiteTimeoutTimer
 @onready var reel_meter: Control = $CanvasLayer/ReelMeter
 @onready var meter_bg: ColorRect = $CanvasLayer/ReelMeter/MeterBg
 @onready var green_zone_rect: ColorRect = $CanvasLayer/ReelMeter/GreenZone
@@ -47,6 +50,7 @@ var reel_duration: float = 0.0
 var original_line_vertices: PackedVector3Array = []
 var twitch_directions: PackedVector3Array = []
 var active_twitch_tween: Tween = null
+var escape_slack_tween: Tween = null
 
 const LINE_SEGMENTS: int = 10
 
@@ -66,6 +70,10 @@ func _ready() -> void:
 
 	reel_timer.one_shot = true
 	reel_timer.timeout.connect(_on_reel_timer_timeout)
+
+	bite_timeout_timer.one_shot = true
+	bite_timeout_timer.wait_time = bite_timeout_duration
+	bite_timeout_timer.timeout.connect(_on_bite_timeout_timer_timeout)
 
 	quota_label.text = "Quota: 0"
 	catch_feedback_manager.feedback_completed.connect(_on_catch_feedback_completed)
@@ -129,6 +137,7 @@ func _on_green_zone_timer_timeout() -> void:
 
 func _enter_reeling() -> void:
 	current_state = State.REELING
+	bite_timeout_timer.stop()
 	player_bar_position = 50.0
 	green_zone_position = 50.0
 	green_zone_target = 50.0
@@ -141,6 +150,7 @@ func _enter_reeling() -> void:
 func _exit_reeling() -> void:
 	green_zone_timer.stop()
 	reel_timer.stop()
+	bite_timeout_timer.stop()
 	reel_meter.visible = false
 
 
@@ -169,7 +179,21 @@ func _on_reel_timer_timeout() -> void:
 		current_state = State.ESCAPE
 		reel_failure.emit()
 		_exit_reeling()
+		$FishManager.cleanup()
+		catch_feedback_manager.play_catch_escape()
+		_apply_escape_slack()
 	print("Reel ended. State: %s, Quota: %d" % ["SUCCESS" if current_state == State.SUCCESS else "ESCAPE", quota])
+
+
+func _on_bite_timeout_timer_timeout() -> void:
+	if current_state != State.BITE:
+		return
+	current_state = State.ESCAPE
+	reel_failure.emit()
+	$FishManager.cleanup()
+	catch_feedback_manager.play_catch_escape()
+	_apply_escape_slack()
+	print("Bite timeout: fish escaped")
 
 
 func cast(from_position: Vector3, forward_direction: Vector3) -> void:
@@ -196,6 +220,7 @@ func _on_bite_timer_timeout() -> void:
 	_play_bite_feedback()
 	$FishManager.spawn(cast_target_position)
 	bite_occurred.emit(cast_target_position)
+	bite_timeout_timer.start()
 	print("Bite! Click/Space to start reeling")
 
 
@@ -234,19 +259,27 @@ func create_visual_line(start_pos: Vector3, end_pos: Vector3) -> void:
 	_build_line_mesh(0.0)
 
 
-func _build_line_mesh(twitch_strength: float) -> void:
+func _build_line_mesh(twitch_strength: float, slack_strength: float = 0.0) -> void:
 	if not is_instance_valid(visual_line_node):
 		return
 
 	var immediate_mesh: ImmediateMesh = ImmediateMesh.new()
 	var material: ORMMaterial3D = ORMMaterial3D.new()
-	material.albedo_color = Color(1.0, 1.0, 1.0)
+	var base_color: Color = Color(1.0, 1.0, 1.0)
+	material.albedo_color = base_color.lerp(Color(0.5, 0.55, 0.6), slack_strength)
 	material.shading_mode = ORMMaterial3D.SHADING_MODE_UNSHADED
 
 	immediate_mesh.surface_begin(Mesh.PRIMITIVE_LINES, material)
 	for i in range(LINE_SEGMENTS):
 		var v0: Vector3 = original_line_vertices[i] + twitch_directions[i] * twitch_strength
 		var v1: Vector3 = original_line_vertices[i + 1] + twitch_directions[i + 1] * twitch_strength
+		if slack_strength > 0.0:
+			var t0: float = float(i) / float(LINE_SEGMENTS)
+			var t1: float = float(i + 1) / float(LINE_SEGMENTS)
+			var droop0: float = sin(t0 * PI) * slack_strength * 0.8
+			var droop1: float = sin(t1 * PI) * slack_strength * 0.8
+			v0.y -= droop0
+			v1.y -= droop1
 		immediate_mesh.surface_add_vertex(v0)
 		immediate_mesh.surface_add_vertex(v1)
 	immediate_mesh.surface_end()
@@ -311,6 +344,21 @@ func _apply_twitch(factor: float) -> void:
 	_build_line_mesh(factor * 0.3)
 
 
+func _apply_escape_slack() -> void:
+	if escape_slack_tween and escape_slack_tween.is_valid():
+		escape_slack_tween.kill()
+	if active_twitch_tween and active_twitch_tween.is_valid():
+		active_twitch_tween.kill()
+		active_twitch_tween = null
+
+	escape_slack_tween = create_tween()
+	escape_slack_tween.tween_method(_apply_slack, 0.0, 1.0, 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+func _apply_slack(factor: float) -> void:
+	_build_line_mesh(0.0, factor)
+
+
 func _on_catch_feedback_completed() -> void:
-	if current_state == State.SUCCESS:
+	if current_state in [State.SUCCESS, State.ESCAPE]:
 		current_state = State.IDLE

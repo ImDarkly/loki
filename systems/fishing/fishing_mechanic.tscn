@@ -18,6 +18,9 @@ wait_time = 0.1
 [node name="ReelTimer" type="Timer" parent="."]
 one_shot = true
 
+[node name="BiteTimeoutTimer" type="Timer" parent="."]
+one_shot = true
+
 [node name="FishManager" parent="." instance=ExtResource("2_likap")]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
