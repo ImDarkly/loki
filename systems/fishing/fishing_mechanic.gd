@@ -1,6 +1,6 @@
 extends Node3D
 
-enum State { IDLE, CASTING, BITE }
+enum State { IDLE, WAITING, REELING }
 
 signal bite_occurred(fish_position: Vector3)
 
@@ -9,14 +9,30 @@ signal bite_occurred(fish_position: Vector3)
 @export var min_bite_delay: float = 3.0
 @export var max_bite_delay: float = 8.0
 
+@export var player_rise_speed: float = 80.0
+@export var player_fall_speed: float = 60.0
+@export var green_zone_width: float = 25.0
+@export var zone_move_interval: float = 0.1
+@export var zone_move_amount: float = 15.0
+
 var current_state: State = State.IDLE
 var is_line_cast: bool = false
 var visual_line_node: MeshInstance3D = null
 var fish_node: Node3D = null
 var cast_target_position: Vector3
 
+var player_bar_position: float = 50.0
+var green_zone_position: float = 50.0
+var green_zone_target: float = 50.0
+var green_zone_lerp_speed: float = 4.0
+
 @onready var bite_timer: Timer = $BiteTimer
 @onready var bite_audio: AudioStreamPlayer = $BiteAudio
+@onready var green_zone_timer: Timer = $GreenZoneTimer
+@onready var reel_meter: Control = $CanvasLayer/ReelMeter
+@onready var meter_bg: ColorRect = $CanvasLayer/ReelMeter/MeterBg
+@onready var green_zone_rect: ColorRect = $CanvasLayer/ReelMeter/GreenZone
+@onready var player_bar_rect: ColorRect = $CanvasLayer/ReelMeter/PlayerBar
 
 var original_line_vertices: PackedVector3Array = []
 var twitch_directions: PackedVector3Array = []
@@ -25,16 +41,90 @@ var active_twitch_tween: Tween = null
 const LINE_SEGMENTS: int = 10
 
 
+func is_reeling() -> bool:
+	return current_state == State.REELING
+
+
 func _ready() -> void:
 	bite_timer.one_shot = true
 	bite_timer.timeout.connect(_on_bite_timer_timeout)
 	bite_audio.stream = _generate_rumble_stream()
 
+	green_zone_timer.wait_time = zone_move_interval
+	green_zone_timer.one_shot = false
+	green_zone_timer.timeout.connect(_on_green_zone_timer_timeout)
+
+	if not InputMap.has_action("reel"):
+		InputMap.add_action("reel")
+		var reel_mouse := InputEventMouseButton.new()
+		reel_mouse.button_index = MOUSE_BUTTON_LEFT
+		InputMap.action_add_event("reel", reel_mouse)
+		var reel_key := InputEventKey.new()
+		reel_key.physical_keycode = KEY_SPACE
+		InputMap.action_add_event("reel", reel_key)
+
+	reel_meter.visible = false
+
+
+func _process(delta: float) -> void:
+	if current_state != State.REELING:
+		return
+
+	var holding: bool = Input.is_action_pressed("reel")
+
+	if holding:
+		player_bar_position += player_rise_speed * delta
+	else:
+		player_bar_position -= player_fall_speed * delta
+
+	player_bar_position = clamp(player_bar_position, 0.0, 100.0)
+
+	green_zone_position = lerp(green_zone_position, green_zone_target, green_zone_lerp_speed * delta)
+	_update_reel_meter()
+
+
+func _update_reel_meter() -> void:
+	if not is_instance_valid(reel_meter):
+		return
+	var meter_height: float = reel_meter.size.y
+
+	var zone_height: float = meter_height * (green_zone_width / 100.0)
+	var zone_y: float = meter_height * (green_zone_position / 100.0)
+	green_zone_rect.position = Vector2(0, zone_y)
+	green_zone_rect.size = Vector2(reel_meter.size.x, zone_height)
+
+	var bar_height: float = 16.0
+	var bar_y: float = meter_height * (player_bar_position / 100.0)
+	player_bar_rect.position = Vector2(0, bar_y)
+	player_bar_rect.size = Vector2(reel_meter.size.x, bar_height)
+
+
+func _on_green_zone_timer_timeout() -> void:
+	if current_state != State.REELING:
+		return
+	green_zone_target += randf_range(-zone_move_amount, zone_move_amount)
+	green_zone_target = clamp(green_zone_target, 0.0, 100.0 - green_zone_width)
+
+
+func _enter_reeling() -> void:
+	current_state = State.REELING
+	player_bar_position = 50.0
+	green_zone_position = 50.0
+	green_zone_timer.start()
+	reel_meter.visible = true
+
+
+func _exit_reeling() -> void:
+	green_zone_timer.stop()
+	reel_meter.visible = false
+
 
 func cast(from_position: Vector3, forward_direction: Vector3) -> void:
+	if current_state == State.REELING:
+		_exit_reeling()
 	cleanup_fish()
 
-	current_state = State.CASTING
+	current_state = State.WAITING
 	is_line_cast = true
 
 	var random_distance: float = randf_range(min_cast_distance, max_cast_distance)
@@ -49,7 +139,7 @@ func cast(from_position: Vector3, forward_direction: Vector3) -> void:
 
 
 func _on_bite_timer_timeout() -> void:
-	current_state = State.BITE
+	_enter_reeling()
 	_play_bite_feedback()
 	spawn_fish_placeholder(cast_target_position)
 	bite_occurred.emit(cast_target_position)
