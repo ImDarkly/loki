@@ -1,0 +1,34 @@
+extends GutTest
+
+var mechanic: Node3D
+
+
+func before_each() -> void:
+	var scene = load("res://systems/fishing/fishing_mechanic.tscn")
+	mechanic = autofree(scene.instantiate())
+	add_child(mechanic)
+	await get_tree().process_frame
+
+
+func test_reel_success_when_bar_in_zone() -> void:
+	mechanic._enter_reeling()
+	mechanic.reel_timer.stop()
+	mechanic.reel_meter.size = Vector2(40, 300)
+	mechanic.player_bar_position = 40.0
+	mechanic.green_zone_position = 30.0
+	mechanic.quota = 0
+	mechanic._on_reel_timer_timeout()
+	assert_eq(mechanic.quota, 1)
+	assert_eq(mechanic.current_state, 4, "Should be SUCCESS (4)")
+
+
+func test_reel_failure_when_bar_outside_zone() -> void:
+	mechanic._enter_reeling()
+	mechanic.reel_timer.stop()
+	mechanic.reel_meter.size = Vector2(40, 300)
+	mechanic.player_bar_position = 90.0
+	mechanic.green_zone_position = 30.0
+	mechanic.quota = 0
+	mechanic._on_reel_timer_timeout()
+	assert_eq(mechanic.quota, 0)
+	assert_eq(mechanic.current_state, 5, "Should be ESCAPE (5)")
