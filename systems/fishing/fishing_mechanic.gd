@@ -94,7 +94,7 @@ func _update_reel_meter() -> void:
 	green_zone_rect.size = Vector2(reel_meter.size.x, zone_height)
 
 	var bar_height: float = 16.0
-	var bar_y: float = meter_height * (player_bar_position / 100.0)
+	var bar_y: float = (meter_height - bar_height) * (player_bar_position / 100.0)
 	player_bar_rect.position = Vector2(0, bar_y)
 	player_bar_rect.size = Vector2(reel_meter.size.x, bar_height)
 
