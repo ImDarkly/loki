@@ -4,3 +4,5 @@
 
 [node name="FishingMechanic" type="Node3D"]
 script = ExtResource("1_7vgpu")
+
+[node name="BiteTimer" type="Timer" parent="."]
