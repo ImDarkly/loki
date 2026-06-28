@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://dssphm27dhpip"]
+
+[ext_resource type="Script" path="res://entities/player/player.gd" id="1_n6c3h"]
+[ext_resource type="PackedScene" path="res://systems/fishing/fishing_mechanic.tscn" id="2_o1vxj"]
+[ext_resource type="Script" path="res://world/world_setup.gd" id="3_y6pqm"]
+
+[node name="main" type="Node3D"]
+script = ExtResource("3_y6pqm")
+
+[node name="Player" type="Node3D" parent="."]
+script = ExtResource("1_n6c3h")
+
+[node name="FishingMechanic" parent="Player" instance=ExtResource("2_o1vxj")]
+
+[node name="Camera3D" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+rotation = Vector3(-0.2, 0, 0)
+current = true
+fov = 75.0
+near = 0.1
+far = 1000.0

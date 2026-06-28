@@ -1,0 +1,3285 @@
+{
+  "sha": "82635f3ce1447173fe9295fd4b83a12476273785",
+  "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/82635f3ce1447173fe9295fd4b83a12476273785",
+  "tree": [
+    {
+      "path": ".claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "52aebd4831e61be54d3af9c66ac28ffb3e7a1a21",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/52aebd4831e61be54d3af9c66ac28ffb3e7a1a21"
+    },
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0041872b4be18bc90045a3f3e99bf57193b1ae54",
+      "size": 384,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0041872b4be18bc90045a3f3e99bf57193b1ae54"
+    },
+    {
+      "path": ".claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eea69ecfc42d4d773aca960cecd97428dc88fb24",
+      "size": 493,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/eea69ecfc42d4d773aca960cecd97428dc88fb24"
+    },
+    {
+      "path": ".claude",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "dbf6ddb36eb7f91d18880de609248a2ee1ac074f",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/dbf6ddb36eb7f91d18880de609248a2ee1ac074f"
+    },
+    {
+      "path": ".claude/settings.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e198247d6c22e81046c0f4294f0977ee9d4d9647",
+      "size": 403,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e198247d6c22e81046c0f4294f0977ee9d4d9647"
+    },
+    {
+      "path": ".codex",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "75a56be46a6adb2c2664fff293ddd5d60b26beca",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/75a56be46a6adb2c2664fff293ddd5d60b26beca"
+    },
+    {
+      "path": ".codex/INSTALL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "944ecb3c1fc73bb6c14eabc3d733cb8686f76bb1",
+      "size": 1803,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/944ecb3c1fc73bb6c14eabc3d733cb8686f76bb1"
+    },
+    {
+      "path": ".codex/agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a9679c26e2b1a1f4f5c9ddda33d9725c892c8656",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/a9679c26e2b1a1f4f5c9ddda33d9725c892c8656"
+    },
+    {
+      "path": ".codex/agents/godot-prompter",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "daede97ca005131a46f4f9dd2d700efdf61c7f65",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/daede97ca005131a46f4f9dd2d700efdf61c7f65"
+    },
+    {
+      "path": ".codex/agents/godot-prompter/godot-animator.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b0a70a3b35578cb529ee9f1668827bbcb57c44b1",
+      "size": 5622,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b0a70a3b35578cb529ee9f1668827bbcb57c44b1"
+    },
+    {
+      "path": ".codex/agents/godot-prompter/godot-code-reviewer.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "83de1b3d93e7669f75c97b44dd292ba133d15a2e",
+      "size": 3958,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/83de1b3d93e7669f75c97b44dd292ba133d15a2e"
+    },
+    {
+      "path": ".codex/agents/godot-prompter/godot-csharp-engineer.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3b07e67b63a0ba6e2f834639094bc42ec0a58a4f",
+      "size": 5886,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3b07e67b63a0ba6e2f834639094bc42ec0a58a4f"
+    },
+    {
+      "path": ".codex/agents/godot-prompter/godot-game-architect.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f92a038a72dd09f10e06e44e64594881f44a4454",
+      "size": 4437,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/f92a038a72dd09f10e06e44e64594881f44a4454"
+    },
+    {
+      "path": ".codex/agents/godot-prompter/godot-game-dev.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d6341a932b7573dba672c821e95426a21697741f",
+      "size": 4699,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d6341a932b7573dba672c821e95426a21697741f"
+    },
+    {
+      "path": ".codex/agents/godot-prompter/godot-performance-profiler.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fa3d6875bbf6f2dac0239cd7b010330bfca58354",
+      "size": 4947,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/fa3d6875bbf6f2dac0239cd7b010330bfca58354"
+    },
+    {
+      "path": ".codex/agents/godot-prompter/godot-shader-author.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "daf16d3b7a36023ee0cf5a954d1e39ce0d714466",
+      "size": 4619,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/daf16d3b7a36023ee0cf5a954d1e39ce0d714466"
+    },
+    {
+      "path": ".codex/agents/godot-prompter/godot-tools-engineer.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8636ae75d621401fdc89acc31e8c55e4d803fb3b",
+      "size": 6162,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/8636ae75d621401fdc89acc31e8c55e4d803fb3b"
+    },
+    {
+      "path": ".codex/agents/godot-prompter/godot-ui-designer.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "515143d71c7b92a1b32dcdac4866fc6dbf55e97f",
+      "size": 5445,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/515143d71c7b92a1b32dcdac4866fc6dbf55e97f"
+    },
+    {
+      "path": ".cursor-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "989924761ab6f42d892e4c24fef074cca2738994",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/989924761ab6f42d892e4c24fef074cca2738994"
+    },
+    {
+      "path": ".cursor-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ba997bf9d9eecaedb96c9318d730fb9cd7972bb5",
+      "size": 560,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ba997bf9d9eecaedb96c9318d730fb9cd7972bb5"
+    },
+    {
+      "path": ".github",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c8781c19d10017663bafad06892f7dda67ce18a3",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/c8781c19d10017663bafad06892f7dda67ce18a3"
+    },
+    {
+      "path": ".github/FUNDING.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c455a4b62f0bdbfc9eb0137e2e66506817e68c62",
+      "size": 90,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c455a4b62f0bdbfc9eb0137e2e66506817e68c62"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2f9c4bbe634bc8b15a80b509a310f70baad0abd4",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/2f9c4bbe634bc8b15a80b509a310f70baad0abd4"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5511bb9345e0a828d65194527b1d646b0c74bd1a",
+      "size": 2540,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/5511bb9345e0a828d65194527b1d646b0c74bd1a"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3ba13e0cec6cbbfd462e9ebf529dd2093148cd69",
+      "size": 28,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3ba13e0cec6cbbfd462e9ebf529dd2093148cd69"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature_request.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3f0b5cadfbc17e417cce772cb90e3c5e58023b51",
+      "size": 1901,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3f0b5cadfbc17e417cce772cb90e3c5e58023b51"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/skill_request.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7b8e0beaee155221d527f1f6641193afdc10a1fc",
+      "size": 2382,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/7b8e0beaee155221d527f1f6641193afdc10a1fc"
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d435a7081820b8785093e4d275d48b3818e8293a",
+      "size": 1008,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d435a7081820b8785093e4d275d48b3818e8293a"
+    },
+    {
+      "path": ".github/workflows",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "aaa52e9ffa7c19c34e16be76d434948b96fefb87",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/aaa52e9ffa7c19c34e16be76d434948b96fefb87"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f0a83d043f14148f55075769abab829e52b9190",
+      "size": 7157,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/8f0a83d043f14148f55075769abab829e52b9190"
+    },
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4fde964bb47519bd31a4d70345a2c9031b78e027",
+      "size": 389,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4fde964bb47519bd31a4d70345a2c9031b78e027"
+    },
+    {
+      "path": ".opencode",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2bb635c52bb5a6671d2861bb970279a6bc0c5d8f",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/2bb635c52bb5a6671d2861bb970279a6bc0c5d8f"
+    },
+    {
+      "path": ".opencode/INSTALL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ce4f62c26f7b3c2040de3c2d1b459eff9242a99c",
+      "size": 1573,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ce4f62c26f7b3c2040de3c2d1b459eff9242a99c"
+    },
+    {
+      "path": ".opencode/plugins",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7ba683e3ece232ad2f23dc030bf72002ee70901c",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/7ba683e3ece232ad2f23dc030bf72002ee70901c"
+    },
+    {
+      "path": ".opencode/plugins/godot-prompter.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5e75d07f614ec5165e51134469c70145a37a3f2d",
+      "size": 2824,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/5e75d07f614ec5165e51134469c70145a37a3f2d"
+    },
+    {
+      "path": "AGENTS.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "044fe2551f8d8117212bf05bb82c465398a0f928",
+      "size": 99,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/044fe2551f8d8117212bf05bb82c465398a0f928"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a5cbb9e79ace034766aa6314f4794e48ed7fac36",
+      "size": 28695,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a5cbb9e79ace034766aa6314f4794e48ed7fac36"
+    },
+    {
+      "path": "CLAUDE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6b69fbccfbac766574238f4329f58122109e0f06",
+      "size": 6344,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/6b69fbccfbac766574238f4329f58122109e0f06"
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eeb47633e7e46de2bba7c485f6308d4ee872bcee",
+      "size": 5224,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/eeb47633e7e46de2bba7c485f6308d4ee872bcee"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8a354c1e7367bb6641398ac35611d4491fcd6cf6",
+      "size": 5469,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/8a354c1e7367bb6641398ac35611d4491fcd6cf6"
+    },
+    {
+      "path": "GEMINI.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b060b002d95624d9b7294179c6f0766fee15c5fc",
+      "size": 98,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b060b002d95624d9b7294179c6f0766fee15c5fc"
+    },
+    {
+      "path": "LICENSE",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f5058316879cd83ed9ee5eec4cb1a180479ffa38",
+      "size": 1083,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/f5058316879cd83ed9ee5eec4cb1a180479ffa38"
+    },
+    {
+      "path": "PRIVACY.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d4adf99161a5e31c39d65727fb1f87e085c72701",
+      "size": 319,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d4adf99161a5e31c39d65727fb1f87e085c72701"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9c9a5f1d6e8633b908e2b77084b32ffcc9d675e",
+      "size": 16976,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d9c9a5f1d6e8633b908e2b77084b32ffcc9d675e"
+    },
+    {
+      "path": "agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f7f3453829505ae663d1e692c2ddaaa99e3cd894",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/f7f3453829505ae663d1e692c2ddaaa99e3cd894"
+    },
+    {
+      "path": "agents/.gitkeep",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "agents/godot-animator.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4b319a62c1efa7cb4d8999cb82704c5adbf399a5",
+      "size": 5266,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4b319a62c1efa7cb4d8999cb82704c5adbf399a5"
+    },
+    {
+      "path": "agents/godot-code-reviewer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1cceb96182664277e049151ed72f1423832f5517",
+      "size": 3642,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/1cceb96182664277e049151ed72f1423832f5517"
+    },
+    {
+      "path": "agents/godot-csharp-engineer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0351ed8f064ed9787255ca0111c2f95a5b638b3a",
+      "size": 5726,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0351ed8f064ed9787255ca0111c2f95a5b638b3a"
+    },
+    {
+      "path": "agents/godot-game-architect.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a66f3c93aa3ed5296054d2cbdae52e999130db8e",
+      "size": 4445,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a66f3c93aa3ed5296054d2cbdae52e999130db8e"
+    },
+    {
+      "path": "agents/godot-game-dev.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7181fd4c08a24167d0ecf303d7000d87af939e7c",
+      "size": 4707,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/7181fd4c08a24167d0ecf303d7000d87af939e7c"
+    },
+    {
+      "path": "agents/godot-performance-profiler.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2e6a565a0ea8f90f62f609959d4a68ebaea67e85",
+      "size": 4672,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/2e6a565a0ea8f90f62f609959d4a68ebaea67e85"
+    },
+    {
+      "path": "agents/godot-shader-author.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b88cf9aa52c923a21871fb183714e74564b9f348",
+      "size": 4264,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b88cf9aa52c923a21871fb183714e74564b9f348"
+    },
+    {
+      "path": "agents/godot-tools-engineer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e852c5e1a7b7cc842a8a4c9beb999120d8bbdbd9",
+      "size": 5931,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e852c5e1a7b7cc842a8a4c9beb999120d8bbdbd9"
+    },
+    {
+      "path": "agents/godot-ui-designer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3de625aa1d8cb2eafe82a74ff04dfa2e461e1759",
+      "size": 5088,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3de625aa1d8cb2eafe82a74ff04dfa2e461e1759"
+    },
+    {
+      "path": "commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d564d0bc3dd917926892c55e3706cc116d5b165e",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/d564d0bc3dd917926892c55e3706cc116d5b165e"
+    },
+    {
+      "path": "commands/.gitkeep",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "docs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c7f15f6a479f6a941d3a784f7b3e66c0c9549cf9",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/c7f15f6a479f6a941d3a784f7b3e66c0c9549cf9"
+    },
+    {
+      "path": "docs/superpowers",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4710ea475c1f8d1096faef66c85313375c45806f",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/4710ea475c1f8d1096faef66c85313375c45806f"
+    },
+    {
+      "path": "docs/superpowers/notes",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8dfc8a5317756358db7534244d55868ea72ae955",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/8dfc8a5317756358db7534244d55868ea72ae955"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-04-30-cross-ref-heuristic.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d57df78968f116796d7b96989ed1639dadc5ec31",
+      "size": 1463,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d57df78968f116796d7b96989ed1639dadc5ec31"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-04-30-csharp-parity-debt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d4c4067f471b9a524bf558d7580c75c277098bc",
+      "size": 14045,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9d4c4067f471b9a524bf558d7580c75c277098bc"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-04-30-godot-4.5-4.6-deltas.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fb8ab4b663cf6ea57d2da7259b0edd67d6fe06b6",
+      "size": 12246,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/fb8ab4b663cf6ea57d2da7259b0edd67d6fe06b6"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-05-06-token-budget-debt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e648efe8ce7c7a017cf83fd33e9e893cc3b6e79c",
+      "size": 4428,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e648efe8ce7c7a017cf83fd33e9e893cc3b6e79c"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-05-06-v1.7.0-resume.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dfe5ce756b71e39efc75311a8cbec8733579ceb2",
+      "size": 5289,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/dfe5ce756b71e39efc75311a8cbec8733579ceb2"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-05-07-v1.7.2-resume.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d8fb6c6f1ac3e5f96868ece37c243339d5d770b",
+      "size": 5190,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9d8fb6c6f1ac3e5f96868ece37c243339d5d770b"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-05-29-gdextension-research.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d8049e66421b844924c2337b95848692fe5672e7",
+      "size": 9302,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d8049e66421b844924c2337b95848692fe5672e7"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-05-29-mobile-development-research.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4d3a8da4129237cafa0be464aa2c4b4791be7d0b",
+      "size": 9956,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4d3a8da4129237cafa0be464aa2c4b4791be7d0b"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-05-29-multithreading-research.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "42d6cf5bd18d61456d47d44ee9669c005c1aeca3",
+      "size": 9162,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/42d6cf5bd18d61456d47d44ee9669c005c1aeca3"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-06-17-antigravity-research.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "62dd81b7f5067f3f0dfcf1915eccc58addb4250e",
+      "size": 19618,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/62dd81b7f5067f3f0dfcf1915eccc58addb4250e"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-06-17-beehave-research.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "82af8ac01fdc4acb1e2ec184efe358a9678c8b25",
+      "size": 21720,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/82af8ac01fdc4acb1e2ec184efe358a9678c8b25"
+    },
+    {
+      "path": "docs/superpowers/notes/2026-06-17-limboai-research.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c82f31241c9e975fcb1447fed562dee0820c0f40",
+      "size": 29252,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c82f31241c9e975fcb1447fed562dee0820c0f40"
+    },
+    {
+      "path": "docs/superpowers/plans",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c02799a354da062d22415b0631d149f904cde3c0",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/c02799a354da062d22415b0631d149f904cde3c0"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-03-phase1-mvp-implementation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dd22e65155ebb6e14bf3701c3c9a902a1883c818",
+      "size": 68268,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/dd22e65155ebb6e14bf3701c3c9a902a1883c818"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-03-phase2-architecture-gameplay.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28d8fd901515973e79fa68d804339d38d4bc562e",
+      "size": 12299,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/28d8fd901515973e79fa68d804339d38d4bc562e"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-04-phase3-ui-multiplayer-deploy.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "01797657847404b2be422ae8491d5c07304b2955",
+      "size": 11955,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/01797657847404b2be422ae8491d5c07304b2955"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-05-agent-test-and-distribution.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1734a8051c40491627bd1d92927e379c642d31a0",
+      "size": 22147,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/1734a8051c40491627bd1d92927e379c642d31a0"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-05-trial-project-validation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4c27db97687eceec937ec52804db3bde9af489ac",
+      "size": 66610,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4c27db97687eceec937ec52804db3bde9af489ac"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-08-v1.4.0-godot-source-alignment.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d401a8e6e13f4d8f6edfe3020ab5edd6555a466",
+      "size": 74616,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0d401a8e6e13f4d8f6edfe3020ab5edd6555a466"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-09-superpowers-coexistence.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c31109a70e815551f4d59c3384aea469891187a2",
+      "size": 9458,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c31109a70e815551f4d59c3384aea469891187a2"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-30-v1.5.0-implementation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e071f062e9f73263399698ec8bc931e3b20181f9",
+      "size": 53558,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e071f062e9f73263399698ec8bc931e3b20181f9"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-01-v1.6.0-implementation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "10dd3280e17a431c64a80e1048d400e64aa3bd6b",
+      "size": 54245,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/10dd3280e17a431c64a80e1048d400e64aa3bd6b"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-06-v1.7.0-implementation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dce0979689ed94a31072680d035260736a63f131",
+      "size": 99976,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/dce0979689ed94a31072680d035260736a63f131"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-17-v1.8.0-implementation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b8d3c0adffcaa7cf7a417a079c1ee3e27b47f815",
+      "size": 48592,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b8d3c0adffcaa7cf7a417a079c1ee3e27b47f815"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-29-v1.9.0-implementation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c20637974f94160adc95fcec526888ed0ef94016",
+      "size": 51210,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c20637974f94160adc95fcec526888ed0ef94016"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-06-17-v1.10.0-implementation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cfbc922d8cdd5d3cde518cfe0828138c50752f24",
+      "size": 39462,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/cfbc922d8cdd5d3cde518cfe0828138c50752f24"
+    },
+    {
+      "path": "docs/superpowers/specs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5d36c6e9ea98f259991c67f46f57b4e471b329a2",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/5d36c6e9ea98f259991c67f46f57b4e471b329a2"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-03-godot-prompter-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5b4d0e3f583c00921fb7ba34f3ef6672d62b5304",
+      "size": 7165,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/5b4d0e3f583c00921fb7ba34f3ef6672d62b5304"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-05-agent-test-and-distribution-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d7bf9aaa8a528169a0460ec595eacb4176a6716",
+      "size": 5041,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9d7bf9aaa8a528169a0460ec595eacb4176a6716"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-05-trial-project-validation-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7bcf87aae1c25bbb3fa9db01a8756a36e1f671df",
+      "size": 4523,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/7bcf87aae1c25bbb3fa9db01a8756a36e1f671df"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-09-superpowers-coexistence-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffcd5cd057b3ba262b9b9cb9b949b29fd475dc75",
+      "size": 9309,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ffcd5cd057b3ba262b9b9cb9b949b29fd475dc75"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-30-v1.5.0-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c53e028fbdf1b7a0d54c090f87d0d1b958b0f148",
+      "size": 13290,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c53e028fbdf1b7a0d54c090f87d0d1b958b0f148"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-05-01-v1.6.0-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3b06c910cb62496f16a45991b1c877338a0b140c",
+      "size": 11656,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3b06c910cb62496f16a45991b1c877338a0b140c"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-05-06-v1.7.0-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b9f770d0d80f0309e46333e95e5c0cb44ae4f1df",
+      "size": 21695,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b9f770d0d80f0309e46333e95e5c0cb44ae4f1df"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-05-29-v1.9.0-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "89f669a2a196eb8d272aafcbc414e0a6232ab83f",
+      "size": 19893,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/89f669a2a196eb8d272aafcbc414e0a6232ab83f"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-06-17-v1.10.0-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "84e0c924ee4557c8e9e969c8b7ca6b2c6b11af80",
+      "size": 11787,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/84e0c924ee4557c8e9e969c8b7ca6b2c6b11af80"
+    },
+    {
+      "path": "docs/token-budget.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fb1ad11099b281dd7371abad8320550120e662d8",
+      "size": 22213,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/fb1ad11099b281dd7371abad8320550120e662d8"
+    },
+    {
+      "path": "gemini-extension.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1fb6f93adfafd10a607a811bbd51b1de347effbc",
+      "size": 197,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/1fb6f93adfafd10a607a811bbd51b1de347effbc"
+    },
+    {
+      "path": "package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "21638800f44947a2a90d9c34c607c724bb98dd1c",
+      "size": 617,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/21638800f44947a2a90d9c34c607c724bb98dd1c"
+    },
+    {
+      "path": "scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "33d016a7b8ee85f229b4467813ba0024a7248d04",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/33d016a7b8ee85f229b4467813ba0024a7248d04"
+    },
+    {
+      "path": "scripts/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f100c7c286a4143bf4ae4157ec59d806e39e0a5e",
+      "size": 1906,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/f100c7c286a4143bf4ae4157ec59d806e39e0a5e"
+    },
+    {
+      "path": "scripts/bump-version.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2c5b0f7f217bb1a21d2f3279ff255086e4d6f269",
+      "size": 6494,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/2c5b0f7f217bb1a21d2f3279ff255086e4d6f269"
+    },
+    {
+      "path": "scripts/count-tokens.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ead6f415637e73f5fd1a5f7869ef27c0d57b51bf",
+      "size": 4683,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ead6f415637e73f5fd1a5f7869ef27c0d57b51bf"
+    },
+    {
+      "path": "scripts/fixtures",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "31b6d45defbaeb42e11822e39cdab613fef2c5d1",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/31b6d45defbaeb42e11822e39cdab613fef2c5d1"
+    },
+    {
+      "path": "scripts/fixtures/bad-cross-ref",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8b9c0c4e56dbdc50f5c6edc31dba62cb4ebc4c25",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/8b9c0c4e56dbdc50f5c6edc31dba62cb4ebc4c25"
+    },
+    {
+      "path": "scripts/fixtures/bad-cross-ref/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2702b7da4054d9bbf6d59ac5b1bd0b80bba47f54",
+      "size": 288,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/2702b7da4054d9bbf6d59ac5b1bd0b80bba47f54"
+    },
+    {
+      "path": "scripts/fixtures/bad-frontmatter",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "1fee7f900ffc9e32002bfdb43af80517d9e695cf",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/1fee7f900ffc9e32002bfdb43af80517d9e695cf"
+    },
+    {
+      "path": "scripts/fixtures/bad-frontmatter/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bbb5d02404720ef0d1c877c064ee830dfccd81a0",
+      "size": 131,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/bbb5d02404720ef0d1c877c064ee830dfccd81a0"
+    },
+    {
+      "path": "scripts/fixtures/missing-checklist",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b5899930f6c21dc35425e92c323d02af13388b2d",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/b5899930f6c21dc35425e92c323d02af13388b2d"
+    },
+    {
+      "path": "scripts/fixtures/missing-checklist/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fa119a54e53066ce82fa1a693bb7b25d05e7258a",
+      "size": 239,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/fa119a54e53066ce82fa1a693bb7b25d05e7258a"
+    },
+    {
+      "path": "scripts/hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "644fbf0219db174f050d8956ab1caa8928d74733",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/644fbf0219db174f050d8956ab1caa8928d74733"
+    },
+    {
+      "path": "scripts/hooks/validate-skill-on-edit.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a53eccead580abd611133ce1c528ba11eb763c8b",
+      "size": 1766,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a53eccead580abd611133ce1c528ba11eb763c8b"
+    },
+    {
+      "path": "scripts/validate-skills.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1dc1a08ef74a2346fe5bd40d7e2d8e67b2c0d98f",
+      "size": 10095,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/1dc1a08ef74a2346fe5bd40d7e2d8e67b2c0d98f"
+    },
+    {
+      "path": "skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "36c06ff964d8f74ddfe4db6c18a3c5e2caff63a6",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/36c06ff964d8f74ddfe4db6c18a3c5e2caff63a6"
+    },
+    {
+      "path": "skills/2d-essentials",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2c84ee76a914b89d55dff2d11e7e8b4da3da5884",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/2c84ee76a914b89d55dff2d11e7e8b4da3da5884"
+    },
+    {
+      "path": "skills/2d-essentials/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2116084c66563ecb7bb2e6e810e79c7a9eb64c04",
+      "size": 8814,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/2116084c66563ecb7bb2e6e810e79c7a9eb64c04"
+    },
+    {
+      "path": "skills/2d-essentials/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7c722276e3ab7fe785976aac6af6c00d8a5a29e2",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/7c722276e3ab7fe785976aac6af6c00d8a5a29e2"
+    },
+    {
+      "path": "skills/2d-essentials/references/2d-particles.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b29ca496f305f434038a3dfee09f4a449e4f4b96",
+      "size": 4083,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b29ca496f305f434038a3dfee09f4a449e4f4b96"
+    },
+    {
+      "path": "skills/2d-essentials/references/custom-drawing.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e210ee2a4e59b093e6604c7fdb6c611e4ce67d98",
+      "size": 3119,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e210ee2a4e59b093e6604c7fdb6c611e4ce67d98"
+    },
+    {
+      "path": "skills/2d-essentials/references/lights-and-shadows.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e0d1323bc14184ad7e24e601678df6d97e21dded",
+      "size": 4006,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e0d1323bc14184ad7e24e601678df6d97e21dded"
+    },
+    {
+      "path": "skills/2d-essentials/references/parallax.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f184c3a0eebd7cf762e97042beb38064f6c408d4",
+      "size": 2776,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/f184c3a0eebd7cf762e97042beb38064f6c408d4"
+    },
+    {
+      "path": "skills/2d-essentials/references/tilemap.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6e3e39c5d47b754aa676cc3b58b3377eb06da787",
+      "size": 4969,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/6e3e39c5d47b754aa676cc3b58b3377eb06da787"
+    },
+    {
+      "path": "skills/3d-essentials",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9406daf4cec2aec725e4128c0c5668a64dbac4c7",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/9406daf4cec2aec725e4128c0c5668a64dbac4c7"
+    },
+    {
+      "path": "skills/3d-essentials/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0bc1577af5697f9a1f73faf0279a26fde36b8218",
+      "size": 16307,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0bc1577af5697f9a1f73faf0279a26fde36b8218"
+    },
+    {
+      "path": "skills/3d-essentials/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "518e98db159c0a395c4c8c14e794c1e7714d4b11",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/518e98db159c0a395c4c8c14e794c1e7714d4b11"
+    },
+    {
+      "path": "skills/3d-essentials/references/decals.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9e634822cb992510c5329a536616968dba9f1386",
+      "size": 2459,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9e634822cb992510c5329a536616968dba9f1386"
+    },
+    {
+      "path": "skills/3d-essentials/references/environment-and-post.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "65399aa6e2ffe225873d7bcb45bb8c0e05be2e8f",
+      "size": 6266,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/65399aa6e2ffe225873d7bcb45bb8c0e05be2e8f"
+    },
+    {
+      "path": "skills/3d-essentials/references/fog-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "abbbde2b2a3ef4a048910b42a1b032b528c861b4",
+      "size": 2875,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/abbbde2b2a3ef4a048910b42a1b032b528c861b4"
+    },
+    {
+      "path": "skills/3d-essentials/references/global-illumination.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "34579602041da89bbe57604aebf210a0072d2b9b",
+      "size": 2545,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/34579602041da89bbe57604aebf210a0072d2b9b"
+    },
+    {
+      "path": "skills/3d-essentials/references/lod-and-culling.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d01a76189b7c7147b7ee8ec548f826c191495df",
+      "size": 3404,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9d01a76189b7c7147b7ee8ec548f826c191495df"
+    },
+    {
+      "path": "skills/3d-essentials/references/materials-and-lighting-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a28b3719972805e218ade6d6e8eab28df3838309",
+      "size": 3959,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a28b3719972805e218ade6d6e8eab28df3838309"
+    },
+    {
+      "path": "skills/ability-system",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "bdd804938941b4558fabf2f94b293966c117b79f",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/bdd804938941b4558fabf2f94b293966c117b79f"
+    },
+    {
+      "path": "skills/ability-system/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "810064357a0a887ac93fde8926c7aa60fe99051e",
+      "size": 12161,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/810064357a0a887ac93fde8926c7aa60fe99051e"
+    },
+    {
+      "path": "skills/ability-system/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "bb83d2e5f6874235b93f3cc742561d68e6ff36e7",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/bb83d2e5f6874235b93f3cc742561d68e6ff36e7"
+    },
+    {
+      "path": "skills/ability-system/references/stat-modifiers.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "082a4c83da92e529f07442573a986ace12777e61",
+      "size": 15567,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/082a4c83da92e529f07442573a986ace12777e61"
+    },
+    {
+      "path": "skills/ability-system/references/tags-and-conditions.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4fec372d8589113bb7d77e090c4d91d4952e24a8",
+      "size": 18225,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4fec372d8589113bb7d77e090c4d91d4952e24a8"
+    },
+    {
+      "path": "skills/ability-system/references/ui-binding.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "71d85faf261c2b4b3c92617a4f902141791fba0c",
+      "size": 10994,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/71d85faf261c2b4b3c92617a4f902141791fba0c"
+    },
+    {
+      "path": "skills/addon-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "aadec66c03623214c65e0a7202b419c0cacf1290",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/aadec66c03623214c65e0a7202b419c0cacf1290"
+    },
+    {
+      "path": "skills/addon-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8d891da5482180d3dd29d1332353647a48614b7f",
+      "size": 13447,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/8d891da5482180d3dd29d1332353647a48614b7f"
+    },
+    {
+      "path": "skills/addon-development/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ebe2e70d0dffedeeb17a06569851ec7bf76171a2",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/ebe2e70d0dffedeeb17a06569851ec7bf76171a2"
+    },
+    {
+      "path": "skills/addon-development/references/dock-panels.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ef052a40bc193fdc7ac352d864fe22493105af49",
+      "size": 2086,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ef052a40bc193fdc7ac352d864fe22493105af49"
+    },
+    {
+      "path": "skills/addon-development/references/gizmos-deep-dive.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ea4635f7754f812922d6f70347a35a02084d0a73",
+      "size": 6717,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ea4635f7754f812922d6f70347a35a02084d0a73"
+    },
+    {
+      "path": "skills/addon-development/references/inspector-plugins.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "88d767ac7aa3cf99d9dccaf01ab56604fe016fc5",
+      "size": 8649,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/88d767ac7aa3cf99d9dccaf01ab56604fe016fc5"
+    },
+    {
+      "path": "skills/ai-navigation",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7c62e02ae64d4877bb279d63b646531a242e1c05",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/7c62e02ae64d4877bb279d63b646531a242e1c05"
+    },
+    {
+      "path": "skills/ai-navigation/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "209a6af9ecbbf49be7ba54e09bff1e3223fe7dcf",
+      "size": 16231,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/209a6af9ecbbf49be7ba54e09bff1e3223fe7dcf"
+    },
+    {
+      "path": "skills/ai-navigation/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "24f677ae3b199885f8639a56e50b2ebedfa17d3b",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/24f677ae3b199885f8639a56e50b2ebedfa17d3b"
+    },
+    {
+      "path": "skills/ai-navigation/references/behavior-trees.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c76439467421af55d847f515e6ff2bb3e7fabf65",
+      "size": 6266,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c76439467421af55d847f515e6ff2bb3e7fabf65"
+    },
+    {
+      "path": "skills/ai-navigation/references/chase-attack.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "71ee996d47e3c78cb72135da92d4baa7c9c535eb",
+      "size": 8531,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/71ee996d47e3c78cb72135da92d4baa7c9c535eb"
+    },
+    {
+      "path": "skills/ai-navigation/references/patrol-patterns.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6b952bb7a537ccc4489415be6e7c4506d75139d0",
+      "size": 2992,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/6b952bb7a537ccc4489415be6e7c4506d75139d0"
+    },
+    {
+      "path": "skills/ai-navigation/references/steering-behaviors.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "10acbcbdcddde84b8bc215093ca92c514ad5c9ab",
+      "size": 6086,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/10acbcbdcddde84b8bc215093ca92c514ad5c9ab"
+    },
+    {
+      "path": "skills/animation-system",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b5e0c526fd8be060c81e7a3aaf1eb1e1d1b33968",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/b5e0c526fd8be060c81e7a3aaf1eb1e1d1b33968"
+    },
+    {
+      "path": "skills/animation-system/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bf51a74a80d1d212c072fff595af7321b2d05f79",
+      "size": 16364,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/bf51a74a80d1d212c072fff595af7321b2d05f79"
+    },
+    {
+      "path": "skills/animation-system/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "1174fc3c136147c66dcba97ed487808fb3cbccb7",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/1174fc3c136147c66dcba97ed487808fb3cbccb7"
+    },
+    {
+      "path": "skills/animation-system/references/bone-constraints.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "80cea39b581d136b3bc1a1a899eaba0e30d2bf02",
+      "size": 3207,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/80cea39b581d136b3bc1a1a899eaba0e30d2bf02"
+    },
+    {
+      "path": "skills/animation-system/references/common-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a64f30179dcbad916ef5450c109cd1e2d52ba4d9",
+      "size": 1892,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a64f30179dcbad916ef5450c109cd1e2d52ba4d9"
+    },
+    {
+      "path": "skills/animation-system/references/ik-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b4b5b4c9bdcb99697180a03526b5e131ffcda22b",
+      "size": 6608,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b4b5b4c9bdcb99697180a03526b5e131ffcda22b"
+    },
+    {
+      "path": "skills/animation-system/references/retargeting.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "be772e7cdeff344731f69fb3398d23cd3baf68ea",
+      "size": 838,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/be772e7cdeff344731f69fb3398d23cd3baf68ea"
+    },
+    {
+      "path": "skills/animation-system/references/skeleton-modifiers.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dbefe06e346c1210111816a88e80e78c00398a1c",
+      "size": 2000,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/dbefe06e346c1210111816a88e80e78c00398a1c"
+    },
+    {
+      "path": "skills/animation-system/references/sprite-animation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a0479f872364993d1d60f38b3e096f83ac87ffee",
+      "size": 2195,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a0479f872364993d1d60f38b3e096f83ac87ffee"
+    },
+    {
+      "path": "skills/assets-pipeline",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3894823d49e5b77108a5eff91bd040bbce1b7734",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/3894823d49e5b77108a5eff91bd040bbce1b7734"
+    },
+    {
+      "path": "skills/assets-pipeline/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "023823e9bc8a734c7e9995bb8fb03b92a16cd59c",
+      "size": 15592,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/023823e9bc8a734c7e9995bb8fb03b92a16cd59c"
+    },
+    {
+      "path": "skills/audio-system",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3656732ff4ccf90254f8b2f0ff381b60ce8b9ef1",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/3656732ff4ccf90254f8b2f0ff381b60ce8b9ef1"
+    },
+    {
+      "path": "skills/audio-system/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "54f9072992d89bfe8b48460f0f2317148825c991",
+      "size": 13901,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/54f9072992d89bfe8b48460f0f2317148825c991"
+    },
+    {
+      "path": "skills/audio-system/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3c82d852b0543bcda5ad2cc6d361b05fc64a29a8",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/3c82d852b0543bcda5ad2cc6d361b05fc64a29a8"
+    },
+    {
+      "path": "skills/audio-system/references/audio-settings.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c5a4db0d5db902753bea559aaa14022c77fe2c84",
+      "size": 3635,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c5a4db0d5db902753bea559aaa14022c77fe2c84"
+    },
+    {
+      "path": "skills/audio-system/references/interactive-music.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ec21dbda984be3b4ab420a61e09c2ec9ffa4dcdc",
+      "size": 5333,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ec21dbda984be3b4ab420a61e09c2ec9ffa4dcdc"
+    },
+    {
+      "path": "skills/audio-system/references/music-manager.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b21b836e32fc8c17427fac8bc60923cdf3f340a1",
+      "size": 3649,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b21b836e32fc8c17427fac8bc60923cdf3f340a1"
+    },
+    {
+      "path": "skills/audio-system/references/sfx-pooling.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0f0113d48aec7182bb18912c6f8797a35b19ba1f",
+      "size": 4469,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0f0113d48aec7182bb18912c6f8797a35b19ba1f"
+    },
+    {
+      "path": "skills/beehave",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "011d6958d7f211a0132369aed60e7b01398dcbf1",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/011d6958d7f211a0132369aed60e7b01398dcbf1"
+    },
+    {
+      "path": "skills/beehave/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ba23cf385e8784989bdf79a19dcc8c1c49e4d626",
+      "size": 11153,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ba23cf385e8784989bdf79a19dcc8c1c49e4d626"
+    },
+    {
+      "path": "skills/beehave/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d8dca8ce035e873597b4d86da0fa86548496bf25",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/d8dca8ce035e873597b4d86da0fa86548496bf25"
+    },
+    {
+      "path": "skills/beehave/references/custom-nodes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "05264c099d90e15fc32fc7f5d13ed39b03c0b792",
+      "size": 5747,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/05264c099d90e15fc32fc7f5d13ed39b03c0b792"
+    },
+    {
+      "path": "skills/camera-system",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "922a1a29957ee3ae7efbfc8601df8a5d11559d26",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/922a1a29957ee3ae7efbfc8601df8a5d11559d26"
+    },
+    {
+      "path": "skills/camera-system/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0890de22609a49bc1414cbb27888485f1d08922f",
+      "size": 11038,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0890de22609a49bc1414cbb27888485f1d08922f"
+    },
+    {
+      "path": "skills/camera-system/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3322ae8677c3c593b081e45a9d174c10ab9aea79",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/3322ae8677c3c593b081e45a9d174c10ab9aea79"
+    },
+    {
+      "path": "skills/camera-system/references/camera-zones.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aca50c837f7a7497d0aa01cb2255d84cc11a72a4",
+      "size": 3506,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/aca50c837f7a7497d0aa01cb2255d84cc11a72a4"
+    },
+    {
+      "path": "skills/camera-system/references/camera3d-patterns.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a852b584a1414be2ed9978bedfad288da61d3d96",
+      "size": 6471,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a852b584a1414be2ed9978bedfad288da61d3d96"
+    },
+    {
+      "path": "skills/camera-system/references/split-screen.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f52a776ed816b7a3146bfd4dc0d5767f92b22f03",
+      "size": 3253,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/f52a776ed816b7a3146bfd4dc0d5767f92b22f03"
+    },
+    {
+      "path": "skills/camera-system/references/transitions.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3cdb85098821b7094e069dd5a7244f7402c7b519",
+      "size": 4886,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3cdb85098821b7094e069dd5a7244f7402c7b519"
+    },
+    {
+      "path": "skills/component-system",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "78c12b0dadb2c24e87e30f3516404d498aa040bb",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/78c12b0dadb2c24e87e30f3516404d498aa040bb"
+    },
+    {
+      "path": "skills/component-system/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf27fe8f595acff14c3f649614b237dd9770553e",
+      "size": 14009,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/cf27fe8f595acff14c3f649614b237dd9770553e"
+    },
+    {
+      "path": "skills/csharp-godot",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "dbe9385ec55fc691b7e525244af2838b8a486be8",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/dbe9385ec55fc691b7e525244af2838b8a486be8"
+    },
+    {
+      "path": "skills/csharp-godot/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "697bc2fa5d772a479cde94449d4d7b38461eb45d",
+      "size": 13944,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/697bc2fa5d772a479cde94449d4d7b38461eb45d"
+    },
+    {
+      "path": "skills/csharp-signals",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "90ec0636ba9b0c2baf4405a2727657e9e8afa5a0",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/90ec0636ba9b0c2baf4405a2727657e9e8afa5a0"
+    },
+    {
+      "path": "skills/csharp-signals/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aa2481db851a200a4299ba3f4b05930fe25a6ff8",
+      "size": 9651,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/aa2481db851a200a4299ba3f4b05930fe25a6ff8"
+    },
+    {
+      "path": "skills/csharp-signals/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f11e282f9181e4bde3420e1f0bbd644ea2eecf06",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/f11e282f9181e4bde3420e1f0bbd644ea2eecf06"
+    },
+    {
+      "path": "skills/csharp-signals/references/awaiting-signals.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4cbbde100e22b2f81fdd5e41e64c99705b5c6dee",
+      "size": 2550,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4cbbde100e22b2f81fdd5e41e64c99705b5c6dee"
+    },
+    {
+      "path": "skills/csharp-signals/references/connecting-gdscript-signals.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ec96ea044bb779159957c458fa97236ab3cfcf77",
+      "size": 1770,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ec96ea044bb779159957c458fa97236ab3cfcf77"
+    },
+    {
+      "path": "skills/csharp-signals/references/custom-signal-patterns.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e738acc11e3bf8238d45eb6d15cc634487495a38",
+      "size": 4993,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e738acc11e3bf8238d45eb6d15cc634487495a38"
+    },
+    {
+      "path": "skills/csharp-signals/references/disconnecting.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8c4054083fcb9a0a0a6e9014047eeb0dd22c90a4",
+      "size": 2560,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/8c4054083fcb9a0a0a6e9014047eeb0dd22c90a4"
+    },
+    {
+      "path": "skills/dedicated-server",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "446a435f3c4082e348654072c9bc8af16c8622ba",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/446a435f3c4082e348654072c9bc8af16c8622ba"
+    },
+    {
+      "path": "skills/dedicated-server/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e5e8459069d64fcb4a5e746f4647e67147bf3e05",
+      "size": 11715,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e5e8459069d64fcb4a5e746f4647e67147bf3e05"
+    },
+    {
+      "path": "skills/dedicated-server/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "859a197e36be485203fb57ff47880b3da437f7f2",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/859a197e36be485203fb57ff47880b3da437f7f2"
+    },
+    {
+      "path": "skills/dedicated-server/references/deployment.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "84f76a3285501131497556a986a57fde314713ff",
+      "size": 4071,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/84f76a3285501131497556a986a57fde314713ff"
+    },
+    {
+      "path": "skills/dedicated-server/references/lobby-management.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "94afb2d3b14c8418daeba2858f481f57454b06cf",
+      "size": 9121,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/94afb2d3b14c8418daeba2858f481f57454b06cf"
+    },
+    {
+      "path": "skills/dedicated-server/references/match-flow.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ec4b8e35d227e480ad6885317bc5ce5525593a3a",
+      "size": 6433,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ec4b8e35d227e480ad6885317bc5ce5525593a3a"
+    },
+    {
+      "path": "skills/dedicated-server/references/server-config.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23c6faaa0844c1fdea43db54d6dc06401630006b",
+      "size": 5002,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/23c6faaa0844c1fdea43db54d6dc06401630006b"
+    },
+    {
+      "path": "skills/dependency-injection",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2970c360bcdc3b19a01c659e30928a82de8ec85b",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/2970c360bcdc3b19a01c659e30928a82de8ec85b"
+    },
+    {
+      "path": "skills/dependency-injection/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1eef3832a95140504891efea04b76459c20cc747",
+      "size": 11334,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/1eef3832a95140504891efea04b76459c20cc747"
+    },
+    {
+      "path": "skills/dependency-injection/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b205dc89f3e4826709dd71f3e6320a0402e34a18",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/b205dc89f3e4826709dd71f3e6320a0402e34a18"
+    },
+    {
+      "path": "skills/dependency-injection/references/autoloads.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c1adda9aac5e34e6a142505d73f6750b415a23ef",
+      "size": 2649,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c1adda9aac5e34e6a142505d73f6750b415a23ef"
+    },
+    {
+      "path": "skills/dependency-injection/references/export-injection.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "de60785727171b9041eab36dce86084b21aa5e51",
+      "size": 2593,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/de60785727171b9041eab36dce86084b21aa5e51"
+    },
+    {
+      "path": "skills/dependency-injection/references/scene-injection.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5784da6acce76c31f67e770158e558ff3097ecc1",
+      "size": 2402,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/5784da6acce76c31f67e770158e558ff3097ecc1"
+    },
+    {
+      "path": "skills/dependency-injection/references/service-locator.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b57cdf3213cdb1ccc1c862f4d5950ead84f083d9",
+      "size": 4914,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b57cdf3213cdb1ccc1c862f4d5950ead84f083d9"
+    },
+    {
+      "path": "skills/dependency-injection/references/testing-with-di.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "86159fb354ec53dd65e7ef4957438bada1ead690",
+      "size": 3558,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/86159fb354ec53dd65e7ef4957438bada1ead690"
+    },
+    {
+      "path": "skills/dialogue-system",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7a58ddd4632a991e23c8f7ce8cc9865185bcf11d",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/7a58ddd4632a991e23c8f7ce8cc9865185bcf11d"
+    },
+    {
+      "path": "skills/dialogue-system/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b0e113ecaf79b1409cb3e0f24e6de00f5e48286d",
+      "size": 10898,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b0e113ecaf79b1409cb3e0f24e6de00f5e48286d"
+    },
+    {
+      "path": "skills/dialogue-system/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f78eb20680e32d57a77f3e9b3f4de1a2ccf5678b",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/f78eb20680e32d57a77f3e9b3f4de1a2ccf5678b"
+    },
+    {
+      "path": "skills/dialogue-system/references/branching-and-conditions.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "636ff41338a3a9d7a5733c2548789cb637e46466",
+      "size": 4871,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/636ff41338a3a9d7a5733c2548789cb637e46466"
+    },
+    {
+      "path": "skills/dialogue-system/references/dialogue-manager.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7c9949ac89b4cf9fb259624a0a586c19f32ceaf2",
+      "size": 7540,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/7c9949ac89b4cf9fb259624a0a586c19f32ceaf2"
+    },
+    {
+      "path": "skills/dialogue-system/references/external-formats.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f2a6cd5e620687646380c38966aa682bb37fb6c",
+      "size": 4491,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/8f2a6cd5e620687646380c38966aa682bb37fb6c"
+    },
+    {
+      "path": "skills/dialogue-system/references/ui-presentation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0833cc476d395bdc190f955dc971ec829fde1060",
+      "size": 8498,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0833cc476d395bdc190f955dc971ec829fde1060"
+    },
+    {
+      "path": "skills/dialogue-system/references/variable-interpolation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5177607b619c23f8715900ea80f36759cb72f2bb",
+      "size": 2386,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/5177607b619c23f8715900ea80f36759cb72f2bb"
+    },
+    {
+      "path": "skills/event-bus",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2b7c0aadb3ce8984bf0e375a7303697806af9783",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/2b7c0aadb3ce8984bf0e375a7303697806af9783"
+    },
+    {
+      "path": "skills/event-bus/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "af30b9e572c24d7134bebb1300b693a2f31cafe4",
+      "size": 15935,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/af30b9e572c24d7134bebb1300b693a2f31cafe4"
+    },
+    {
+      "path": "skills/event-bus/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a2d815e1a0ebfb6d345e04d7ee3fe1d9243c0e23",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/a2d815e1a0ebfb6d345e04d7ee3fe1d9243c0e23"
+    },
+    {
+      "path": "skills/event-bus/references/testing.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "286dd08186f4409eae52abd27c0988b66c48e0ae",
+      "size": 6372,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/286dd08186f4409eae52abd27c0988b66c48e0ae"
+    },
+    {
+      "path": "skills/export-pipeline",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "350f8cf9c7941bea2187504f388e8caef6d7a723",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/350f8cf9c7941bea2187504f388e8caef6d7a723"
+    },
+    {
+      "path": "skills/export-pipeline/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ec9f5e790825803cb5669001344982bb787d4929",
+      "size": 14005,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ec9f5e790825803cb5669001344982bb787d4929"
+    },
+    {
+      "path": "skills/export-pipeline/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d897dbfeacb8930a852e899cd66d3471bb94a2b4",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/d897dbfeacb8930a852e899cd66d3471bb94a2b4"
+    },
+    {
+      "path": "skills/export-pipeline/references/ci-cd-github-actions.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "58700b5287064d360f0248ca3f32b7c5b247771b",
+      "size": 2460,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/58700b5287064d360f0248ca3f32b7c5b247771b"
+    },
+    {
+      "path": "skills/export-pipeline/references/distribution-itch-steam.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "233959827154a913eab8625372687bfe0870cfad",
+      "size": 3026,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/233959827154a913eab8625372687bfe0870cfad"
+    },
+    {
+      "path": "skills/gdextension",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a41e0cc96f2bb375e9861a0f10e13b75b3d22586",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/a41e0cc96f2bb375e9861a0f10e13b75b3d22586"
+    },
+    {
+      "path": "skills/gdextension/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c054b1232595ab04fb8a991868dfe67c5e03f592",
+      "size": 8949,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c054b1232595ab04fb8a991868dfe67c5e03f592"
+    },
+    {
+      "path": "skills/gdextension/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "93e3bfa798dd352e89e0124b5309ca6b20fd0d52",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/93e3bfa798dd352e89e0124b5309ca6b20fd0d52"
+    },
+    {
+      "path": "skills/gdextension/references/debugging-native.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3e17cdad2866c43df87be0039f0704e4b0b9bb87",
+      "size": 2132,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3e17cdad2866c43df87be0039f0704e4b0b9bb87"
+    },
+    {
+      "path": "skills/gdextension/references/rust-gdext.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e5b4768579e2643805ad9325fb20e472bcbe6ce9",
+      "size": 1998,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e5b4768579e2643805ad9325fb20e472bcbe6ce9"
+    },
+    {
+      "path": "skills/gdscript-advanced",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4f6aa855dba0d8e27b5767c54a60b0dae64f9c4c",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/4f6aa855dba0d8e27b5767c54a60b0dae64f9c4c"
+    },
+    {
+      "path": "skills/gdscript-advanced/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "13b9a9a8e9302acf68a0cbc797afc5d136839dbf",
+      "size": 10075,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/13b9a9a8e9302acf68a0cbc797afc5d136839dbf"
+    },
+    {
+      "path": "skills/gdscript-advanced/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a1042feca157ebf9ee3299a1d6008de16e4057fa",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/a1042feca157ebf9ee3299a1d6008de16e4057fa"
+    },
+    {
+      "path": "skills/gdscript-advanced/references/metaprogramming-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "79062a2de067bd43ca3f1f2893ce23b868c74378",
+      "size": 2081,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/79062a2de067bd43ca3f1f2893ce23b868c74378"
+    },
+    {
+      "path": "skills/gdscript-advanced/references/profiler-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e83db7fd5e4d976dd652a23ba2689812f64f0528",
+      "size": 2497,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e83db7fd5e4d976dd652a23ba2689812f64f0528"
+    },
+    {
+      "path": "skills/gdscript-advanced/references/tool-script-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "89c0bc4cc10863926aa2b3b70b67cef262b63371",
+      "size": 2350,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/89c0bc4cc10863926aa2b3b70b67cef262b63371"
+    },
+    {
+      "path": "skills/gdscript-patterns",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f7d3db79391d16e1b55b106374172d9f0731c50c",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/f7d3db79391d16e1b55b106374172d9f0731c50c"
+    },
+    {
+      "path": "skills/gdscript-patterns/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d4152a922816cc53716371d2f96c3f8298635936",
+      "size": 15141,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d4152a922816cc53716371d2f96c3f8298635936"
+    },
+    {
+      "path": "skills/gdscript-patterns/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b2ae8b885c9107f413eb03133c1b85c5693fb13e",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/b2ae8b885c9107f413eb03133c1b85c5693fb13e"
+    },
+    {
+      "path": "skills/gdscript-patterns/references/abstract-classes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "018d2c629c888cedf0c707f2fb360817b0189146",
+      "size": 2422,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/018d2c629c888cedf0c707f2fb360817b0189146"
+    },
+    {
+      "path": "skills/gdscript-patterns/references/common-idioms.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "70a0a8bd28fedf1571a8f9780722c78da075bff8",
+      "size": 2586,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/70a0a8bd28fedf1571a8f9780722c78da075bff8"
+    },
+    {
+      "path": "skills/gdscript-patterns/references/export-annotations.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "680b2e8b3abb00f9eab247414b7f0875736479c8",
+      "size": 1821,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/680b2e8b3abb00f9eab247414b7f0875736479c8"
+    },
+    {
+      "path": "skills/gdscript-patterns/references/super-in-virtual-methods.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a68e5a3eea08318ca956a8b0b1f44e8b56cc7b93",
+      "size": 2771,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a68e5a3eea08318ca956a8b0b1f44e8b56cc7b93"
+    },
+    {
+      "path": "skills/gdscript-patterns/references/variadic-functions.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fc77ff0518531813ab8e9410abfa1455061c8e8e",
+      "size": 1805,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/fc77ff0518531813ab8e9410abfa1455061c8e8e"
+    },
+    {
+      "path": "skills/godot-brainstorming",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9a8556ad86f622b04a23018d555ee361f05ca884",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/9a8556ad86f622b04a23018d555ee361f05ca884"
+    },
+    {
+      "path": "skills/godot-brainstorming/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f83a910aad3750ac78a981bfa1dff79a410d1c33",
+      "size": 14097,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/f83a910aad3750ac78a981bfa1dff79a410d1c33"
+    },
+    {
+      "path": "skills/godot-brainstorming/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8471b014ce9e779064a988b877a9188d8a7607ce",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/8471b014ce9e779064a988b877a9188d8a7607ce"
+    },
+    {
+      "path": "skills/godot-brainstorming/references/example-chest.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "820b6748f707db4b90671be26121d19b05c89f12",
+      "size": 4578,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/820b6748f707db4b90671be26121d19b05c89f12"
+    },
+    {
+      "path": "skills/godot-code-review",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6b8aa2ebf86c1dfd41697f573ec8056e0db884e0",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/6b8aa2ebf86c1dfd41697f573ec8056e0db884e0"
+    },
+    {
+      "path": "skills/godot-code-review/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "adba31bf25cefdc1e42113ee048eb25ff30d0290",
+      "size": 14602,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/adba31bf25cefdc1e42113ee048eb25ff30d0290"
+    },
+    {
+      "path": "skills/godot-debugging",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "19e9d46f241d75c23ed4ef4ecab245a26ef8fe16",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/19e9d46f241d75c23ed4ef4ecab245a26ef8fe16"
+    },
+    {
+      "path": "skills/godot-debugging/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "debcefb9f1bc9d2ed77532e0238f3adf7f221b25",
+      "size": 12259,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/debcefb9f1bc9d2ed77532e0238f3adf7f221b25"
+    },
+    {
+      "path": "skills/godot-debugging/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e309a6160b91c27db4188f55c37e5feef8b5258b",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/e309a6160b91c27db4188f55c37e5feef8b5258b"
+    },
+    {
+      "path": "skills/godot-debugging/references/performance-debugging.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c2724315b69723882e8d2ffbca6ca910170d0e2d",
+      "size": 4320,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c2724315b69723882e8d2ffbca6ca910170d0e2d"
+    },
+    {
+      "path": "skills/godot-debugging/references/scene-tree-debugging.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eec482f5410841ed6b2a884b7dd62bdcd1680a14",
+      "size": 3218,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/eec482f5410841ed6b2a884b7dd62bdcd1680a14"
+    },
+    {
+      "path": "skills/godot-debugging/references/signal-tracing.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "659bad3a53ad3a16fc46d696c968fb148db7784e",
+      "size": 5452,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/659bad3a53ad3a16fc46d696c968fb148db7784e"
+    },
+    {
+      "path": "skills/godot-debugging/references/systematic-method.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bbcf0751d2fc42ea4f38898009546c7c3fbd8ac4",
+      "size": 4245,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/bbcf0751d2fc42ea4f38898009546c7c3fbd8ac4"
+    },
+    {
+      "path": "skills/godot-optimization",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ae586a855a0bc6f0b08925c1525b679e5af634f8",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/ae586a855a0bc6f0b08925c1525b679e5af634f8"
+    },
+    {
+      "path": "skills/godot-optimization/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2e4a9152705e910d5c8b0236a3d5d32b08391ce2",
+      "size": 11865,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/2e4a9152705e910d5c8b0236a3d5d32b08391ce2"
+    },
+    {
+      "path": "skills/godot-optimization/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "990de7f9cce5d4b77539b864682d9b6e817e6e43",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/990de7f9cce5d4b77539b864682d9b6e817e6e43"
+    },
+    {
+      "path": "skills/godot-optimization/references/cpu-bottlenecks.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7e8527f56c20b792251d43b3f233cf37b6c9b709",
+      "size": 7642,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/7e8527f56c20b792251d43b3f233cf37b6c9b709"
+    },
+    {
+      "path": "skills/godot-optimization/references/draw-calls.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b8c8652addd4eca66574e49c6c8d1737a5948744",
+      "size": 6785,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b8c8652addd4eca66574e49c6c8d1737a5948744"
+    },
+    {
+      "path": "skills/godot-optimization/references/memory-management.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "282077969f482f5716f8272b21f6e0296222f470",
+      "size": 10420,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/282077969f482f5716f8272b21f6e0296222f470"
+    },
+    {
+      "path": "skills/godot-optimization/references/physics-tuning.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5620647e78f4717ab3dbdc52de1c3f3b0e57b521",
+      "size": 4754,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/5620647e78f4717ab3dbdc52de1c3f3b0e57b521"
+    },
+    {
+      "path": "skills/godot-project-setup",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "25815e63690c79bbda19646a125580de3600891d",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/25815e63690c79bbda19646a125580de3600891d"
+    },
+    {
+      "path": "skills/godot-project-setup/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f32b3733aa660781741d8c5763221558d46296fc",
+      "size": 12817,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/f32b3733aa660781741d8c5763221558d46296fc"
+    },
+    {
+      "path": "skills/godot-testing",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a6b1368234e45130e1cd7eace66cf42c09e118c0",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/a6b1368234e45130e1cd7eace66cf42c09e118c0"
+    },
+    {
+      "path": "skills/godot-testing/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4b4e4c1173125e7944904f77ff8dc35ec558e8dc",
+      "size": 9564,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4b4e4c1173125e7944904f77ff8dc35ec558e8dc"
+    },
+    {
+      "path": "skills/godot-testing/gdunit4-reference.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "744a7ef3834b3c3a3673a08db22c45085330bfb3",
+      "size": 10088,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/744a7ef3834b3c3a3673a08db22c45085330bfb3"
+    },
+    {
+      "path": "skills/godot-testing/gut-reference.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a6c290f8ae4910250ae883306f7dd964b8f2a610",
+      "size": 8771,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a6c290f8ae4910250ae883306f7dd964b8f2a610"
+    },
+    {
+      "path": "skills/godot-testing/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4a1bfdbc103d74c18160952d86df397bbf4cd6d8",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/4a1bfdbc103d74c18160952d86df397bbf4cd6d8"
+    },
+    {
+      "path": "skills/godot-testing/references/running-tests.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3cd1176f9afc08d212b90b1139d516a3c4b5145c",
+      "size": 2577,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3cd1176f9afc08d212b90b1139d516a3c4b5145c"
+    },
+    {
+      "path": "skills/godot-testing/references/tdd-workflow.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c6098ae0da0f7f024c8d7d73bf7b277f3a302cb",
+      "size": 5945,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/6c6098ae0da0f7f024c8d7d73bf7b277f3a302cb"
+    },
+    {
+      "path": "skills/godot-testing/references/testing-patterns.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "161c2a23ee747db30db4c8df9a64f28d4c433d9c",
+      "size": 4377,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/161c2a23ee747db30db4c8df9a64f28d4c433d9c"
+    },
+    {
+      "path": "skills/godot-ui",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "371ecfea175f375655c168b8e519475e8b4f1873",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/371ecfea175f375655c168b8e519475e8b4f1873"
+    },
+    {
+      "path": "skills/godot-ui/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c2f53eeacd3267519b4622d03504716c40bd15f3",
+      "size": 14061,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c2f53eeacd3267519b4622d03504716c40bd15f3"
+    },
+    {
+      "path": "skills/godot-ui/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c6e98088af916bf919b2013df7805fb46259c635",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/c6e98088af916bf919b2013df7805fb46259c635"
+    },
+    {
+      "path": "skills/godot-ui/references/focus-and-navigation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "895d9771da8a0797be96314713c6f41c35580e86",
+      "size": 2845,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/895d9771da8a0797be96314713c6f41c35580e86"
+    },
+    {
+      "path": "skills/godot-ui/references/signals.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7275f126e6cf0ca27391c18a25f34a9e206d2363",
+      "size": 2472,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/7275f126e6cf0ca27391c18a25f34a9e206d2363"
+    },
+    {
+      "path": "skills/godot-ui/references/theme-system.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "51cfd152c51fd7c88b98c97cff5ecaff29ce2edd",
+      "size": 3601,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/51cfd152c51fd7c88b98c97cff5ecaff29ce2edd"
+    },
+    {
+      "path": "skills/godot-ui/references/ui-patterns.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7561b5d8317469347ce22126b0f61c3138db6244",
+      "size": 7611,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/7561b5d8317469347ce22126b0f61c3138db6244"
+    },
+    {
+      "path": "skills/hud-system",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "446ea1ded767bbae07d3a8d451587b6a4be33fec",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/446ea1ded767bbae07d3a8d451587b6a4be33fec"
+    },
+    {
+      "path": "skills/hud-system/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a5630270578f7a3d155f8f0e8176cf298b8f5eb6",
+      "size": 11548,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a5630270578f7a3d155f8f0e8176cf298b8f5eb6"
+    },
+    {
+      "path": "skills/hud-system/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "01c52bac42c8ae7cb34bfba6ac10304f65c5f50c",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/01c52bac42c8ae7cb34bfba6ac10304f65c5f50c"
+    },
+    {
+      "path": "skills/hud-system/references/damage-numbers.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9c17660f7f47a8684bdfdbd4a3d6742fe3004a74",
+      "size": 6451,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9c17660f7f47a8684bdfdbd4a3d6742fe3004a74"
+    },
+    {
+      "path": "skills/hud-system/references/interaction-prompts.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23543b329002c237e8d53791d9de707722204816",
+      "size": 5451,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/23543b329002c237e8d53791d9de707722204816"
+    },
+    {
+      "path": "skills/hud-system/references/minimap.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ad4c042cd56ad6f44d330f66f2193c2154ed6041",
+      "size": 3528,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ad4c042cd56ad6f44d330f66f2193c2154ed6041"
+    },
+    {
+      "path": "skills/hud-system/references/notifications.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9e4df08bcdd0546a717042cf482d590d7c8a596e",
+      "size": 4179,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9e4df08bcdd0546a717042cf482d590d7c8a596e"
+    },
+    {
+      "path": "skills/input-handling",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "65e8384767e00f31c1262372da4737c7c2f2d295",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/65e8384767e00f31c1262372da4737c7c2f2d295"
+    },
+    {
+      "path": "skills/input-handling/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7483aad19303836bc504a7684226d9f0bbe89303",
+      "size": 14955,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/7483aad19303836bc504a7684226d9f0bbe89303"
+    },
+    {
+      "path": "skills/input-handling/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3d94824b29dfa1e6104f7da1f36f1d13f6ad4e27",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/3d94824b29dfa1e6104f7da1f36f1d13f6ad4e27"
+    },
+    {
+      "path": "skills/input-handling/references/action-rebinding.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9aca3a1e25f17db9dc423460b85eccf7ec6a96a4",
+      "size": 5369,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9aca3a1e25f17db9dc423460b85eccf7ec6a96a4"
+    },
+    {
+      "path": "skills/input-handling/references/gamepad.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3b12fb64ebe8b4e4befcc35f4a56276ae1fab681",
+      "size": 4218,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3b12fb64ebe8b4e4befcc35f4a56276ae1fab681"
+    },
+    {
+      "path": "skills/input-handling/references/mouse.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "faadca4282051e224437a1e2d6fe521556c3b63c",
+      "size": 4510,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/faadca4282051e224437a1e2d6fe521556c3b63c"
+    },
+    {
+      "path": "skills/input-handling/references/touch.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d3b6dfd0e1a31d73a3dcc8fd762e4a8b41fed504",
+      "size": 1229,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d3b6dfd0e1a31d73a3dcc8fd762e4a8b41fed504"
+    },
+    {
+      "path": "skills/inventory-system",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9da074e8237b3c6eec6db2e7a04c69847eef5ef6",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/9da074e8237b3c6eec6db2e7a04c69847eef5ef6"
+    },
+    {
+      "path": "skills/inventory-system/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dddaaed8284387b876fac399c4f96e5c1c3a1288",
+      "size": 13872,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/dddaaed8284387b876fac399c4f96e5c1c3a1288"
+    },
+    {
+      "path": "skills/inventory-system/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4abe779245ddaea1959af427211972fa76e8cd35",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/4abe779245ddaea1959af427211972fa76e8cd35"
+    },
+    {
+      "path": "skills/inventory-system/references/equipment.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9d9f90c2caf41837198befd3ad90c4a82efcdb9",
+      "size": 4191,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d9d9f90c2caf41837198befd3ad90c4a82efcdb9"
+    },
+    {
+      "path": "skills/inventory-system/references/serialization.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "db155ec1583060dc2757701f90a0725bf8321fe0",
+      "size": 5705,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/db155ec1583060dc2757701f90a0725bf8321fe0"
+    },
+    {
+      "path": "skills/inventory-system/references/ui-binding.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0e20eba62ff932428b83a7d7d8826096494a24f4",
+      "size": 6873,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0e20eba62ff932428b83a7d7d8826096494a24f4"
+    },
+    {
+      "path": "skills/limboai",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "09569b06a0825b99c549e380c2da204214e19bd8",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/09569b06a0825b99c549e380c2da204214e19bd8"
+    },
+    {
+      "path": "skills/limboai/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "abfd40f31c973b926bdcbd1b59a3669099b2939d",
+      "size": 12900,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/abfd40f31c973b926bdcbd1b59a3669099b2939d"
+    },
+    {
+      "path": "skills/limboai/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3db83b1792034c104fc881f9d4d71db05013866b",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/3db83b1792034c104fc881f9d4d71db05013866b"
+    },
+    {
+      "path": "skills/limboai/references/hsm.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "10c2adead1be35a1596a6e5fbcbefd4f44b75b44",
+      "size": 4780,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/10c2adead1be35a1596a6e5fbcbefd4f44b75b44"
+    },
+    {
+      "path": "skills/localization",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8d27de55b706d254cd6f268f240b822360434b94",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/8d27de55b706d254cd6f268f240b822360434b94"
+    },
+    {
+      "path": "skills/localization/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4683ce52bdf9c9e12596bd45751c7cee12a6d631",
+      "size": 15649,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4683ce52bdf9c9e12596bd45751c7cee12a6d631"
+    },
+    {
+      "path": "skills/math-essentials",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a14cfea7ad43b9892c8ad651d94903a5f974cbaa",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/a14cfea7ad43b9892c8ad651d94903a5f974cbaa"
+    },
+    {
+      "path": "skills/math-essentials/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dddafea25653342760529318e4fcf9108e07fc81",
+      "size": 12716,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/dddafea25653342760529318e4fcf9108e07fc81"
+    },
+    {
+      "path": "skills/math-essentials/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "177821cb15985cfcf913cbff28daaa84f9607889",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/177821cb15985cfcf913cbff28daaa84f9607889"
+    },
+    {
+      "path": "skills/math-essentials/references/curves-and-paths.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c1bb9d97b581565e0d00bbe9aae06a819f6f9c4",
+      "size": 1895,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/1c1bb9d97b581565e0d00bbe9aae06a819f6f9c4"
+    },
+    {
+      "path": "skills/math-essentials/references/game-math-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eeacda22692214edf18efaf64f9349400bb9f6e7",
+      "size": 2727,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/eeacda22692214edf18efaf64f9349400bb9f6e7"
+    },
+    {
+      "path": "skills/math-essentials/references/random-numbers.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ff48e4146fec799224da6cc40c1d239f65b2815b",
+      "size": 2792,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/ff48e4146fec799224da6cc40c1d239f65b2815b"
+    },
+    {
+      "path": "skills/mobile-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9cc3badeb39c5d71b9fa27eb721c391cf0e2cea4",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/9cc3badeb39c5d71b9fa27eb721c391cf0e2cea4"
+    },
+    {
+      "path": "skills/mobile-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "54f02b2f4945fa3c2fc54f16d5d8304f977557c8",
+      "size": 8192,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/54f02b2f4945fa3c2fc54f16d5d8304f977557c8"
+    },
+    {
+      "path": "skills/mobile-development/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "75fe29676cc1e45792edc764ec0757e34803a488",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/75fe29676cc1e45792edc764ec0757e34803a488"
+    },
+    {
+      "path": "skills/mobile-development/references/crash-debugging.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "da7c8b0f08b54ff7aef1255046e4cb35a7bc1f0c",
+      "size": 1280,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/da7c8b0f08b54ff7aef1255046e4cb35a7bc1f0c"
+    },
+    {
+      "path": "skills/mobile-development/references/iap-and-ads.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d3a1056c484c0ad09f5a1ae2f8a6860af6a74829",
+      "size": 3050,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d3a1056c484c0ad09f5a1ae2f8a6860af6a74829"
+    },
+    {
+      "path": "skills/mobile-development/references/plugins.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c9ef0a85f8ce8e45f655c42becc29421518bb26d",
+      "size": 3879,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c9ef0a85f8ce8e45f655c42becc29421518bb26d"
+    },
+    {
+      "path": "skills/multiplayer-basics",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3c0d25869f0b7eb86c356a4a40dfc08794401488",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/3c0d25869f0b7eb86c356a4a40dfc08794401488"
+    },
+    {
+      "path": "skills/multiplayer-basics/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e0d0da6acdcf0a6a46865eec6610d743d04800d1",
+      "size": 15997,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e0d0da6acdcf0a6a46865eec6610d743d04800d1"
+    },
+    {
+      "path": "skills/multiplayer-basics/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2685999021fcbc32afb5de9d3048471ca69ec39f",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/2685999021fcbc32afb5de9d3048471ca69ec39f"
+    },
+    {
+      "path": "skills/multiplayer-basics/references/disconnect-handling.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4c4ca18c532a3b7144d9f4235d9ade234d40e921",
+      "size": 3212,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4c4ca18c532a3b7144d9f4235d9ade234d40e921"
+    },
+    {
+      "path": "skills/multiplayer-basics/references/player-join-flow.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d50221f07e601a706faedddcb86f74420117099b",
+      "size": 4188,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d50221f07e601a706faedddcb86f74420117099b"
+    },
+    {
+      "path": "skills/multiplayer-basics/references/spawning-networked-objects.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f37a017ed5aa4cda144b417f137db473d9e3f0c5",
+      "size": 3144,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/f37a017ed5aa4cda144b417f137db473d9e3f0c5"
+    },
+    {
+      "path": "skills/multiplayer-sync",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c5910bdcda943eec6ae1a17c0cf246b337c68050",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/c5910bdcda943eec6ae1a17c0cf246b337c68050"
+    },
+    {
+      "path": "skills/multiplayer-sync/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d130c4220e019af485be19be6fd7b10ed76cd80",
+      "size": 10659,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9d130c4220e019af485be19be6fd7b10ed76cd80"
+    },
+    {
+      "path": "skills/multiplayer-sync/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5848994cb17079f5c2e614075ca88c8fee37a873",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/5848994cb17079f5c2e614075ca88c8fee37a873"
+    },
+    {
+      "path": "skills/multiplayer-sync/references/bandwidth-optimization.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "051363ff080ae4d5408de1bbfedc6778bff4d5e5",
+      "size": 4431,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/051363ff080ae4d5408de1bbfedc6778bff4d5e5"
+    },
+    {
+      "path": "skills/multiplayer-sync/references/client-prediction.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3ff80af56136106f4d5dad851fb8a207a9f37067",
+      "size": 5614,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3ff80af56136106f4d5dad851fb8a207a9f37067"
+    },
+    {
+      "path": "skills/multiplayer-sync/references/interpolation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3876d5cbd26adf1c8b49f3b1ca6664d79bb907bc",
+      "size": 3169,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3876d5cbd26adf1c8b49f3b1ca6664d79bb907bc"
+    },
+    {
+      "path": "skills/multiplayer-sync/references/lag-compensation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f58334f0b85eeea62a319ca5024441247babd0ad",
+      "size": 5517,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/f58334f0b85eeea62a319ca5024441247babd0ad"
+    },
+    {
+      "path": "skills/multithreading",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a97528acc3e5c42410b50cf74cf4ae50a1367b19",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/a97528acc3e5c42410b50cf74cf4ae50a1367b19"
+    },
+    {
+      "path": "skills/multithreading/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4ee40df09a46ff9a813b84f3ad6393be86425317",
+      "size": 10367,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4ee40df09a46ff9a813b84f3ad6393be86425317"
+    },
+    {
+      "path": "skills/multithreading/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7cdfcddedd9bf59c33f52bfd57c3f2b585b83474",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/7cdfcddedd9bf59c33f52bfd57c3f2b585b83474"
+    },
+    {
+      "path": "skills/multithreading/references/pitfalls.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "65af3cde66f62b984d465bb4b69af44e1abd9339",
+      "size": 4182,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/65af3cde66f62b984d465bb4b69af44e1abd9339"
+    },
+    {
+      "path": "skills/particles-vfx",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "997d2750da4e96788bc01c8602f7da02c6720845",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/997d2750da4e96788bc01c8602f7da02c6720845"
+    },
+    {
+      "path": "skills/particles-vfx/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a53a588ab1a90c761b227b46f5f6371ad90dc2ef",
+      "size": 14564,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a53a588ab1a90c761b227b46f5f6371ad90dc2ef"
+    },
+    {
+      "path": "skills/particles-vfx/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8f9e2aeb5b9b65ab9ec6026f0bb00689f3192ae9",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/8f9e2aeb5b9b65ab9ec6026f0bb00689f3192ae9"
+    },
+    {
+      "path": "skills/particles-vfx/references/attractors-and-collision.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1d1e7c6a3cec678b664568b2a60ce47fd295c52a",
+      "size": 3346,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/1d1e7c6a3cec678b664568b2a60ce47fd295c52a"
+    },
+    {
+      "path": "skills/particles-vfx/references/flipbook-animation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fefef27cfb2c630853cbd6368155a282f37da83c",
+      "size": 1781,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/fefef27cfb2c630853cbd6368155a282f37da83c"
+    },
+    {
+      "path": "skills/particles-vfx/references/subemitters.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "075b17268d22b3ba1edcd3382198edc5b21cb7bf",
+      "size": 2319,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/075b17268d22b3ba1edcd3382198edc5b21cb7bf"
+    },
+    {
+      "path": "skills/particles-vfx/references/trails.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9c3bed08b14990f508c04779e5e9815e205c6f96",
+      "size": 2007,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9c3bed08b14990f508c04779e5e9815e205c6f96"
+    },
+    {
+      "path": "skills/particles-vfx/references/vfx-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cba8a3e1d80f912b7866ab0ee241aa194114a9a1",
+      "size": 4803,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/cba8a3e1d80f912b7866ab0ee241aa194114a9a1"
+    },
+    {
+      "path": "skills/physics-system",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7520d505b1cc9f446c804965ea498c9c420b56cd",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/7520d505b1cc9f446c804965ea498c9c420b56cd"
+    },
+    {
+      "path": "skills/physics-system/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f8d12e73fdd535a46deffdd322e0540404c654d0",
+      "size": 16300,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/f8d12e73fdd535a46deffdd322e0540404c654d0"
+    },
+    {
+      "path": "skills/physics-system/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "bb879e5e0c73dbb5e32516ece8a05558382f7806",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/bb879e5e0c73dbb5e32516ece8a05558382f7806"
+    },
+    {
+      "path": "skills/physics-system/references/area-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b3706e82d797aaf03ebbea871453d82d17306a59",
+      "size": 2233,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b3706e82d797aaf03ebbea871453d82d17306a59"
+    },
+    {
+      "path": "skills/physics-system/references/interpolation-camera.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3c64cb6445605c682114a86332037e97d3e587f4",
+      "size": 1734,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3c64cb6445605c682114a86332037e97d3e587f4"
+    },
+    {
+      "path": "skills/physics-system/references/ragdoll-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a140fbf2517e37f508ad6e49d54f446f99cd1ac4",
+      "size": 2528,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a140fbf2517e37f508ad6e49d54f446f99cd1ac4"
+    },
+    {
+      "path": "skills/physics-system/references/raycasting-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cc218bb3c49d7a8f485e63fb1450605a45eba7c2",
+      "size": 3493,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/cc218bb3c49d7a8f485e63fb1450605a45eba7c2"
+    },
+    {
+      "path": "skills/physics-system/references/rigidbody-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8d25668eca9dc16e8471e7da49cef64a06666110",
+      "size": 5891,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/8d25668eca9dc16e8471e7da49cef64a06666110"
+    },
+    {
+      "path": "skills/physics-system/references/softbody-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "16a227258a54b3832d4c99b43ed3ecbdf836b7c6",
+      "size": 3376,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/16a227258a54b3832d4c99b43ed3ecbdf836b7c6"
+    },
+    {
+      "path": "skills/physics-system/references/staticbody-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "350e9100873b827df79e74a94317d779539bac41",
+      "size": 1879,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/350e9100873b827df79e74a94317d779539bac41"
+    },
+    {
+      "path": "skills/player-controller",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "76860b65ed40c1493a0ccf2eb56b361c9ce62cdb",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/76860b65ed40c1493a0ccf2eb56b361c9ce62cdb"
+    },
+    {
+      "path": "skills/player-controller/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b563a9dd68bf82d6a37a2bb990fa08697f59bc5e",
+      "size": 13918,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b563a9dd68bf82d6a37a2bb990fa08697f59bc5e"
+    },
+    {
+      "path": "skills/player-controller/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9c3b4e361c88fb195daf2cb01fe5e7baacc74f41",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/9c3b4e361c88fb195daf2cb01fe5e7baacc74f41"
+    },
+    {
+      "path": "skills/player-controller/references/common-movement-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a160695f66819bda507f2a7dfc7b9db0c2505a1e",
+      "size": 4257,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a160695f66819bda507f2a7dfc7b9db0c2505a1e"
+    },
+    {
+      "path": "skills/procedural-generation",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2a66645299eded632c5d2ce8e60b5559c88ac2a0",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/2a66645299eded632c5d2ce8e60b5559c88ac2a0"
+    },
+    {
+      "path": "skills/procedural-generation/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "11392603517bdf8dd6f84da509f64842c8ef9dc0",
+      "size": 4975,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/11392603517bdf8dd6f84da509f64842c8ef9dc0"
+    },
+    {
+      "path": "skills/procedural-generation/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a240599d2119ffa5cbedd3c7755b3d620cc7c98a",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/a240599d2119ffa5cbedd3c7755b3d620cc7c98a"
+    },
+    {
+      "path": "skills/procedural-generation/references/bsp-dungeons.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "839e7c3547dc8209c45c30fcb3abaffc858e4a47",
+      "size": 6542,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/839e7c3547dc8209c45c30fcb3abaffc858e4a47"
+    },
+    {
+      "path": "skills/procedural-generation/references/cellular-automata.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1d6d61fbbd769ec0fdb32d493fd747f4134cc486",
+      "size": 4655,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/1d6d61fbbd769ec0fdb32d493fd747f4134cc486"
+    },
+    {
+      "path": "skills/procedural-generation/references/noise-generation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "967b95d182ed03ecaa4b38a3fe937c89b154100d",
+      "size": 3958,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/967b95d182ed03ecaa4b38a3fe937c89b154100d"
+    },
+    {
+      "path": "skills/procedural-generation/references/wave-function-collapse.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a5f8a55bd1b0419edcbcd4c7ff3ab23a89305ab5",
+      "size": 7334,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a5f8a55bd1b0419edcbcd4c7ff3ab23a89305ab5"
+    },
+    {
+      "path": "skills/resource-pattern",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "76177448a764cc8ebecbd188a6c4c275611158e9",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/76177448a764cc8ebecbd188a6c4c275611158e9"
+    },
+    {
+      "path": "skills/resource-pattern/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "13c6e49eea92989e939632f0c6e83ab698778bc4",
+      "size": 12545,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/13c6e49eea92989e939632f0c6e83ab698778bc4"
+    },
+    {
+      "path": "skills/resource-pattern/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "657b5472392c276ac37938f8810b673d2da3d916",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/657b5472392c276ac37938f8810b673d2da3d916"
+    },
+    {
+      "path": "skills/resource-pattern/references/collections.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7c44eb4a3bddc6069164c0b846409e8d1abb5c0d",
+      "size": 3375,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/7c44eb4a3bddc6069164c0b846409e8d1abb5c0d"
+    },
+    {
+      "path": "skills/resource-pattern/references/configuration-pattern.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e56799965227ccae1591c3d5d3449438a52fb491",
+      "size": 3481,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e56799965227ccae1591c3d5d3449438a52fb491"
+    },
+    {
+      "path": "skills/resource-pattern/references/editor-integration.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2bab71e5ba3c4fcb2ee2b040d0c3ea1031dcac46",
+      "size": 2503,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/2bab71e5ba3c4fcb2ee2b040d0c3ea1031dcac46"
+    },
+    {
+      "path": "skills/resource-pattern/references/saving-resources.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e785ef082364551fd11202964f373ac5ce4426f3",
+      "size": 1882,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/e785ef082364551fd11202964f373ac5ce4426f3"
+    },
+    {
+      "path": "skills/resource-pattern/references/sharing-vs-unique.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "91cc0afb5e44b2c8db8b2032c4b2133cf4cedb87",
+      "size": 2122,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/91cc0afb5e44b2c8db8b2032c4b2133cf4cedb87"
+    },
+    {
+      "path": "skills/responsive-ui",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "cc3d3df52c72e33bf56b98f2b9d69aef0c30fbb5",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/cc3d3df52c72e33bf56b98f2b9d69aef0c30fbb5"
+    },
+    {
+      "path": "skills/responsive-ui/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0a41ab2c18a7bab62ebe248c8c80574184f8fcfa",
+      "size": 8912,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0a41ab2c18a7bab62ebe248c8c80574184f8fcfa"
+    },
+    {
+      "path": "skills/responsive-ui/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2b82009c85080a10db06a505c82e930441d0fc80",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/2b82009c85080a10db06a505c82e930441d0fc80"
+    },
+    {
+      "path": "skills/responsive-ui/references/adaptive-layouts.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5ffb20f8df66864516314925d39ba84c9dca58c0",
+      "size": 2888,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/5ffb20f8df66864516314925d39ba84c9dca58c0"
+    },
+    {
+      "path": "skills/responsive-ui/references/dpi-scaling.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9f39104b7b7dc440009dd0b1ae236122cbb92207",
+      "size": 1845,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9f39104b7b7dc440009dd0b1ae236122cbb92207"
+    },
+    {
+      "path": "skills/responsive-ui/references/mobile.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "38e6956c8a3cf200c67ab8176aedc3adcdc1c35a",
+      "size": 4787,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/38e6956c8a3cf200c67ab8176aedc3adcdc1c35a"
+    },
+    {
+      "path": "skills/responsive-ui/references/pixel-art-setup.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cffafea45d10d8644922f8fe86fea8c8b9e355dc",
+      "size": 2644,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/cffafea45d10d8644922f8fe86fea8c8b9e355dc"
+    },
+    {
+      "path": "skills/save-load",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "397ee15c8e083c442deeea8231536b40350d916d",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/397ee15c8e083c442deeea8231536b40350d916d"
+    },
+    {
+      "path": "skills/save-load/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7f2d62363ead7f9ea5e37da12ea907f66cc67ea6",
+      "size": 4742,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/7f2d62363ead7f9ea5e37da12ea907f66cc67ea6"
+    },
+    {
+      "path": "skills/save-load/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "97b6940a3e0a8b72fc1acd07917e4d8ed9e84bf0",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/97b6940a3e0a8b72fc1acd07917e4d8ed9e84bf0"
+    },
+    {
+      "path": "skills/save-load/references/configfile.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2c0cca72a43e4a70eb2c4e5788a5044b1b5cb61f",
+      "size": 3445,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/2c0cca72a43e4a70eb2c4e5788a5044b1b5cb61f"
+    },
+    {
+      "path": "skills/save-load/references/json-saves.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d769dff89e205e32e2dcae0b6a43a3533e4e30fd",
+      "size": 12833,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/d769dff89e205e32e2dcae0b6a43a3533e4e30fd"
+    },
+    {
+      "path": "skills/save-load/references/save-architecture.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fbd22b88d15c777c4ce134e086cf82e85b93c064",
+      "size": 4160,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/fbd22b88d15c777c4ce134e086cf82e85b93c064"
+    },
+    {
+      "path": "skills/save-load/references/version-migration.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a0bcff645ba880f7670b1d0860e3dc4fd6c63cc3",
+      "size": 2368,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a0bcff645ba880f7670b1d0860e3dc4fd6c63cc3"
+    },
+    {
+      "path": "skills/scene-organization",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ceb570cef116105d8078e55ea8997ff34577f853",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/ceb570cef116105d8078e55ea8997ff34577f853"
+    },
+    {
+      "path": "skills/scene-organization/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "048769d56b1c74b39971c5045cc01fe5273db22f",
+      "size": 10447,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/048769d56b1c74b39971c5045cc01fe5273db22f"
+    },
+    {
+      "path": "skills/shader-basics",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9c8ebd33cdc1f0f50c391b640de2698e43016a87",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/9c8ebd33cdc1f0f50c391b640de2698e43016a87"
+    },
+    {
+      "path": "skills/shader-basics/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "baaadada992c114291e86cf5661c750af66231e9",
+      "size": 15826,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/baaadada992c114291e86cf5661c750af66231e9"
+    },
+    {
+      "path": "skills/shader-basics/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "85775d42fa99b81f475191a4e5380ea9c9071f3c",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/85775d42fa99b81f475191a4e5380ea9c9071f3c"
+    },
+    {
+      "path": "skills/shader-basics/references/2d-shader-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5114461cb80fdd751d7cfea1402f483ca8762976",
+      "size": 3707,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/5114461cb80fdd751d7cfea1402f483ca8762976"
+    },
+    {
+      "path": "skills/shader-basics/references/3d-shader-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c988ec2554199d1471aef5668c6f9798ace4c5a2",
+      "size": 1703,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c988ec2554199d1471aef5668c6f9798ace4c5a2"
+    },
+    {
+      "path": "skills/shader-basics/references/compositor-effects.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a856f8d3c478a5353bc974f210fb977ed407b926",
+      "size": 4228,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/a856f8d3c478a5353bc974f210fb977ed407b926"
+    },
+    {
+      "path": "skills/shader-basics/references/post-processing.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9b99d8968eab14785b585854145a0dcdf5eb28b7",
+      "size": 2735,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/9b99d8968eab14785b585854145a0dcdf5eb28b7"
+    },
+    {
+      "path": "skills/shader-basics/references/stencil-buffer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fee0a7d6fcb8fd7fb5eea7a7eb5096c83b3751e5",
+      "size": 2856,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/fee0a7d6fcb8fd7fb5eea7a7eb5096c83b3751e5"
+    },
+    {
+      "path": "skills/state-machine",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6e26d455c3b709249c470236d632ae6bba921505",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/6e26d455c3b709249c470236d632ae6bba921505"
+    },
+    {
+      "path": "skills/state-machine/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5f087751c06cc8564111988bed64da17b930fdb7",
+      "size": 14495,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/5f087751c06cc8564111988bed64da17b930fdb7"
+    },
+    {
+      "path": "skills/state-machine/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "dc54d6a801de99db494dcadec3705403841f4afb",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/dc54d6a801de99db494dcadec3705403841f4afb"
+    },
+    {
+      "path": "skills/state-machine/references/hierarchical-and-parallel.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "603952d2655ad3ccf4fa9c5b144d81bbeb8c4e71",
+      "size": 5241,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/603952d2655ad3ccf4fa9c5b144d81bbeb8c4e71"
+    },
+    {
+      "path": "skills/tween-animation",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7b359f70c618f07d7d7cadf1b95def8d529b28b3",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/7b359f70c618f07d7d7cadf1b95def8d529b28b3"
+    },
+    {
+      "path": "skills/tween-animation/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1b1c195808626f86efdd95bb3e95a9151e989053",
+      "size": 13528,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/1b1c195808626f86efdd95bb3e95a9151e989053"
+    },
+    {
+      "path": "skills/tween-animation/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "09daa3774ede59a90f6c84c1ef016980859d6d01",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/09daa3774ede59a90f6c84c1ef016980859d6d01"
+    },
+    {
+      "path": "skills/tween-animation/references/common-recipes.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8010e1eac3b563933e95399d745f70bd3d8eca98",
+      "size": 5726,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/8010e1eac3b563933e95399d745f70bd3d8eca98"
+    },
+    {
+      "path": "skills/tween-animation/references/lifecycle.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "22bdbb7ac6582e904e7e9db43ad6496e572fbfc6",
+      "size": 1569,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/22bdbb7ac6582e904e7e9db43ad6496e572fbfc6"
+    },
+    {
+      "path": "skills/tween-animation/references/looping-and-signals.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3d76efc65460c0d1d47f7f200d70abdab9674042",
+      "size": 1736,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3d76efc65460c0d1d47f7f200d70abdab9674042"
+    },
+    {
+      "path": "skills/tween-animation/references/property-tweener-modifiers.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0cdf4f0c80e72057673746bcb52df342ab462150",
+      "size": 1632,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0cdf4f0c80e72057673746bcb52df342ab462150"
+    },
+    {
+      "path": "skills/using-godot-prompter",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "96ab69df73fdeef56527d0f010c3c84a135d808a",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/96ab69df73fdeef56527d0f010c3c84a135d808a"
+    },
+    {
+      "path": "skills/using-godot-prompter/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8098757baa45be7b53f9d6d03cd17ee62d2ea9f3",
+      "size": 12105,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/8098757baa45be7b53f9d6d03cd17ee62d2ea9f3"
+    },
+    {
+      "path": "skills/using-godot-prompter/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "1e79fc3b97ad8d4bb706991b266af16b05e38a9a",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/1e79fc3b97ad8d4bb706991b266af16b05e38a9a"
+    },
+    {
+      "path": "skills/using-godot-prompter/references/antigravity-tools.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b89ba801aadf14c0e782147827bba7fe7e46fe5d",
+      "size": 4504,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/b89ba801aadf14c0e782147827bba7fe7e46fe5d"
+    },
+    {
+      "path": "skills/using-godot-prompter/references/codex-tools.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c6b05fc030f5771268ebf2ba4fa65cff52051e3e",
+      "size": 688,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/c6b05fc030f5771268ebf2ba4fa65cff52051e3e"
+    },
+    {
+      "path": "skills/using-godot-prompter/references/copilot-tools.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0793adb8e10c72120ad747485901fb89ad7d2ff9",
+      "size": 712,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/0793adb8e10c72120ad747485901fb89ad7d2ff9"
+    },
+    {
+      "path": "skills/using-godot-prompter/references/cursor-tools.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1fc8bb5b41ff9b68b5a871211ed97510ee689cf6",
+      "size": 734,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/1fc8bb5b41ff9b68b5a871211ed97510ee689cf6"
+    },
+    {
+      "path": "skills/using-godot-prompter/references/gemini-tools.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "40ca5c175a478523141ed86c41ec0ba429766ad1",
+      "size": 742,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/40ca5c175a478523141ed86c41ec0ba429766ad1"
+    },
+    {
+      "path": "skills/xr-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6a4e2601b2d5dc997f8b29afca9690e16ab46dc1",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/6a4e2601b2d5dc997f8b29afca9690e16ab46dc1"
+    },
+    {
+      "path": "skills/xr-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "34a360cc967428080e262bbd4b68745260ca1e9d",
+      "size": 15344,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/34a360cc967428080e262bbd4b68745260ca1e9d"
+    },
+    {
+      "path": "skills/xr-development/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f6657d2ca7f535c07b9c876f648ffbecec6091f7",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/f6657d2ca7f535c07b9c876f648ffbecec6091f7"
+    },
+    {
+      "path": "skills/xr-development/references/controllers-and-input.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "88b67ddb5e5a6eb9d6b99a930c128d4a76772f30",
+      "size": 3293,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/88b67ddb5e5a6eb9d6b99a930c128d4a76772f30"
+    },
+    {
+      "path": "skills/xr-development/references/grabbing-objects.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "15f339de41a24df9217749733daa8d5203fef273",
+      "size": 3182,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/15f339de41a24df9217749733daa8d5203fef273"
+    },
+    {
+      "path": "skills/xr-development/references/hand-tracking.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2ff97e93178cc3afdcd0a50cd9b80ca4e09bc412",
+      "size": 2519,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/2ff97e93178cc3afdcd0a50cd9b80ca4e09bc412"
+    },
+    {
+      "path": "skills/xr-development/references/passthrough.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "616e5605a53b79d1072273039c01028a43166d76",
+      "size": 1265,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/616e5605a53b79d1072273039c01028a43166d76"
+    },
+    {
+      "path": "skills/xr-development/references/xr-ui.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3f5bf2b540fb1999c60af64481bf4b58002283ef",
+      "size": 1985,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/3f5bf2b540fb1999c60af64481bf4b58002283ef"
+    },
+    {
+      "path": "tests",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4b3832bd0757e1cb18ad08466eaceccbaf64452c",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/4b3832bd0757e1cb18ad08466eaceccbaf64452c"
+    },
+    {
+      "path": "tests/agent-integration",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f696bcbfba5167472b0a25ceb0657710d0d697cc",
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/trees/f696bcbfba5167472b0a25ceb0657710d0d697cc"
+    },
+    {
+      "path": "tests/agent-integration/RESULTS.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "52143f0b7d7468ed7dfa44366ce8b55ffdef3cff",
+      "size": 1008,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/52143f0b7d7468ed7dfa44366ce8b55ffdef3cff"
+    },
+    {
+      "path": "tests/agent-integration/TEST_PLAN.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4b0b80dec8c6eca015b3e5a0c281eee66b2263e9",
+      "size": 6798,
+      "url": "https://api.github.com/repos/jame581/GodotPrompter/git/blobs/4b0b80dec8c6eca015b3e5a0c281eee66b2263e9"
+    }
+  ],
+  "truncated": false
+}
