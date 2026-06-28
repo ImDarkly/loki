@@ -42,6 +42,7 @@ var reel_duration: float = 0.0
 @onready var green_zone_rect: ColorRect = $CanvasLayer/ReelMeter/GreenZone
 @onready var player_bar_rect: ColorRect = $CanvasLayer/ReelMeter/PlayerBar
 @onready var quota_label: Label = $CanvasLayer/QuotaLabel
+@onready var catch_feedback_manager: Node3D = $CatchFeedbackManager
 
 var original_line_vertices: PackedVector3Array = []
 var twitch_directions: PackedVector3Array = []
@@ -67,6 +68,7 @@ func _ready() -> void:
 	reel_timer.timeout.connect(_on_reel_timer_timeout)
 
 	quota_label.text = "Quota: 0"
+	catch_feedback_manager.feedback_completed.connect(_on_catch_feedback_completed)
 
 	if not InputMap.has_action("reel"):
 		InputMap.add_action("reel")
@@ -161,10 +163,12 @@ func _on_reel_timer_timeout() -> void:
 		quota += 1
 		quota_label.text = "Quota: %d" % quota
 		reel_success.emit(quota)
+		_exit_reeling()
+		catch_feedback_manager.play_catch_success()
 	else:
 		current_state = State.ESCAPE
 		reel_failure.emit()
-	_exit_reeling()
+		_exit_reeling()
 	print("Reel ended. State: %s, Quota: %d" % ["SUCCESS" if current_state == State.SUCCESS else "ESCAPE", quota])
 
 
@@ -305,3 +309,8 @@ func _play_bite_feedback() -> void:
 
 func _apply_twitch(factor: float) -> void:
 	_build_line_mesh(factor * 0.3)
+
+
+func _on_catch_feedback_completed() -> void:
+	if current_state == State.SUCCESS:
+		current_state = State.IDLE
