@@ -10,16 +10,16 @@ func _ready() -> void:
 
 	if not InputMap.has_action("cast_line"):
 		InputMap.add_action("cast_line")
-		var mouse_event = InputEventMouseButton.new()
+		var mouse_event := InputEventMouseButton.new()
 		mouse_event.button_index = MOUSE_BUTTON_LEFT
 		InputMap.action_add_event("cast_line", mouse_event)
+		var space_event := InputEventKey.new()
+		space_event.physical_keycode = KEY_SPACE
+		InputMap.action_add_event("cast_line", space_event)
 
 
 func _input(event: InputEvent) -> void:
-	if Input.is_action_just_pressed("cast_line"):
-		fishing_mechanic.cast(global_position, -global_transform.basis.z)
-
-	if event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
+	if event.is_action_pressed("cast_line") and not fishing_mechanic.is_reeling():
 		fishing_mechanic.cast(global_position, -global_transform.basis.z)
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:

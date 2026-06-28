@@ -1,5 +1,4 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "customInstructions": "At the start of every session, read docs/prd/core-fishing-mechanic.md to understand the project scope and current task.",
   "plugin": ["godot-prompter@git+https://github.com/jame581/GodotPrompter.git"]
 }
