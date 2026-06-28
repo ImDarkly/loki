@@ -85,6 +85,9 @@ func create_visual_line(start_pos: Vector3, end_pos: Vector3) -> void:
 		visual_line_node.queue_free()
 
 	visual_line_node = MeshInstance3D.new()
+	if active_twitch_tween and active_twitch_tween.is_valid():
+		active_twitch_tween.kill()
+		active_twitch_tween = null
 	original_line_vertices.clear()
 	twitch_directions.clear()
 
