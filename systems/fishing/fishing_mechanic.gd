@@ -130,6 +130,7 @@ func _enter_reeling() -> void:
 	current_state = State.REELING
 	player_bar_position = 50.0
 	green_zone_position = 50.0
+	green_zone_target = 50.0
 	green_zone_timer.start()
 	reel_duration = randf_range(min_reel_duration, max_reel_duration)
 	reel_timer.start(reel_duration)
