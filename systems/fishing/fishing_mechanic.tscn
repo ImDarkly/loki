@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://systems/fishing/fishing_mechanic.gd" id="1_7vgpu"]
+[ext_resource type="PackedScene" uid="uid://b1hd6oestfl7f" path="res://systems/fishing/fish_manager.tscn" id="2_likap"]
 
 [node name="FishingMechanic" type="Node3D"]
 script = ExtResource("1_7vgpu")
@@ -15,6 +16,8 @@ wait_time = 0.1
 
 [node name="ReelTimer" type="Timer" parent="."]
 one_shot = true
+
+[node name="FishManager" parent="." instance=ExtResource("2_likap")]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 128

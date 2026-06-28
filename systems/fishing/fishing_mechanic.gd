@@ -23,7 +23,6 @@ signal reel_failure()
 var current_state: State = State.IDLE
 var is_line_cast: bool = false
 var visual_line_node: MeshInstance3D = null
-var fish_node: Node3D = null
 var cast_target_position: Vector3
 
 var player_bar_position: float = 50.0
@@ -172,7 +171,7 @@ func _on_reel_timer_timeout() -> void:
 func cast(from_position: Vector3, forward_direction: Vector3) -> void:
 	if current_state in [State.BITE, State.REELING, State.SUCCESS, State.ESCAPE]:
 		_exit_reeling()
-	cleanup_fish()
+	$FishManager.cleanup()
 
 	current_state = State.WAITING
 	is_line_cast = true
@@ -191,33 +190,9 @@ func cast(from_position: Vector3, forward_direction: Vector3) -> void:
 func _on_bite_timer_timeout() -> void:
 	current_state = State.BITE
 	_play_bite_feedback()
-	spawn_fish_placeholder(cast_target_position)
+	$FishManager.spawn(cast_target_position)
 	bite_occurred.emit(cast_target_position)
 	print("Bite! Click/Space to start reeling")
-
-
-func spawn_fish_placeholder(position: Vector3) -> void:
-	if is_instance_valid(fish_node):
-		fish_node.queue_free()
-
-	fish_node = MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.3, 0.1, 0.5)
-
-	var mat := ORMMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.5, 0.0)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mesh.material = mat
-
-	fish_node.mesh = mesh
-	fish_node.position = position + Vector3(0, 0.05, 0)
-	get_tree().root.add_child(fish_node)
-
-
-func cleanup_fish() -> void:
-	if is_instance_valid(fish_node):
-		fish_node.queue_free()
-		fish_node = null
 
 
 func create_visual_line(start_pos: Vector3, end_pos: Vector3) -> void:
