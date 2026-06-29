@@ -125,7 +125,7 @@ The shark lifecycle follows this state machine:
 INACTIVE    → (spawn timer fires)             → APPROACHING
 APPROACHING → (player.is_yelling == true)     → RETREATING
 APPROACHING → (distance < attack_range)       → ATTACKING
-ATTACKING   →                                 → RETREATING  [escalation resets, new spawn timer]
+ATTACKING   →                                 → WAITING  [escalation resets, new spawn timer]
 RETREATING  → (exits water boundary)          → WAITING
 WAITING     → (return_delay expires)          → APPROACHING
 

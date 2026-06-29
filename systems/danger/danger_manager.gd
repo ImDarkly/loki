@@ -54,6 +54,8 @@ func _reset_escalation() -> void:
 
 func _on_spawn_timer_timeout() -> void:
 	if current_state == State.INACTIVE or current_state == State.WAITING:
+		if not is_instance_valid(player_ref):
+			return
 		_spawn_shark()
 		current_state = State.APPROACHING
 
@@ -169,15 +171,18 @@ func _process_approaching(delta: float) -> void:
 
 	var target := Vector3(player_ref.global_position.x, 0, player_ref.global_position.z)
 	var current := Vector3(shark_node.position.x, 0, shark_node.position.z)
+	var dist := current.distance_to(target)
+
+	if dist <= attack_range:
+		_trigger_attack()
+		return
+
 	var direction := (target - current).normalized()
-	shark_node.position += direction * swim_speed * delta
+	var step: float = minf(swim_speed * delta, dist)
+	shark_node.position += direction * step
 
 	if direction.length_squared() > 0.001:
 		shark_node.look_at(shark_node.position + direction, Vector3.UP)
-
-	var dist := current.distance_to(target)
-	if dist <= attack_range:
-		_trigger_attack()
 
 
 func _process_retreating(delta: float) -> void:
