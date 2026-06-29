@@ -91,6 +91,38 @@ func _setup_meshes() -> void:
 	_hand_base_left = hand_left.position
 	_hand_base_right = hand_right.position
 
+	_setup_fishing_rod()
+	fishing_mechanic.set_rod_tip($Head/HandRight/FishingRod/RodTip)
+
+
+func _setup_fishing_rod() -> void:
+	var rod_pivot := Node3D.new()
+	rod_pivot.name = "FishingRod"
+	rod_pivot.rotation.x = deg_to_rad(45)
+
+	var rod_mesh := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.height = 0.8
+	cyl.top_radius = 0.005
+	cyl.bottom_radius = 0.015
+	rod_mesh.mesh = cyl
+	rod_mesh.rotation.x = deg_to_rad(-90)
+	rod_mesh.position = Vector3(0, 0, -0.4)
+
+	var rod_mat := StandardMaterial3D.new()
+	rod_mat.albedo_color = Color(0.35, 0.2, 0.1)
+	rod_mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
+	rod_mesh.material_override = rod_mat
+
+	rod_pivot.add_child(rod_mesh)
+
+	var tip := Marker3D.new()
+	tip.name = "RodTip"
+	tip.position = Vector3(0, 0, -0.8)
+	rod_pivot.add_child(tip)
+
+	hand_right.add_child(rod_pivot)
+
 
 func _setup_hand(hand: MeshInstance3D, position_offset: Vector3) -> void:
 	var hand_mesh := SphereMesh.new()
@@ -164,7 +196,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotate_x(-event.relative.y * mouse_sensitivity)
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 
-	if event.is_action_pressed("cast_line") and not fishing_mechanic.is_reeling():
+	if event.is_action_pressed("cast_line") and fishing_mechanic.can_cast():
 		fishing_mechanic.cast(global_position, -global_transform.basis.z)
 
 
