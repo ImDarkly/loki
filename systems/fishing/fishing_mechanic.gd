@@ -68,8 +68,8 @@ func on_fish_fled() -> void:
 	_snap_bobber_to_rod()
 	$FishManager.cleanup()
 	current_state = State.IDLE
-	reel_failure.emit()
 	_exit_reeling()
+	reel_failure.emit()
 
 
 func apply_quota_penalty(amount: int) -> void:
