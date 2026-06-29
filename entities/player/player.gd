@@ -68,6 +68,7 @@ func _setup_collision_shape() -> void:
 	shape.radius = 0.3
 	var collision_shape := CollisionShape3D.new()
 	collision_shape.shape = shape
+	collision_shape.position.y = 1.0
 	add_child(collision_shape)
 
 
