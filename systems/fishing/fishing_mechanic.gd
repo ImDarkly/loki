@@ -75,9 +75,6 @@ func _ready() -> void:
 		var reel_mouse := InputEventMouseButton.new()
 		reel_mouse.button_index = MOUSE_BUTTON_LEFT
 		InputMap.action_add_event("reel", reel_mouse)
-		var reel_key := InputEventKey.new()
-		reel_key.physical_keycode = KEY_SPACE
-		InputMap.action_add_event("reel", reel_key)
 
 	reel_meter.visible = false
 

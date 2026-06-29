@@ -5,6 +5,7 @@ func _ready() -> void:
 	setup_environment()
 	setup_lighting()
 	setup_ground()
+	setup_ground_collision()
 	setup_water()
 
 
@@ -55,6 +56,19 @@ func setup_ground() -> void:
 	ground.material_override = mat
 	ground.position = Vector3(0, -0.1, -7)
 	add_child(ground)
+
+
+func setup_ground_collision() -> void:
+	var body := StaticBody3D.new()
+	body.position = Vector3(0, -0.35, -7)
+
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(80, 0.5, 80)
+
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	body.add_child(collision)
+	add_child(body)
 
 
 func setup_water() -> void:
