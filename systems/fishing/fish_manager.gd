@@ -20,6 +20,10 @@ func spawn(position: Vector3) -> void:
 	get_tree().root.add_child(_fish_node)
 
 
+func get_fish() -> Node3D:
+	return _fish_node
+
+
 func cleanup() -> void:
 	if is_instance_valid(_fish_node):
 		_fish_node.queue_free()
