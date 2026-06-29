@@ -48,6 +48,7 @@ func test_fish_fled_during_reeling_transitions_to_idle() -> void:
 
 	assert_eq(mechanic.current_state, 0, "Should be IDLE (0) after fish_fled")
 	assert_eq(mechanic.quota, 3, "Quota should remain unchanged after fish_fled")
+	assert_false(mechanic.reel_meter.visible, "Reel meter should be hidden after cleanup")
 	assert_signal_emitted(mechanic, "reel_failure")
 
 
