@@ -62,6 +62,21 @@ func can_cast() -> bool:
 	return current_state == State.IDLE
 
 
+func on_fish_fled() -> void:
+	if current_state not in [State.BITE, State.REELING]:
+		return
+	_snap_bobber_to_rod()
+	$FishManager.cleanup()
+	current_state = State.IDLE
+	reel_failure.emit()
+	_exit_reeling()
+
+
+func apply_quota_penalty(amount: int) -> void:
+	quota = max(0, quota - amount)
+	quota_label.text = "Quota: %d" % quota
+
+
 func _ready() -> void:
 	bite_timer.one_shot = true
 	bite_timer.timeout.connect(_on_bite_timer_timeout)
@@ -98,6 +113,7 @@ func _ready() -> void:
 	line_material.albedo_color = Color(1.0, 1.0, 1.0)
 	line_material.shading_mode = ORMMaterial3D.SHADING_MODE_UNSHADED
 	line_material.cull_mode = ORMMaterial3D.CULL_DISABLED
+
 
 
 func set_rod_tip(tip: Node3D) -> void:
