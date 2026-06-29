@@ -1,21 +1,28 @@
 [gd_scene format=3 uid="uid://dssphm27dhpip"]
 
-[ext_resource type="Script" path="res://entities/player/player.gd" id="1_n6c3h"]
+[ext_resource type="Script" uid="uid://i4odkxdn61c8" path="res://entities/player/player.gd" id="1_n6c3h"]
 [ext_resource type="PackedScene" path="res://systems/fishing/fishing_mechanic.tscn" id="2_o1vxj"]
-[ext_resource type="Script" path="res://world/world_setup.gd" id="3_y6pqm"]
+[ext_resource type="Script" uid="uid://208xm5t1nmmc" path="res://world/world_setup.gd" id="3_y6pqm"]
 
-[node name="main" type="Node3D"]
+[node name="main" type="Node3D" unique_id=1783119357]
 script = ExtResource("3_y6pqm")
 
-[node name="Player" type="Node3D" parent="."]
+[node name="Player" type="CharacterBody3D" parent="." unique_id=114001188]
 script = ExtResource("1_n6c3h")
 
-[node name="FishingMechanic" parent="Player" instance=ExtResource("2_o1vxj")]
+[node name="BodyMesh" type="MeshInstance3D" parent="Player" unique_id=1725971335]
 
-[node name="Camera3D" type="Camera3D" parent="Player"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
-rotation = Vector3(-0.2, 0, 0)
+[node name="Head" type="Node3D" parent="Player" unique_id=943289108]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Player/Head" unique_id=1972203984]
+transform = Transform3D(1, 0, 0, 0, 0.9800666, 0.19866933, 0, -0.19866933, 0.9800666, 0, 0, 0)
 current = true
-fov = 75.0
 near = 0.1
 far = 1000.0
+
+[node name="HandLeft" type="MeshInstance3D" parent="Player/Head" unique_id=1213215331]
+
+[node name="HandRight" type="MeshInstance3D" parent="Player/Head" unique_id=1759128289]
+
+[node name="FishingMechanic" parent="Player" unique_id=575926188 instance=ExtResource("2_o1vxj")]
