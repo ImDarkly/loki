@@ -133,6 +133,7 @@ func _process(delta: float) -> void:
 					current_state = State.IDLE
 					$FishManager.cleanup()
 					reel_failure.emit()
+					return
 
 				if Input.is_action_just_pressed("reel"):
 					_enter_reeling()
@@ -297,7 +298,11 @@ func _rebuild_line() -> void:
 	st.begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
 
 	var line_width: float = 0.025
-	var half_w := Vector3.RIGHT * line_width * 0.5
+	var dir := (end - start).normalized()
+	var right := dir.cross(Vector3.UP).normalized()
+	if right.length_squared() < 0.001:
+		right = Vector3.RIGHT
+	var half_w := right * line_width * 0.5
 
 	for i in range(LINE_SEGMENTS + 1):
 		var t := float(i) / float(LINE_SEGMENTS)
