@@ -47,6 +47,7 @@ var _cam_home: Vector3
 var _bounce_pos: float = 0.0
 var _bounce_vel: float = 0.0
 var _hand_bounce: float = 0.0
+var is_yelling: bool = false
 
 
 func _ready() -> void:
@@ -149,6 +150,8 @@ func _setup_input_actions() -> void:
 
 	_remove_key_from_action("reel", KEY_SPACE)
 
+	_ensure_action("yell", KEY_E)
+
 
 func _ensure_action(action: String, keycode: Key = KEY_NONE) -> void:
 	if not InputMap.has_action(action):
@@ -168,6 +171,7 @@ func _remove_key_from_action(action: String, keycode: Key) -> void:
 
 
 func _process(delta: float) -> void:
+	is_yelling = Input.is_action_pressed("yell")
 	var speed := Vector2(velocity.x, velocity.z).length()
 	var t := Time.get_ticks_msec() / 1000.0
 

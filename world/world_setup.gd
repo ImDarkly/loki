@@ -7,6 +7,8 @@ func _ready() -> void:
 	setup_ground()
 	setup_ground_collision()
 	setup_water()
+	_setup_danger_system()
+	_add_fps_counter()
 
 
 func setup_environment() -> void:
@@ -85,3 +87,30 @@ func setup_water() -> void:
 	water.material_override = mat
 	water.position = Vector3(0, 0, -7)
 	add_child(water)
+
+
+func _setup_danger_system() -> void:
+	var danger := $DangerManager
+	var player := $Player
+	var mechanic := $Player/FishingMechanic
+
+	danger.set_player_ref(player)
+	danger.fish_fled.connect(mechanic.on_fish_fled)
+	danger.quota_penalty.connect(mechanic.apply_quota_penalty)
+
+
+func _add_fps_counter() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "FPSLayer"
+	var label := Label.new()
+	label.name = "FPSLabel"
+	label.add_theme_font_size_override("font_size", 14)
+	label.position = Vector2(10, 34)
+	layer.add_child(label)
+	add_child(layer)
+
+
+func _process(_delta: float) -> void:
+	var label := get_node_or_null("FPSLayer/FPSLabel")
+	if label:
+		label.text = "FPS: %d" % Engine.get_frames_per_second()

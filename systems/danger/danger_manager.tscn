@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://systems/danger/danger_manager.gd" id="1_ylr2v"]
+
+[node name="DangerManager" type="Node3D"]
+script = ExtResource("1_ylr2v")
+
+[node name="SpawnTimer" type="Timer" parent="."]
+
+[node name="ReturnTimer" type="Timer" parent="."]
