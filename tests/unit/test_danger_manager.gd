@@ -14,9 +14,12 @@ func before_each() -> void:
 	manager.return_timer.stop()
 
 	mock_player = Node3D.new()
+	var mock_script := GDScript.new()
+	mock_script.source_code = "extends Node3D\nvar is_yelling: bool = false\n"
+	mock_script.reload()
+	mock_player.set_script(mock_script)
 	add_child(mock_player)
 	manager.set_player_ref(mock_player)
-	manager.player_ref.is_yelling = false
 
 
 func test_initial_state_is_inactive() -> void:
