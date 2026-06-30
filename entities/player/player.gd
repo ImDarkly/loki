@@ -1,4 +1,4 @@
-extends CharacterBody3D
+class_name Player extends CharacterBody3D
 
 @export var move_speed: float = 5.0
 @export var jump_height: float = 2.0
@@ -172,6 +172,8 @@ func _remove_key_from_action(action: String, keycode: Key) -> void:
 
 func _process(delta: float) -> void:
 	is_yelling = Input.is_action_pressed("yell")
+	if Input.is_action_just_pressed("yell") and fishing_mechanic.is_reeling():
+		fishing_mechanic.on_fish_fled()
 	var speed := Vector2(velocity.x, velocity.z).length()
 	var t := Time.get_ticks_msec() / 1000.0
 

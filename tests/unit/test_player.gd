@@ -1,6 +1,6 @@
 extends GutTest
 
-var player: CharacterBody3D
+var player
 
 
 func before_each() -> void:
@@ -39,6 +39,40 @@ func before_each() -> void:
 	await get_tree().process_frame
 
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func test_yell_during_reeling_flees_fish() -> void:
+	var mechanic = player.fishing_mechanic
+	mechanic._enter_reeling()
+	mechanic.reel_timer.stop()
+	mechanic.reel_meter.size = Vector2(40, 300)
+	mechanic.player_bar_position = 50.0
+	mechanic.green_zone_position = 50.0
+	mechanic.quota = 3
+
+	watch_signals(mechanic)
+	Input.action_press("yell")
+	await get_tree().process_frame
+	Input.action_release("yell")
+
+	assert_eq(mechanic.current_state, 0, "Should be IDLE (0) after yell while reeling")
+	assert_eq(mechanic.quota, 3, "Quota should remain unchanged after yell")
+	assert_false(mechanic.reel_meter.visible, "Reel meter should be hidden after cleanup")
+	assert_signal_emitted(mechanic, "reel_failure")
+
+
+func test_yell_during_idle_does_not_flee_fish() -> void:
+	var mechanic = player.fishing_mechanic
+	mechanic.current_state = 0
+	mechanic.quota = 3
+
+	watch_signals(mechanic)
+	Input.action_press("yell")
+	await get_tree().process_frame
+	Input.action_release("yell")
+
+	assert_eq(mechanic.current_state, 0, "Should remain IDLE (0)")
+	assert_signal_not_emitted(mechanic, "reel_failure")
 
 
 func test_is_yelling_starts_false() -> void:

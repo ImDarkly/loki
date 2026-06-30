@@ -55,7 +55,7 @@ const LINE_SEGMENTS: int = 4
 
 
 func is_reeling() -> bool:
-	return current_state in [State.BITE, State.REELING]
+	return current_state == State.REELING
 
 
 func can_cast() -> bool:
