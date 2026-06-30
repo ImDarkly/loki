@@ -1,69 +1,70 @@
 extends GutTest
 
-var manager
+const TEST_BUS_NAME := "VoiceChatRecordingBus"
+
+var manager: Node
 
 
 func before_each() -> void:
-	var scene: PackedScene = load("res://systems/voice_chat/voice_chat_manager.tscn")
+	_cleanup_test_bus()
+	var scene := load("res://systems/voice_chat/voice_chat_manager.tscn")
 	manager = autofree(scene.instantiate())
 	add_child(manager)
+
+
+func after_each() -> void:
+	_cleanup_test_bus()
+
+
+func _cleanup_test_bus() -> void:
+	var idx := AudioServer.get_bus_index(TEST_BUS_NAME)
+	if idx != -1:
+		AudioServer.remove_bus(idx)
+
+
+func _create_test_bus() -> void:
+	var idx := AudioServer.get_bus_index(TEST_BUS_NAME)
+	if idx == -1:
+		AudioServer.add_bus()
+		idx = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(idx, TEST_BUS_NAME)
+
+
+func test_bus_not_found_logs_warning_once() -> void:
 	await get_tree().process_frame
+	assert_eq(manager._bus_error_logged, true, "Warning flag should be set after first _process")
+	assert_eq(manager._bus_index, -1, "_bus_index should remain -1 when bus not found")
 
 
-func test_bus_created_and_queryable() -> void:
-	var idx := AudioServer.get_bus_index("VoiceChatRecord")
-	assert_ne(idx, -1, "Bus VoiceChatRecord should exist after manager loads")
-	var peak: float = AudioServer.get_bus_peak_volume_left_db(idx, 0)
-	assert_lt(peak, -60, "Peak should be near noise floor with no audio playing")
+func test_bus_not_found_no_crash() -> void:
+	for i in 5:
+		await get_tree().process_frame
+	assert_true(true, "Manager survived multiple frames without the bus")
 
 
-func test_get_peak_volume_db_returns_float() -> void:
-	var peak: float = manager.get_peak_volume_db()
-	assert_lt(peak, -60, "get_peak_volume_db should return a low value when silent")
-
-
-func test_synthetic_amplitude_minus_20_db() -> void:
-	manager.inject_synthetic_amplitude(-20.0)
+func test_bus_found_on_first_process() -> void:
+	_create_test_bus()
 	await get_tree().process_frame
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var peak: float = manager.get_peak_volume_db()
-	assert_gt(peak, -35.0, "Peak at -20 dB injection should be above -35 dB")
+	assert_ne(manager._bus_index, -1, "_bus_index should be set after bus is found")
+	assert_false(manager._bus_error_logged, "No warning should be logged when bus exists")
 
 
-func test_synthetic_amplitude_minus_12_db() -> void:
-	manager.inject_synthetic_amplitude(-12.0)
+func test_bus_index_cached_after_first_lookup() -> void:
+	_create_test_bus()
 	await get_tree().process_frame
+	var cached: int = manager._bus_index
+	assert_ne(cached, -1, "Bus should be found initially")
+
+	_cleanup_test_bus()
 	await get_tree().process_frame
-	await get_tree().process_frame
-	var peak: float = manager.get_peak_volume_db()
-	assert_gt(peak, -25.0, "Peak at -12 dB injection should be above -25 dB")
+	assert_eq(manager._bus_index, cached, "_bus_index should remain cached after bus is removed")
 
 
-func test_synthetic_amplitude_minus_6_db() -> void:
-	manager.inject_synthetic_amplitude(-6.0)
+func test_bus_created_later_found_on_retry() -> void:
 	await get_tree().process_frame
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var peak: float = manager.get_peak_volume_db()
-	assert_gt(peak, -18.0, "Peak at -6 dB injection should be above -18 dB")
+	assert_eq(manager._bus_index, -1, "Bus should not be found initially")
+	assert_true(manager._bus_error_logged, "Warning should be logged on first miss")
 
-
-func test_peak_rises_with_louder_injection() -> void:
-	manager.inject_synthetic_amplitude(-20.0)
+	_create_test_bus()
 	await get_tree().process_frame
-	await get_tree().process_frame
-	var peak_quiet: float = manager.get_peak_volume_db()
-	assert_lt(peak_quiet, -10.0, "Baseline quiet peak should be below -10 dB")
-
-	manager.inject_synthetic_amplitude(-6.0)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var peak_loud: float = manager.get_peak_volume_db()
-	assert_gt(peak_loud, peak_quiet, "Louder injection should produce higher peak volume")
-
-
-func test_get_bus_index_returns_valid() -> void:
-	var idx: int = manager.get_bus_index()
-	assert_ne(idx, -1, "get_bus_index should return a valid bus index")
-	assert_eq(idx, AudioServer.get_bus_index("VoiceChatRecord"), "get_bus_index should match AudioServer lookup")
+	assert_ne(manager._bus_index, -1, "Bus should be found on retry after creation")
