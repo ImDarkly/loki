@@ -1,6 +1,6 @@
 extends GutTest
 
-var player: CharacterBody3D
+var player
 
 
 func before_each() -> void:
