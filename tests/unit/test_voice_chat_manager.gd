@@ -68,3 +68,62 @@ func test_bus_created_later_found_on_retry() -> void:
 	_create_test_bus()
 	await get_tree().process_frame
 	assert_ne(manager._bus_index, -1, "Bus should be found on retry after creation")
+
+
+func test_amplitude_above_on_threshold_activates_yelling() -> void:
+	watch_signals(manager)
+	manager._update_yelling_state(-11.0)
+	assert_true(manager.is_yelling, "is_yelling should be true when amplitude exceeds ON threshold")
+	assert_signal_emitted(manager, "yelling_state_changed", "Signal should fire on activation")
+
+
+func test_amplitude_below_off_threshold_deactivates_yelling() -> void:
+	manager._update_yelling_state(-11.0)
+	watch_signals(manager)
+	manager._update_yelling_state(-15.0)
+	assert_false(manager.is_yelling, "is_yelling should be false when amplitude drops below OFF threshold")
+	assert_signal_emitted(manager, "yelling_state_changed", "Signal should fire on deactivation")
+
+
+func test_hysteresis_deadband_from_false() -> void:
+	watch_signals(manager)
+	manager._update_yelling_state(-13.0)
+	assert_false(manager.is_yelling, "is_yelling should remain false in deadband")
+	assert_signal_not_emitted(manager, "yelling_state_changed", "Signal should not fire in deadband when starting false")
+
+
+func test_hysteresis_deadband_from_true() -> void:
+	manager._update_yelling_state(-11.0)
+	watch_signals(manager)
+	manager._update_yelling_state(-13.0)
+	assert_true(manager.is_yelling, "is_yelling should remain true in deadband")
+	assert_signal_not_emitted(manager, "yelling_state_changed", "Signal should not fire in deadband when starting true")
+
+
+func test_signal_guard_no_duplicate() -> void:
+	watch_signals(manager)
+	manager._update_yelling_state(-11.0)
+	manager._update_yelling_state(-11.0)
+	assert_signal_emit_count(manager, "yelling_state_changed", 1, "Signal should emit only once per transition")
+
+
+func test_signal_emits_on_each_transition() -> void:
+	watch_signals(manager)
+	manager._update_yelling_state(-11.0)
+	manager._update_yelling_state(-15.0)
+	manager._update_yelling_state(-11.0)
+	assert_signal_emit_count(manager, "yelling_state_changed", 3, "Signal should fire on each transition (true, false, true)")
+
+
+func test_threshold_exports_apply() -> void:
+	manager.amplitude_threshold_on = -20.0
+	manager.amplitude_threshold_off = -25.0
+	watch_signals(manager)
+
+	manager._update_yelling_state(-22.0)
+	assert_false(manager.is_yelling, "is_yelling should remain false with custom ON threshold at -20")
+	assert_signal_not_emitted(manager, "yelling_state_changed", "Signal should not fire in custom deadband")
+
+	manager._update_yelling_state(-19.0)
+	assert_true(manager.is_yelling, "is_yelling should become true with custom ON threshold")
+	assert_signal_emitted(manager, "yelling_state_changed", "Signal should fire with custom threshold")

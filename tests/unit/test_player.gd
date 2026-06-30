@@ -32,6 +32,11 @@ func before_each() -> void:
 	fishing_mechanic.name = "FishingMechanic"
 	player_node.add_child(fishing_mechanic)
 
+	var voice_chat_manager := Node.new()
+	voice_chat_manager.name = "VoiceChatManager"
+	voice_chat_manager.set_script(load("res://systems/voice_chat/voice_chat_manager.gd"))
+	player_node.add_child(voice_chat_manager)
+
 	player_node.set_script(load("res://entities/player/player.gd"))
 
 	player = autofree(player_node)
@@ -77,22 +82,3 @@ func test_yell_during_idle_does_not_flee_fish() -> void:
 
 func test_is_yelling_starts_false() -> void:
 	assert_false(player.is_yelling, "is_yelling should be false initially")
-
-
-func test_is_yelling_true_when_yell_pressed() -> void:
-	Input.action_press("yell")
-	player._process(0.016)
-
-	assert_true(player.is_yelling, "is_yelling should be true when yell action is pressed")
-
-	Input.action_release("yell")
-
-
-func test_is_yelling_false_when_yell_released() -> void:
-	Input.action_press("yell")
-	player._process(0.016)
-
-	Input.action_release("yell")
-	player._process(0.016)
-
-	assert_false(player.is_yelling, "is_yelling should be false when yell action is released")

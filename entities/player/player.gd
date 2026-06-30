@@ -33,6 +33,7 @@ class_name Player extends CharacterBody3D
 @onready var hand_left: MeshInstance3D = $Head/HandLeft
 @onready var hand_right: MeshInstance3D = $Head/HandRight
 @onready var body_mesh: MeshInstance3D = $BodyMesh
+@onready var _voice_chat: Node = $VoiceChatManager
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _jump_velocity: float
@@ -171,7 +172,7 @@ func _remove_key_from_action(action: String, keycode: Key) -> void:
 
 
 func _process(delta: float) -> void:
-	is_yelling = Input.is_action_pressed("yell")
+	is_yelling = _voice_chat.is_yelling if _voice_chat != null else false
 	if Input.is_action_just_pressed("yell") and fishing_mechanic.is_reeling():
 		fishing_mechanic.on_fish_fled()
 	var speed := Vector2(velocity.x, velocity.z).length()
