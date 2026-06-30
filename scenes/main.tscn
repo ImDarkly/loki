@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://systems/fishing/fishing_mechanic.tscn" id="2_o1vxj"]
 [ext_resource type="Script" uid="uid://208xm5t1nmmc" path="res://world/world_setup.gd" id="3_y6pqm"]
 [ext_resource type="PackedScene" path="res://systems/danger/danger_manager.tscn" id="4_0we7i"]
+[ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_manager.tscn" id="5_83xm0"]
 
 [node name="main" type="Node3D" unique_id=1783119357]
 script = ExtResource("3_y6pqm")
@@ -27,5 +28,7 @@ far = 1000.0
 [node name="HandRight" type="MeshInstance3D" parent="Player/Head" unique_id=1759128289]
 
 [node name="FishingMechanic" parent="Player" unique_id=575926188 instance=ExtResource("2_o1vxj")]
+
+[node name="VoiceChatManager" parent="Player" instance=ExtResource("5_83xm0")]
 
 [node name="DangerManager" parent="." instance=ExtResource("4_0we7i")]
