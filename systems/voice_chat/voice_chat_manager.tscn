@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://systems/voice_chat/voice_chat_manager.gd" id="1_ylr2v"]
+
+[node name="VoiceChatManager" type="Node"]
+script = ExtResource("1_ylr2v")
