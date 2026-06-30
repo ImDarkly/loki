@@ -1,6 +1,6 @@
 extends GutTest
 
-const TEST_BUS_NAME := "VoiceChatRecordingBus"
+const TEST_BUS_NAME := "GDRecord"
 
 var manager: Node
 
