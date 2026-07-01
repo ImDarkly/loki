@@ -151,7 +151,6 @@ func _setup_input_actions() -> void:
 
 	_remove_key_from_action("reel", KEY_SPACE)
 
-	_ensure_action("yell", KEY_E)
 
 
 func _ensure_action(action: String, keycode: Key = KEY_NONE) -> void:
@@ -173,8 +172,6 @@ func _remove_key_from_action(action: String, keycode: Key) -> void:
 
 func _process(delta: float) -> void:
 	is_yelling = _voice_chat.is_yelling if _voice_chat != null else false
-	if Input.is_action_just_pressed("yell") and fishing_mechanic.is_reeling():
-		fishing_mechanic.on_fish_fled()
 	var speed := Vector2(velocity.x, velocity.z).length()
 	var t := Time.get_ticks_msec() / 1000.0
 
