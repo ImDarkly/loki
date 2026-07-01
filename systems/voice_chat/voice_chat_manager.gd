@@ -2,7 +2,7 @@ extends Node
 
 signal yelling_state_changed(is_yelling: bool)
 
-@export var voice_bus_name: String = "VoiceChatRecordingBus"
+@export var voice_bus_name: String = "GDRecord"
 @export var amplitude_threshold_on: float = -12.0
 @export var amplitude_threshold_off: float = -14.0
 
