@@ -73,7 +73,9 @@ func _on_yelling_state_changed(is_yelling: bool) -> void:
 
 
 func _process(delta: float) -> void:
-	if _target_db > _display_db:
+	if _target_db == -INF:
+		_display_db = -INF
+	elif _target_db > _display_db:
 		_display_db = _target_db
 	else:
 		var decay := exp(-delta / falloff_time)
