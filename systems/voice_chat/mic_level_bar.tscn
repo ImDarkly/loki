@@ -1,0 +1,92 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://systems/voice_chat/mic_level_bar.gd" id="1_kcmi2"]
+
+[node name="MicLevelBar" type="CanvasLayer"]
+layer = 2
+script = ExtResource("1_kcmi2")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.0
+anchor_top = 0.5
+anchor_right = 0.0
+anchor_bottom = 0.5
+offset_left = 16.0
+offset_top = -160.0
+offset_right = 72.0
+offset_bottom = 160.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MicStatus" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+
+[node name="MicDot" type="ColorRect" parent="MarginContainer/VBoxContainer/MicStatus"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+custom_minimum_size = Vector2(12.0, 12.0)
+color = Color(0.4, 0.4, 0.4, 1.0)
+
+[node name="MicLabel" type="Label" parent="MarginContainer/VBoxContainer/MicStatus"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+text = "MIC"
+horizontal_alignment = 0
+
+[node name="MeterFrame" type="Control" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(24.0, 100.0)
+
+[node name="MeterBg" type="ColorRect" parent="MarginContainer/VBoxContainer/MeterFrame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.15, 0.15, 0.15, 1.0)
+
+[node name="MeterFill" type="ColorRect" parent="MarginContainer/VBoxContainer/MeterFrame"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+color = Color(0.0, 0.8, 0.0, 1.0)
+
+[node name="DBLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+text = "-∞ dB"
+horizontal_alignment = 1
+
+[node name="YellLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+text = "YELLING"
+horizontal_alignment = 1
+visible = false
