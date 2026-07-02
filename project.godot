@@ -15,9 +15,13 @@ run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 
+[audio]
+
+driver/enable_input=true
+
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/gut/plugin.cfg", "res://addons/GD-Sync/plugin.cfg")
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [physics]
 

@@ -9,6 +9,7 @@ func before_each() -> void:
 	_cleanup_test_bus()
 	var scene := load("res://systems/voice_chat/voice_chat_manager.tscn")
 	manager = autofree(scene.instantiate())
+	manager.auto_create_bus = false
 	add_child(manager)
 
 
@@ -18,6 +19,9 @@ func after_each() -> void:
 
 func _cleanup_test_bus() -> void:
 	var idx := AudioServer.get_bus_index(TEST_BUS_NAME)
+	if idx != -1:
+		AudioServer.remove_bus(idx)
+	idx = AudioServer.get_bus_index("DevNull")
 	if idx != -1:
 		AudioServer.remove_bus(idx)
 
@@ -127,3 +131,68 @@ func test_threshold_exports_apply() -> void:
 	manager._update_yelling_state(-19.0)
 	assert_true(manager.is_yelling, "is_yelling should become true with custom ON threshold")
 	assert_signal_emitted(manager, "yelling_state_changed", "Signal should fire with custom threshold")
+
+
+func test_auto_create_bus_creates_bus() -> void:
+	manager.auto_create_bus = true
+	await get_tree().process_frame
+	var idx := AudioServer.get_bus_index(TEST_BUS_NAME)
+	assert_ne(idx, -1, "Bus should be created by auto_create_bus")
+
+
+func test_auto_create_bus_configures_bus() -> void:
+	manager.auto_create_bus = true
+	await get_tree().process_frame
+	var idx := AudioServer.get_bus_index(TEST_BUS_NAME)
+	assert_ne(idx, -1, "GDRecord bus should exist")
+
+	assert_eq(AudioServer.get_bus_send(idx), "DevNull", "GDRecord should send to DevNull for silent routing")
+	var effect := AudioServer.get_bus_effect(idx, 0)
+	assert_not_null(effect, "Bus should have an effect at index 0")
+	assert_true(is_instance_of(effect, AudioEffectCapture), "Effect should be AudioEffectCapture")
+
+	var null_idx := AudioServer.get_bus_index("DevNull")
+	assert_ne(null_idx, -1, "DevNull bus should exist")
+	assert_eq(AudioServer.get_bus_volume_db(null_idx), -INF, "DevNull should have -INF volume")
+
+
+func test_auto_create_bus_creates_mic_player() -> void:
+	manager.auto_create_bus = true
+	await get_tree().process_frame
+	var mic_player := manager.get_node_or_null("MicrophoneInput") as AudioStreamPlayer
+	assert_not_null(mic_player, "MicrophoneInput child node should exist")
+	assert_not_null(mic_player.stream, "Mic player should have a stream")
+	assert_true(is_instance_of(mic_player.stream, AudioStreamMicrophone), "Stream should be AudioStreamMicrophone")
+	assert_eq(mic_player.bus, TEST_BUS_NAME, "Mic player bus should be set to %s" % TEST_BUS_NAME)
+
+
+func test_auto_create_bus_caches_index() -> void:
+	manager.auto_create_bus = true
+	await get_tree().process_frame
+	var idx := AudioServer.get_bus_index(TEST_BUS_NAME)
+	assert_eq(manager._bus_index, idx, "_bus_index should match the created bus index")
+
+
+func test_auto_create_bus_false_no_creation() -> void:
+	await get_tree().process_frame
+	var idx := AudioServer.get_bus_index(TEST_BUS_NAME)
+	assert_eq(idx, -1, "Bus should not be created when auto_create_bus is false")
+	assert_eq(manager._bus_index, -1, "_bus_index should remain -1")
+	assert_true(manager._bus_error_logged, "Warning should be logged when auto_create_bus is false")
+
+
+func test_auto_create_bus_skips_with_existing_bus() -> void:
+	_create_test_bus()
+	var initial_count := AudioServer.bus_count
+	manager.auto_create_bus = true
+	await get_tree().process_frame
+	assert_eq(AudioServer.bus_count, initial_count, "Should not create a duplicate bus")
+	assert_ne(manager._bus_index, -1, "_bus_index should be set to the existing bus")
+
+
+func test_mic_level_signal_emitted_on_process() -> void:
+	_create_test_bus()
+	watch_signals(manager)
+	await get_tree().process_frame
+	assert_signal_emitted(manager, "mic_level_updated", "mic_level_updated should fire every _process")
+	assert_signal_emit_count(manager, "mic_level_updated", 1, "Should fire once per frame")
