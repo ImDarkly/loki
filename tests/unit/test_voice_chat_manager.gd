@@ -76,13 +76,13 @@ func test_bus_created_later_found_on_retry() -> void:
 
 func test_amplitude_above_on_threshold_activates_yelling() -> void:
 	watch_signals(manager)
-	manager._update_yelling_state(-11.0)
+	manager._update_yelling_state(-5.0)
 	assert_true(manager.is_yelling, "is_yelling should be true when amplitude exceeds ON threshold")
 	assert_signal_emitted(manager, "yelling_state_changed", "Signal should fire on activation")
 
 
 func test_amplitude_below_off_threshold_deactivates_yelling() -> void:
-	manager._update_yelling_state(-11.0)
+	manager._update_yelling_state(-5.0)
 	watch_signals(manager)
 	manager._update_yelling_state(-15.0)
 	assert_false(manager.is_yelling, "is_yelling should be false when amplitude drops below OFF threshold")
@@ -97,25 +97,25 @@ func test_hysteresis_deadband_from_false() -> void:
 
 
 func test_hysteresis_deadband_from_true() -> void:
-	manager._update_yelling_state(-11.0)
+	manager._update_yelling_state(-5.0)
 	watch_signals(manager)
-	manager._update_yelling_state(-13.0)
+	manager._update_yelling_state(-7.0)
 	assert_true(manager.is_yelling, "is_yelling should remain true in deadband")
 	assert_signal_not_emitted(manager, "yelling_state_changed", "Signal should not fire in deadband when starting true")
 
 
 func test_signal_guard_no_duplicate() -> void:
 	watch_signals(manager)
-	manager._update_yelling_state(-11.0)
-	manager._update_yelling_state(-11.0)
+	manager._update_yelling_state(-5.0)
+	manager._update_yelling_state(-5.0)
 	assert_signal_emit_count(manager, "yelling_state_changed", 1, "Signal should emit only once per transition")
 
 
 func test_signal_emits_on_each_transition() -> void:
 	watch_signals(manager)
-	manager._update_yelling_state(-11.0)
+	manager._update_yelling_state(-5.0)
 	manager._update_yelling_state(-15.0)
-	manager._update_yelling_state(-11.0)
+	manager._update_yelling_state(-5.0)
 	assert_signal_emit_count(manager, "yelling_state_changed", 3, "Signal should fire on each transition (true, false, true)")
 
 
@@ -164,6 +164,7 @@ func test_auto_create_bus_creates_mic_player() -> void:
 	assert_not_null(mic_player.stream, "Mic player should have a stream")
 	assert_true(is_instance_of(mic_player.stream, AudioStreamMicrophone), "Stream should be AudioStreamMicrophone")
 	assert_eq(mic_player.bus, TEST_BUS_NAME, "Mic player bus should be set to %s" % TEST_BUS_NAME)
+	assert_true(mic_player.playing, "Mic player should be playing after creation")
 
 
 func test_auto_create_bus_caches_index() -> void:
@@ -188,6 +189,17 @@ func test_auto_create_bus_skips_with_existing_bus() -> void:
 	await get_tree().process_frame
 	assert_eq(AudioServer.bus_count, initial_count, "Should not create a duplicate bus")
 	assert_ne(manager._bus_index, -1, "_bus_index should be set to the existing bus")
+
+
+func test_auto_create_bus_false_existing_bus_no_creation() -> void:
+	_create_test_bus()
+	var initial_count := AudioServer.bus_count
+	var idx := AudioServer.get_bus_index(TEST_BUS_NAME)
+	manager.auto_create_bus = false
+	await get_tree().process_frame
+	assert_eq(AudioServer.bus_count, initial_count, "Should not add any buses when bus already exists")
+	assert_eq(manager._bus_index, idx, "_bus_index should match the pre-existing bus")
+	assert_false(manager._bus_error_logged, "No warning should be logged when bus already exists")
 
 
 func test_mic_level_signal_emitted_on_process() -> void:
