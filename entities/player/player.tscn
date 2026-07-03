@@ -1,0 +1,60 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://entities/player/player.gd" id="1_q6y7j"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1xb1u"]
+radius = 0.5
+height = 1.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_j68h"]
+top_radius = 0.5
+bottom_radius = 0.5
+height = 2.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_k2f"]
+radius = 0.1
+height = 0.2
+
+[sub_resource type="SphereMesh" id="SphereMesh_l3g"]
+radius = 0.1
+height = 0.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_p4h"]
+albedo_color = Color(0.35, 0.6, 0.9)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q5i"]
+albedo_color = Color(0.85, 0.75, 0.65)
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_q6y7j")
+
+[node name="Collision" type="Node3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Collision"]
+shape = SubResource("CapsuleShape3D_1xb1u")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Visuals"]
+mesh = SubResource("CylinderMesh_j68h")
+layers = 2
+material = SubResource("StandardMaterial3D_p4h")
+
+[node name="Camera3D" type="Camera3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+rotation = Vector3(-0.2, 0, 0)
+current = true
+fov = 75.0
+near = 0.1
+far = 1000.0
+cull_mask = 1
+
+[node name="LeftHand" type="MeshInstance3D" parent="Visuals/Camera3D"]
+mesh = SubResource("SphereMesh_k2f")
+material = SubResource("StandardMaterial3D_q5i")
+position = Vector3(-0.3, -0.35, -0.5)
+
+[node name="RightHand" type="MeshInstance3D" parent="Visuals/Camera3D"]
+mesh = SubResource("SphereMesh_l3g")
+material = SubResource("StandardMaterial3D_q5i")
+position = Vector3(0.3, -0.35, -0.5)
