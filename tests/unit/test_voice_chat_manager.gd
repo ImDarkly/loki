@@ -196,3 +196,57 @@ func test_mic_level_signal_emitted_on_process() -> void:
 	await get_tree().process_frame
 	assert_signal_emitted(manager, "mic_level_updated", "mic_level_updated should fire every _process")
 	assert_signal_emit_count(manager, "mic_level_updated", 1, "Should fire once per frame")
+
+
+func test_mic_failure_logs_warning_once() -> void:
+	manager.queue_free()
+	await get_tree().process_frame
+	_cleanup_test_bus()
+	var DoubleScript := preload("res://tests/unit/test_double_voice_chat_manager.gd")
+	manager = autofree(DoubleScript.new())
+	manager.mic_should_fail = true
+	manager.auto_create_bus = true
+	add_child(manager)
+	await get_tree().process_frame
+	assert_true(manager._mic_error_logged, "Mic error flag should be set after failed mic creation")
+
+
+func test_mic_failure_sets_bus_index() -> void:
+	manager.queue_free()
+	await get_tree().process_frame
+	_cleanup_test_bus()
+	var DoubleScript := preload("res://tests/unit/test_double_voice_chat_manager.gd")
+	manager = autofree(DoubleScript.new())
+	manager.mic_should_fail = true
+	manager.auto_create_bus = true
+	add_child(manager)
+	await get_tree().process_frame
+	assert_ne(manager._bus_index, -1, "_bus_index should be set even on mic failure to prevent retry loop")
+
+
+func test_mic_failure_no_warning_spam() -> void:
+	manager.queue_free()
+	await get_tree().process_frame
+	_cleanup_test_bus()
+	var DoubleScript := preload("res://tests/unit/test_double_voice_chat_manager.gd")
+	manager = autofree(DoubleScript.new())
+	manager.mic_should_fail = true
+	manager.auto_create_bus = true
+	add_child(manager)
+	for i in 5:
+		await get_tree().process_frame
+	assert_eq(manager.warning_count, 1, "push_warning should be called exactly once")
+	assert_true(manager._mic_error_logged, "_mic_error_logged should be set after warning")
+
+
+func test_mic_failure_is_yelling_stays_false() -> void:
+	manager.queue_free()
+	await get_tree().process_frame
+	_cleanup_test_bus()
+	var DoubleScript := preload("res://tests/unit/test_double_voice_chat_manager.gd")
+	manager = autofree(DoubleScript.new())
+	manager.mic_should_fail = true
+	manager.auto_create_bus = true
+	add_child(manager)
+	await get_tree().process_frame
+	assert_false(manager.is_yelling, "is_yelling should remain false when mic fails")

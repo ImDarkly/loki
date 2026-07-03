@@ -13,6 +13,7 @@ var is_yelling: bool = false
 
 var _bus_index: int = -1
 var _bus_error_logged: bool = false
+var _mic_error_logged: bool = false
 
 
 func _process(_delta: float) -> void:
@@ -32,6 +33,20 @@ func _process(_delta: float) -> void:
 	var peak := _get_peak_volume_db()
 	_update_yelling_state(peak)
 	mic_level_updated.emit(peak)
+
+
+func _has_input_devices() -> bool:
+	return not AudioServer.get_input_device_list().is_empty()
+
+
+func _report_mic_unavailable() -> void:
+	if not _mic_error_logged:
+		push_warning("Voice chat microphone unavailable. Voice yelling disabled.")
+		_mic_error_logged = true
+
+
+func _create_mic_stream() -> AudioStreamMicrophone:
+	return AudioStreamMicrophone.new()
 
 
 func _auto_create_bus() -> void:
@@ -58,8 +73,13 @@ func _auto_create_bus() -> void:
 	var capture := AudioEffectCapture.new()
 	AudioServer.add_bus_effect(rec_idx, capture, 0)
 
+	if not _has_input_devices():
+		_report_mic_unavailable()
+		_bus_index = rec_idx
+		return
+
 	var mic_player := AudioStreamPlayer.new()
-	mic_player.stream = AudioStreamMicrophone.new()
+	mic_player.stream = _create_mic_stream()
 	mic_player.bus = voice_bus_name
 	mic_player.name = "MicrophoneInput"
 	add_child(mic_player)
