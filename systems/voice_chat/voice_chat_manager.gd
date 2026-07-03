@@ -35,6 +35,16 @@ func _process(_delta: float) -> void:
 	mic_level_updated.emit(peak)
 
 
+func _has_input_devices() -> bool:
+	return not AudioServer.get_input_device_list().is_empty()
+
+
+func _report_mic_unavailable() -> void:
+	if not _mic_error_logged:
+		push_warning("Voice chat microphone unavailable. Voice yelling disabled.")
+		_mic_error_logged = true
+
+
 func _create_mic_stream() -> AudioStreamMicrophone:
 	return AudioStreamMicrophone.new()
 
@@ -63,16 +73,13 @@ func _auto_create_bus() -> void:
 	var capture := AudioEffectCapture.new()
 	AudioServer.add_bus_effect(rec_idx, capture, 0)
 
-	var mic := _create_mic_stream()
-	if not is_instance_valid(mic):
-		if not _mic_error_logged:
-			push_warning("Voice chat microphone unavailable. Voice yelling disabled.")
-			_mic_error_logged = true
+	if not _has_input_devices():
+		_report_mic_unavailable()
 		_bus_index = rec_idx
 		return
 
 	var mic_player := AudioStreamPlayer.new()
-	mic_player.stream = mic
+	mic_player.stream = _create_mic_stream()
 	mic_player.bus = voice_bus_name
 	mic_player.name = "MicrophoneInput"
 	add_child(mic_player)

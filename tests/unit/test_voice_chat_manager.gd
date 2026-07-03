@@ -235,7 +235,8 @@ func test_mic_failure_no_warning_spam() -> void:
 	add_child(manager)
 	for i in 5:
 		await get_tree().process_frame
-	assert_true(manager._mic_error_logged, "Should not crash or spam warnings over multiple frames")
+	assert_eq(manager.warning_count, 1, "push_warning should be called exactly once")
+	assert_true(manager._mic_error_logged, "_mic_error_logged should be set after warning")
 
 
 func test_mic_failure_is_yelling_stays_false() -> void:
