@@ -13,6 +13,7 @@ var _tracked_ids: Array = []
 func _ready() -> void:
 	GDSync.connected.connect(_on_connected)
 	GDSync.connection_failed.connect(_on_connection_failed)
+	GDSync.disconnected.connect(_on_disconnected)
 	GDSync.lobby_joined.connect(_on_lobby_joined)
 	GDSync.client_joined.connect(_on_client_joined)
 	GDSync.client_left.connect(_on_client_left)
@@ -28,6 +29,10 @@ func _on_connected() -> void:
 
 func _on_connection_failed(error: int) -> void:
 	push_error("GameManager: Connection failed: ", error)
+
+
+func _on_disconnected() -> void:
+	GDSync.change_scene("res://scenes/lobby.tscn")
 
 
 func _on_lobby_joined(_lobby_name: String) -> void:

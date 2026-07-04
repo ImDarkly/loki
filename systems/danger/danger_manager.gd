@@ -33,6 +33,13 @@ var spawn_position: Vector3
 
 func _ready() -> void:
 	_reset_escalation()
+	GDSync.expose_func(_apply_synced_state)
+
+	if not GDSync.is_host():
+		set_physics_process(false)
+		spawn_timer.stop()
+		return_timer.stop()
+		return
 
 	spawn_timer.one_shot = true
 	spawn_timer.timeout.connect(_on_spawn_timer_timeout)
@@ -53,24 +60,31 @@ func _reset_escalation() -> void:
 
 
 func _on_spawn_timer_timeout() -> void:
+	if not GDSync.is_host():
+		return
 	if current_state == State.INACTIVE or current_state == State.WAITING:
-		if not is_instance_valid(player_ref):
+		if _get_nearest_player() == null:
 			return
 		_spawn_shark()
 		current_state = State.APPROACHING
+		_sync_state_to_clients()
 
 
 func _on_return_timer_timeout() -> void:
+	if not GDSync.is_host():
+		return
 	if current_state == State.WAITING:
 		_spawn_shark()
 		current_state = State.APPROACHING
+		_sync_state_to_clients()
 
 
 func _spawn_shark() -> void:
-	if not is_instance_valid(player_ref):
+	var target_player := _get_nearest_player()
+	if target_player == null:
 		return
 
-	spawn_position = _pick_spawn_position()
+	spawn_position = _pick_spawn_position(target_player)
 
 	if not is_instance_valid(shark_node):
 		shark_node = _create_shark_mesh()
@@ -79,13 +93,14 @@ func _spawn_shark() -> void:
 	shark_node.position = spawn_position
 	shark_node.visible = true
 
-	var dir := _direction_to_player(spawn_position)
+	var dir := _direction_to_player(spawn_position, target_player)
 	if dir.length_squared() > 0.001:
 		shark_node.look_at(shark_node.position + dir, Vector3.UP)
+	_sync_state_to_clients()
 
 
-func _pick_spawn_position() -> Vector3:
-	var player_pos := player_ref.global_position
+func _pick_spawn_position(target_player: Node3D) -> Vector3:
+	var player_pos := target_player.global_position
 	var half := WATER_HALF_SIZE
 	var cx := WATER_CENTER.x
 	var cz := WATER_CENTER.z
@@ -153,6 +168,8 @@ func _create_shark_mesh() -> MeshInstance3D:
 
 
 func _physics_process(delta: float) -> void:
+	if not GDSync.is_host():
+		return
 	match current_state:
 		State.APPROACHING:
 			_process_approaching(delta)
@@ -161,15 +178,17 @@ func _physics_process(delta: float) -> void:
 
 
 func _process_approaching(delta: float) -> void:
-	if not is_instance_valid(player_ref) or not is_instance_valid(shark_node):
+	var target_player := _get_nearest_player()
+	if target_player == null or not is_instance_valid(shark_node):
 		return
 
-	if player_ref.is_yelling:
+	if _has_yelling_player():
 		_apply_escalation()
 		current_state = State.RETREATING
+		_sync_state_to_clients()
 		return
 
-	var target := Vector3(player_ref.global_position.x, 0, player_ref.global_position.z)
+	var target := Vector3(target_player.global_position.x, 0, target_player.global_position.z)
 	var current := Vector3(shark_node.position.x, 0, shark_node.position.z)
 	var dist := current.distance_to(target)
 
@@ -183,6 +202,7 @@ func _process_approaching(delta: float) -> void:
 
 	if direction.length_squared() > 0.001:
 		shark_node.look_at(shark_node.position + direction, Vector3.UP)
+	_sync_state_to_clients()
 
 
 func _process_retreating(delta: float) -> void:
@@ -205,13 +225,51 @@ func _process_retreating(delta: float) -> void:
 		shark_node.visible = false
 		current_state = State.WAITING
 		return_timer.start(return_delay)
+	_sync_state_to_clients()
 
 
-func _direction_to_player(from: Vector3) -> Vector3:
-	if not is_instance_valid(player_ref):
+func _direction_to_player(from: Vector3, target_player: Node3D) -> Vector3:
+	if not is_instance_valid(target_player):
 		return Vector3.ZERO
-	var target := Vector3(player_ref.global_position.x, 0, player_ref.global_position.z)
+	var target := Vector3(target_player.global_position.x, 0, target_player.global_position.z)
 	return (target - Vector3(from.x, 0, from.z)).normalized()
+
+
+func _get_nearest_player() -> Node3D:
+	var players := _get_player_nodes()
+	if players.is_empty():
+		return player_ref if is_instance_valid(player_ref) else null
+
+	var origin := Vector3.ZERO
+	if is_instance_valid(shark_node):
+		origin = shark_node.global_position
+	var best_player: Node3D = null
+	var best_dist := INF
+	for player in players:
+		var dist := origin.distance_to(player.global_position)
+		if dist < best_dist:
+			best_dist = dist
+			best_player = player
+	return best_player
+
+
+func _get_player_nodes() -> Array[Node3D]:
+	var players_container := get_node_or_null("../Players")
+	if players_container == null:
+		return []
+	var players: Array[Node3D] = []
+	for child in players_container.get_children():
+		var player := child as Player
+		if player != null:
+			players.append(player)
+	return players
+
+
+func _has_yelling_player() -> bool:
+	for player in _get_player_nodes():
+		if player is Player and player.is_yelling:
+			return true
+	return is_instance_valid(player_ref) and player_ref is Player and player_ref.is_yelling
 
 
 func _apply_escalation() -> void:
@@ -221,6 +279,9 @@ func _apply_escalation() -> void:
 
 func _trigger_attack() -> void:
 	current_state = State.ATTACKING
+	var target_player := _get_nearest_player()
+	if target_player != null:
+		_broadcast_fish_fled(target_player)
 	fish_fled.emit()
 	quota_penalty.emit(3)
 	_reset_escalation()
@@ -229,3 +290,38 @@ func _trigger_attack() -> void:
 	var interval := randf_range(respawn_interval_min, respawn_interval_max)
 	current_state = State.WAITING
 	spawn_timer.start(interval)
+	_sync_state_to_clients()
+
+
+func _broadcast_fish_fled(target_player: Node3D) -> void:
+	var target_mechanic := target_player.get_node_or_null("FishingMechanic")
+	if target_mechanic == null:
+		return
+	var target_client_id := _get_player_client_id(target_player)
+	GDSync.call_func_all(target_mechanic.on_fish_fled, target_client_id)
+
+
+func _sync_state_to_clients() -> void:
+	if not GDSync.is_host():
+		return
+	var has_shark := is_instance_valid(shark_node)
+	var shark_pos := shark_node.position if has_shark else spawn_position
+	GDSync.call_func_all(_apply_synced_state, current_state, shark_pos, spawn_position, has_shark and shark_node.visible)
+
+
+func _apply_synced_state(state_value: int, shark_pos: Vector3, synced_spawn_position: Vector3, shark_visible: bool) -> void:
+	current_state = state_value
+	spawn_position = synced_spawn_position
+	if not is_instance_valid(shark_node):
+		shark_node = _create_shark_mesh()
+		add_child(shark_node)
+	shark_node.position = shark_pos
+	shark_node.visible = shark_visible
+
+
+func _get_player_client_id(player: Node3D) -> int:
+	if not (player is Player):
+		return -1
+	if player.spawn_index < game_manager.players.size():
+		return game_manager.players[player.spawn_index].id
+	return -1
