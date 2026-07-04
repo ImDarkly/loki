@@ -294,3 +294,4 @@ func _disable_player() -> void:
 	set_process(false)
 	set_physics_process(false)
 	set_process_unhandled_input(false)
+	fishing_mechanic.is_local_render = false
