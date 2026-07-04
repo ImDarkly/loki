@@ -97,10 +97,11 @@ func _setup_danger_system() -> void:
 	if player == null:
 		return
 	var mechanic := player.get_node("FishingMechanic")
+	var quota_manager := $QuotaManager
 
 	danger.set_player_ref(player)
 	danger.fish_fled.connect(mechanic.on_fish_fled)
-	danger.quota_penalty.connect(mechanic.apply_quota_penalty)
+	danger.quota_penalty.connect(quota_manager.apply_penalty)
 
 
 func _find_local_player() -> Node3D:
@@ -119,7 +120,7 @@ func _add_fps_counter() -> void:
 	var label := Label.new()
 	label.name = "FPSLabel"
 	label.add_theme_font_size_override("font_size", 14)
-	label.position = Vector2(10, 34)
+	label.position = Vector2(10, 50)
 	layer.add_child(label)
 	add_child(layer)
 
