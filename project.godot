@@ -11,8 +11,6 @@ config_version=5
 [GD-Sync]
 
 version="1.0"
-publicKey="dd741f3f4c4fbf09"
-privateKey="4ffab06b45dc9b67"
 
 [application]
 
