@@ -32,6 +32,9 @@ func _on_connection_failed(error: int) -> void:
 
 
 func _on_disconnected() -> void:
+	players = []
+	_tracked_ids.clear()
+	local_player_id = -1
 	GDSync.change_scene("res://scenes/lobby.tscn")
 
 
