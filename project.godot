@@ -31,16 +31,17 @@ game_manager="*res://autoloads/game_manager.gd"
 
 enabled=PackedStringArray("res://addons/GD-Sync/plugin.cfg", "res://addons/gut/plugin.cfg")
 
-[physics]
-
-3d/physics_engine="Jolt Physics"
-
 [layer_names]
+
 3d_physics/layer_1="world"
 3d_physics/layer_2="players"
 3d_physics/layer_3="water"
 3d_physics/layer_4="fishing"
 3d_physics/layer_5="fish"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
 
 [rendering]
 

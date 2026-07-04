@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://208xm5t1nmmc" path="res://world/world_setup.gd" id="3_y6pqm"]
 [ext_resource type="Script" path="res://world/spawn_manager.gd" id="4_cu0i6"]
 [ext_resource type="PackedScene" path="res://systems/danger/danger_manager.tscn" id="4_0we7i"]
+[ext_resource type="PackedScene" path="res://systems/quota/quota_manager.tscn" id="5_2ihsm"]
 
 [node name="main" type="Node3D" unique_id=1783119357]
 script = ExtResource("3_y6pqm")
@@ -11,3 +12,5 @@ script = ExtResource("3_y6pqm")
 script = ExtResource("4_cu0i6")
 
 [node name="DangerManager" parent="." unique_id=621029984 instance=ExtResource("4_0we7i")]
+
+[node name="QuotaManager" parent="." instance=ExtResource("5_2ihsm")]

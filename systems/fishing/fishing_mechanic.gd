@@ -5,6 +5,7 @@ enum State { IDLE, CASTING, WAITING, BITE, REELING, SUCCESS }
 signal bite_occurred(fish_position: Vector3)
 signal reel_success(quota: int)
 signal reel_failure()
+signal personal_catch_changed(count: int)
 
 @export var min_cast_distance: float = 5.0
 @export var max_cast_distance: float = 15.0
@@ -30,6 +31,7 @@ signal reel_failure()
 @onready var green_zone_rect: ColorRect = $CanvasLayer/ReelMeter/GreenZone
 @onready var player_bar_rect: ColorRect = $CanvasLayer/ReelMeter/PlayerBar
 @onready var quota_label: Label = $CanvasLayer/QuotaLabel
+@onready var personal_label: Label = $CanvasLayer/PersonalLabel
 @onready var catch_feedback_manager: Node3D = $CatchFeedbackManager
 
 var current_state: State = State.IDLE
@@ -43,10 +45,16 @@ var green_zone_position: float = 50.0
 var green_zone_target: float = 50.0
 var green_zone_lerp_speed: float = 4.0
 
-var quota: int = 0
+var personal_catch_count: int = 0
 var reel_duration: float = 0.0
 
-var is_local_render: bool = true
+var _quota_manager_ref: Node3D = null
+
+var is_local_render: bool = true:
+	set(value):
+		is_local_render = value
+		if is_node_ready():
+			$CanvasLayer.visible = value
 var _prev_remote_state: int = -1
 
 var _line_twitch: float = 0.0
@@ -77,12 +85,34 @@ func on_fish_fled() -> void:
 	reel_failure.emit()
 
 
-func apply_quota_penalty(amount: int) -> void:
-	quota = max(0, quota - amount)
-	quota_label.text = "Quota: %d" % quota
+func _on_quota_updated(value: int) -> void:
+	quota_label.text = "Quota: %d" % value
+
+
+func _on_personal_catch_changed(count: int) -> void:
+	personal_label.text = "Your catches: %d" % count
+
+
+func _report_catch_to_host(amount: int) -> void:
+	if not is_instance_valid(_quota_manager_ref):
+		return
+	if GDSync.is_host():
+		_quota_manager_ref.report_catch(amount)
+	else:
+		GDSync.call_func(_quota_manager_ref.report_catch, amount)
+
+
+func _try_find_quota_manager() -> void:
+	if _quota_manager_ref:
+		return
+	var qm := get_node_or_null("/root/main/QuotaManager")
+	if qm:
+		_quota_manager_ref = qm
+		qm.quota_updated.connect(_on_quota_updated)
 
 
 func _ready() -> void:
+	_try_find_quota_manager()
 	bite_timer.one_shot = true
 	bite_timer.timeout.connect(_on_bite_timer_timeout)
 	bite_audio.stream = _generate_rumble_stream()
@@ -98,6 +128,8 @@ func _ready() -> void:
 	reel_timer.timeout.connect(_on_reel_timer_timeout)
 
 	quota_label.text = "Quota: 0"
+	personal_label.text = "Your catches: 0"
+	personal_catch_changed.connect(_on_personal_catch_changed)
 	catch_feedback_manager.feedback_completed.connect(_on_catch_feedback_completed)
 
 	if not InputMap.has_action("reel"):
@@ -278,9 +310,10 @@ func _on_reel_timer_timeout() -> void:
 	var was_success: bool = _is_bar_in_zone()
 	if was_success:
 		current_state = State.SUCCESS
-		quota += 1
-		quota_label.text = "Quota: %d" % quota
-		reel_success.emit(quota)
+		personal_catch_count += 1
+		personal_catch_changed.emit(personal_catch_count)
+		reel_success.emit(personal_catch_count)
+		_report_catch_to_host(1)
 		_exit_reeling()
 		$FishManager.cleanup()
 		catch_feedback_manager.play_catch_success()
@@ -290,7 +323,7 @@ func _on_reel_timer_timeout() -> void:
 		current_state = State.IDLE
 		reel_failure.emit()
 		_exit_reeling()
-	print("Reel ended. State: %s, Quota: %d" % ["SUCCESS" if was_success else "ESCAPE", quota])
+	print("Reel ended. State: %s, Personal catches: %d" % ["SUCCESS" if was_success else "ESCAPE", personal_catch_count])
 
 
 func cast(from_position: Vector3, forward_direction: Vector3) -> void:
