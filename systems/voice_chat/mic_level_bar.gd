@@ -1,6 +1,6 @@
 extends CanvasLayer
 
-@export var voice_chat_manager_path: NodePath = NodePath("../Player/VoiceChatManager")
+@export var voice_chat_manager_path: NodePath = NodePath("../VoiceChatManager")
 @export var falloff_time: float = 0.3
 
 var _target_db: float = -INF

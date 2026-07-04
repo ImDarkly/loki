@@ -3,8 +3,12 @@
 [ext_resource type="Script" path="res://entities/player/player.gd" id="1_q6y7j"]
 [ext_resource type="PackedScene" path="res://systems/fishing/fishing_mechanic.tscn" id="2_jg4e3"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_manager.tscn" id="3_lh5f4"]
+[ext_resource type="PackedScene" path="res://systems/voice_chat/mic_level_bar.tscn" id="4_yshjx"]
+[ext_resource type="Script" path="res://addons/GD-Sync/Scripts/Types/PropertySynchronizer.gd" id="5_u3g5k"]
 
 [node name="Player" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
 script = ExtResource("1_q6y7j")
 
 [node name="BodyMesh" type="MeshInstance3D" parent="."]
@@ -13,7 +17,6 @@ script = ExtResource("1_q6y7j")
 position = Vector3(0, 1.6, 0)
 
 [node name="Camera3D" type="Camera3D" parent="Head"]
-current = true
 near = 0.1
 far = 1000.0
 
@@ -24,3 +27,25 @@ far = 1000.0
 [node name="FishingMechanic" parent="." instance=ExtResource("2_jg4e3")]
 
 [node name="VoiceChatManager" parent="." instance=ExtResource("3_lh5f4")]
+
+[node name="MicLevelBar" parent="." instance=ExtResource("4_yshjx")]
+
+[node name="SyncTransform" type="Node" parent="."]
+script = ExtResource("5_u3g5k")
+node_path = NodePath("..")
+properties = PackedStringArray("global_position", "rotation")
+broadcast = 2
+process = 1
+refresh_rate = 30
+interpolated = true
+interpolation_speed = 10.0
+
+[node name="SyncHead" type="Node" parent="."]
+script = ExtResource("5_u3g5k")
+node_path = NodePath("../Head")
+properties = PackedStringArray("rotation")
+broadcast = 2
+process = 1
+refresh_rate = 30
+interpolated = true
+interpolation_speed = 10.0

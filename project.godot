@@ -8,24 +8,41 @@
 
 config_version=5
 
+[GD-Sync]
+
+version="1.0"
+publicKey="dd741f3f4c4fbf09"
+privateKey="4ffab06b45dc9b67"
+
 [application]
 
 config/name="Loki"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/lobby.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
-config/icon="res://icon.svg"
 
 [audio]
 
 driver/enable_input=true
 
+[autoload]
+
+GDSync="*uid://bt6tf85hp7w1"
+game_manager="*res://autoloads/game_manager.gd"
+
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+enabled=PackedStringArray("res://addons/GD-Sync/plugin.cfg", "res://addons/gut/plugin.cfg")
 
 [physics]
 
 3d/physics_engine="Jolt Physics"
+
+[layer_names]
+3d_physics/layer_1="world"
+3d_physics/layer_2="players"
+3d_physics/layer_3="water"
+3d_physics/layer_4="fishing"
+3d_physics/layer_5="fish"
 
 [rendering]
 

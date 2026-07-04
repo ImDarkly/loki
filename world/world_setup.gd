@@ -62,6 +62,8 @@ func setup_ground() -> void:
 
 func setup_ground_collision() -> void:
 	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 2
 	body.position = Vector3(0, -0.35, -7)
 
 	var shape := BoxShape3D.new()
@@ -91,12 +93,24 @@ func setup_water() -> void:
 
 func _setup_danger_system() -> void:
 	var danger := $DangerManager
-	var player := $Player
-	var mechanic := $Player/FishingMechanic
+	var player := _find_local_player()
+	if player == null:
+		return
+	var mechanic := player.get_node("FishingMechanic")
 
 	danger.set_player_ref(player)
 	danger.fish_fled.connect(mechanic.on_fish_fled)
 	danger.quota_penalty.connect(mechanic.apply_quota_penalty)
+
+
+func _find_local_player() -> Node3D:
+	var players_container := $Players
+	var my_cid := GDSync.get_client_id()
+	for child in players_container.get_children():
+		var p: Player = child as Player
+		if p != null and p.spawn_index < game_manager.players.size() and game_manager.players[p.spawn_index].id == my_cid:
+			return child
+	return null
 
 
 func _add_fps_counter() -> void:
