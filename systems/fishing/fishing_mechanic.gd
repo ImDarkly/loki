@@ -136,6 +136,8 @@ func _get_bobber_position() -> Vector3:
 		var fish: Node3D = $FishManager.get_fish()
 		if is_instance_valid(fish):
 			return fish.position
+	if current_state in [State.CASTING, State.WAITING, State.BITE]:
+		return cast_target_position
 	if is_instance_valid(bobber_node):
 		return bobber_node.position
 	return cast_target_position
