@@ -1,37 +1,13 @@
 [gd_scene format=3 uid="uid://dssphm27dhpip"]
 
-[ext_resource type="Script" uid="uid://i4odkxdn61c8" path="res://entities/player/player.gd" id="1_n6c3h"]
-[ext_resource type="PackedScene" path="res://systems/fishing/fishing_mechanic.tscn" id="2_o1vxj"]
 [ext_resource type="Script" uid="uid://208xm5t1nmmc" path="res://world/world_setup.gd" id="3_y6pqm"]
+[ext_resource type="Script" path="res://world/spawn_manager.gd" id="4_cu0i6"]
 [ext_resource type="PackedScene" path="res://systems/danger/danger_manager.tscn" id="4_0we7i"]
-[ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_manager.tscn" id="5_83xm0"]
-[ext_resource type="PackedScene" path="res://systems/voice_chat/mic_level_bar.tscn" id="6_xxvj"]
 
 [node name="main" type="Node3D" unique_id=1783119357]
 script = ExtResource("3_y6pqm")
 
-[node name="Player" type="CharacterBody3D" parent="." unique_id=114001188]
-script = ExtResource("1_n6c3h")
+[node name="Players" type="Node3D" parent="." unique_id=1984856934]
+script = ExtResource("4_cu0i6")
 
-[node name="BodyMesh" type="MeshInstance3D" parent="Player" unique_id=1725971335]
-
-[node name="Head" type="Node3D" parent="Player" unique_id=943289108]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
-
-[node name="Camera3D" type="Camera3D" parent="Player/Head" unique_id=1972203984]
-transform = Transform3D(1, 0, 0, 0, 0.9800666, 0.19866933, 0, -0.19866933, 0.9800666, 0, 0, 0)
-current = true
-near = 0.1
-far = 1000.0
-
-[node name="HandLeft" type="MeshInstance3D" parent="Player/Head" unique_id=1213215331]
-
-[node name="HandRight" type="MeshInstance3D" parent="Player/Head" unique_id=1759128289]
-
-[node name="FishingMechanic" parent="Player" unique_id=575926188 instance=ExtResource("2_o1vxj")]
-
-[node name="VoiceChatManager" parent="Player" unique_id=1872920873 instance=ExtResource("5_83xm0")]
-
-[node name="DangerManager" parent="." unique_id=261888952 instance=ExtResource("4_0we7i")]
-
-[node name="MicLevelBar" parent="." unique_id=158010821 instance=ExtResource("6_xxvj")]
+[node name="DangerManager" parent="." unique_id=621029984 instance=ExtResource("4_0we7i")]

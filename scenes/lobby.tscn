@@ -1,0 +1,112 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/lobby.gd" id="1_lg9d"]
+
+[node name="Lobby" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_lg9d")
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(400, 0)
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Title" type="Label" parent="CenterContainer/VBox"]
+layout_mode = 2
+text = "LOBBY"
+horizontal_alignment = 1
+size_flags_horizontal = 4
+
+[node name="MainMenu" type="VBoxContainer" parent="CenterContainer/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="CreateButton" type="Button" parent="CenterContainer/VBox/MainMenu"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Create Lobby"
+size_flags_horizontal = 4
+
+[node name="JoinMenuButton" type="Button" parent="CenterContainer/VBox/MainMenu"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Join Lobby"
+size_flags_horizontal = 4
+
+[node name="JoinRow" type="HBoxContainer" parent="CenterContainer/VBox/MainMenu"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+visible = false
+
+[node name="JoinCodeInput" type="LineEdit" parent="CenterContainer/VBox/MainMenu/JoinRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Enter join code..."
+
+[node name="JoinConfirmButton" type="Button" parent="CenterContainer/VBox/MainMenu/JoinRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Join"
+
+[node name="LobbyView" type="VBoxContainer" parent="CenterContainer/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+visible = false
+
+[node name="JoinCodeRow" type="HBoxContainer" parent="CenterContainer/VBox/LobbyView"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+visible = false
+
+[node name="JoinCodeDisplay" type="Label" parent="CenterContainer/VBox/LobbyView/JoinCodeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+
+[node name="CopyCodeButton" type="Button" parent="CenterContainer/VBox/LobbyView/JoinCodeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Copy"
+
+[node name="PlayersLabel" type="Label" parent="CenterContainer/VBox/LobbyView"]
+layout_mode = 2
+text = "Players:"
+size_flags_horizontal = 4
+
+[node name="PlayerList" type="ItemList" parent="CenterContainer/VBox/LobbyView"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 120)
+
+[node name="StatusLabel" type="Label" parent="CenterContainer/VBox/LobbyView"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+size_flags_horizontal = 4
+
+[node name="StartButton" type="Button" parent="CenterContainer/VBox/LobbyView"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Start Game"
+size_flags_horizontal = 4
+visible = false

@@ -25,6 +25,7 @@ class_name Player extends CharacterBody3D
 @export var hand_land_drop: float = 0.025
 @export var hand_bounce_decay: float = 10.0
 @export var jump_cut_multiplier: float = 0.5
+@export var spawn_index: int = 0
 
 
 @onready var head: Node3D = $Head
@@ -43,7 +44,6 @@ var _hand_base_right: Vector3
 var _prev_yaw: float = 0.0
 var _was_moving: bool = false
 var _walk_squish_offset: float = 0.0
-var _was_on_floor: bool = true
 var _cam_home: Vector3
 var _bounce_pos: float = 0.0
 var _bounce_vel: float = 0.0
@@ -53,7 +53,9 @@ var is_yelling: bool = false
 
 func _ready() -> void:
 	randomize()
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	set_process(false)
+	set_physics_process(false)
+	set_process_unhandled_input(false)
 
 	_jump_velocity = sqrt(2.0 * _gravity * jump_height)
 
@@ -233,8 +235,6 @@ func _physics_process(delta: float) -> void:
 	if not was_on_floor and is_on_floor():
 		_hand_bounce = -hand_land_drop
 
-	_was_on_floor = is_on_floor()
-
 	var is_moving := Vector2(velocity.x, velocity.z).length() > 0.1
 	if is_moving and not _was_moving:
 		_walk_squish_offset = -walk_squish_strength
@@ -262,3 +262,35 @@ func _physics_process(delta: float) -> void:
 	_hand_bounce = lerp(_hand_bounce, 0.0, hand_bounce_decay * delta)
 
 	_prev_yaw = rotation.y
+
+
+func _multiplayer_ready() -> void:
+	var spawn_positions := [
+		Vector3(-2.25, 0, 2.5),
+		Vector3(-0.75, 0, 2.5),
+		Vector3(0.75, 0, 2.5),
+		Vector3(2.25, 0, 2.5),
+	]
+	position = spawn_positions[spawn_index] if spawn_index < spawn_positions.size() else spawn_positions[0]
+	var is_mine: bool = spawn_index < game_manager.players.size() and game_manager.players[spawn_index].id == GDSync.get_client_id()
+
+	if is_mine:
+		GDSync.set_gdsync_owner(self, GDSync.get_client_id())
+		_enable_player()
+	else:
+		_disable_player()
+
+
+func _enable_player() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	camera.current = true
+	set_process(true)
+	set_physics_process(true)
+	set_process_unhandled_input(true)
+
+
+func _disable_player() -> void:
+	camera.current = false
+	set_process(false)
+	set_physics_process(false)
+	set_process_unhandled_input(false)
