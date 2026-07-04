@@ -93,25 +93,8 @@ func setup_water() -> void:
 
 func _setup_danger_system() -> void:
 	var danger := $DangerManager
-	var player := _find_local_player()
-	if player == null:
-		return
-	var mechanic := player.get_node("FishingMechanic")
 	var quota_manager := $QuotaManager
-
-	danger.set_player_ref(player)
-	danger.fish_fled.connect(mechanic.on_fish_fled)
 	danger.quota_penalty.connect(quota_manager.apply_penalty)
-
-
-func _find_local_player() -> Node3D:
-	var players_container := $Players
-	var my_cid := GDSync.get_client_id()
-	for child in players_container.get_children():
-		var p: Player = child as Player
-		if p != null and p.spawn_index < game_manager.players.size() and game_manager.players[p.spawn_index].id == my_cid:
-			return child
-	return null
 
 
 func _add_fps_counter() -> void:
