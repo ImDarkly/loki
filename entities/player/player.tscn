@@ -49,3 +49,19 @@ process = 1
 refresh_rate = 30
 interpolated = true
 interpolation_speed = 10.0
+
+[node name="SyncFishingState" type="Node" parent="."]
+script = ExtResource("5_u3g5k")
+node_path = NodePath("../FishingMechanic")
+properties = PackedStringArray("current_state")
+broadcast = 2
+process = 0
+refresh_rate = 10
+
+[node name="SyncCastTarget" type="Node" parent="."]
+script = ExtResource("5_u3g5k")
+node_path = NodePath("../FishingMechanic")
+properties = PackedStringArray("cast_target_position")
+broadcast = 2
+process = 0
+refresh_rate = 10
