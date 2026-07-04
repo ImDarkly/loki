@@ -267,9 +267,16 @@ func _get_player_nodes() -> Array[Node3D]:
 
 func _has_yelling_player() -> bool:
 	for player in _get_player_nodes():
-		if player is Player and player.is_yelling:
+		if _player_is_yelling(player):
 			return true
-	return is_instance_valid(player_ref) and player_ref is Player and player_ref.is_yelling
+	return is_instance_valid(player_ref) and _player_is_yelling(player_ref)
+
+
+func _player_is_yelling(player: Object) -> bool:
+	if player == null:
+		return false
+	var yelling = player.get("is_yelling")
+	return yelling == true
 
 
 func _apply_escalation() -> void:

@@ -119,7 +119,7 @@ func test_spawn_position_rejects_close_points() -> void:
 	manager.player_ref.global_position = Vector3(0, 0, -7)
 	manager.min_spawn_distance_from_player = 100.0
 
-	var pos: Vector3 = manager._pick_spawn_position()
+	var pos: Vector3 = manager._pick_spawn_position(mock_player)
 	var dist: float = Vector2(pos.x - 0, pos.z - (-7)).length()
 	assert_gt(dist, 0, "Spawn should pick some position even when all points are too close")
 
