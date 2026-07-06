@@ -7,7 +7,8 @@ signal round_ended(success: bool)
 
 var round_active: bool = false
 var round_success: bool = false
-var _quota_manager_ref: Node3D = null
+
+@export var quota_manager: Node3D = null
 
 @onready var timer: Timer = $Timer
 
@@ -15,22 +16,14 @@ var _quota_manager_ref: Node3D = null
 func _ready() -> void:
 	timer.one_shot = true
 	timer.timeout.connect(_on_timer_timeout)
-	_try_find_quota_manager()
+	if quota_manager:
+		quota_manager.quota_updated.connect(_on_quota_updated)
 	GDSync.expose_func(_apply_synced_state)
 
 	if GDSync.is_host():
 		timer.start(round_duration)
 		round_active = true
 		_sync_state_to_clients()
-
-
-func _try_find_quota_manager() -> void:
-	if _quota_manager_ref:
-		return
-	var qm := get_node_or_null("/root/main/QuotaManager")
-	if qm:
-		_quota_manager_ref = qm
-		qm.quota_updated.connect(_on_quota_updated)
 
 
 func _on_quota_updated(value: int) -> void:

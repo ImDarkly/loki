@@ -20,5 +20,8 @@ initial_spawn_delay = 5.0
 
 [node name="RoundManager" parent="." unique_id=273981928 instance=ExtResource("6_0f4gj")]
 round_duration = 20.0
+quota_manager = NodePath("../QuotaManager")
 
 [node name="EndScreen" parent="." unique_id=174325840 instance=ExtResource("7_7tkbk")]
+round_manager = NodePath("../RoundManager")
+quota_manager = NodePath("../QuotaManager")
