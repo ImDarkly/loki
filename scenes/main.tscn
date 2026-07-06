@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://bgyet62minjw8" path="res://world/spawn_manager.gd" id="4_cu0i6"]
 [ext_resource type="PackedScene" path="res://systems/quota/quota_manager.tscn" id="5_2ihsm"]
 [ext_resource type="PackedScene" path="res://systems/round/round_manager.tscn" id="6_0f4gj"]
+[ext_resource type="PackedScene" path="res://ui/end_screen.tscn" id="7_7tkbk"]
 
 [node name="main" type="Node3D" unique_id=1783119357]
 script = ExtResource("3_y6pqm")
@@ -19,3 +20,5 @@ initial_spawn_delay = 5.0
 
 [node name="RoundManager" parent="." unique_id=273981928 instance=ExtResource("6_0f4gj")]
 round_duration = 20.0
+
+[node name="EndScreen" parent="." unique_id=174325840 instance=ExtResource("7_7tkbk")]
