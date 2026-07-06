@@ -282,6 +282,8 @@ func _update_reel_meter() -> void:
 func _on_green_zone_timer_timeout() -> void:
 	if current_state != State.REELING:
 		return
+	if not _is_round_active():
+		return
 	green_zone_target += randf_range(-zone_move_amount, zone_move_amount)
 	green_zone_target = clamp(green_zone_target, 0.0, 100.0 - green_zone_width)
 
