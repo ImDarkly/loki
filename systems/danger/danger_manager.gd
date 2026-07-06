@@ -26,6 +26,7 @@ var swim_speed: float
 var return_delay: float
 var shark_node: MeshInstance3D = null
 var spawn_position: Vector3
+var _cached_round_active: bool = true
 
 @onready var spawn_timer: Timer = $SpawnTimer
 @onready var return_timer: Timer = $ReturnTimer
@@ -59,8 +60,17 @@ func _reset_escalation() -> void:
 	return_delay = initial_return_delay
 
 
+func _is_round_active() -> bool:
+	var rm := get_node_or_null("/root/main/RoundManager")
+	if rm != null:
+		_cached_round_active = rm.round_active
+	return _cached_round_active
+
+
 func _on_spawn_timer_timeout() -> void:
 	if not GDSync.is_host():
+		return
+	if not _is_round_active():
 		return
 	if current_state == State.INACTIVE or current_state == State.WAITING:
 		if _get_nearest_player() == null:
@@ -72,6 +82,8 @@ func _on_spawn_timer_timeout() -> void:
 
 func _on_return_timer_timeout() -> void:
 	if not GDSync.is_host():
+		return
+	if not _is_round_active():
 		return
 	if current_state == State.WAITING:
 		_spawn_shark()
@@ -169,6 +181,8 @@ func _create_shark_mesh() -> MeshInstance3D:
 
 func _physics_process(delta: float) -> void:
 	if not GDSync.is_host():
+		return
+	if not _is_round_active():
 		return
 	match current_state:
 		State.APPROACHING:

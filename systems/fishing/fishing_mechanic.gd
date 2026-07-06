@@ -61,6 +61,7 @@ var _line_twitch: float = 0.0
 var _bite_time: float = 0.0
 var _reel_elapsed: float = 0.0
 var _rod_tip_ref: Node3D = null
+var _cached_round_active: bool = true
 
 const LINE_SEGMENTS: int = 4
 
@@ -70,7 +71,14 @@ func is_reeling() -> bool:
 
 
 func can_cast() -> bool:
-	return current_state == State.IDLE
+	return current_state == State.IDLE and _is_round_active()
+
+
+func _is_round_active() -> bool:
+	var rm := get_node_or_null("/root/main/RoundManager")
+	if rm != null:
+		_cached_round_active = rm.round_active
+	return _cached_round_active
 
 
 func on_fish_fled(target_client_id: int = -1) -> void:
@@ -211,7 +219,7 @@ func _process(delta: float) -> void:
 			_update_bobber()
 			_rebuild_line()
 
-			if current_state == State.BITE:
+			if current_state == State.BITE and _is_round_active():
 				_bite_time += delta
 				if is_local_render:
 					if _bite_time >= 2.5:
@@ -224,28 +232,30 @@ func _process(delta: float) -> void:
 				if is_local_render and Input.is_action_just_pressed("reel"):
 					_enter_reeling()
 
-			if is_local_render and current_state == State.WAITING and Input.is_action_just_pressed("reel"):
+			if is_local_render and current_state == State.WAITING and Input.is_action_just_pressed("reel") and _is_round_active():
 				bite_timer.stop()
 				_snap_bobber_to_rod()
 				current_state = State.IDLE
 
 		State.REELING:
 			_update_bobber()
-			_reel_elapsed += delta
 			_rebuild_line()
 
-			if is_local_render:
-				var holding: bool = Input.is_action_pressed("reel")
+			if _is_round_active():
+				_reel_elapsed += delta
 
-				if holding:
-					player_bar_position += player_rise_speed * delta
-				else:
-					player_bar_position -= player_fall_speed * delta
+				if is_local_render:
+					var holding: bool = Input.is_action_pressed("reel")
 
-				player_bar_position = clamp(player_bar_position, 0.0, 100.0)
+					if holding:
+						player_bar_position += player_rise_speed * delta
+					else:
+						player_bar_position -= player_fall_speed * delta
 
-				green_zone_position = lerp(green_zone_position, green_zone_target, green_zone_lerp_speed * delta)
-				_update_reel_meter()
+					player_bar_position = clamp(player_bar_position, 0.0, 100.0)
+
+					green_zone_position = lerp(green_zone_position, green_zone_target, green_zone_lerp_speed * delta)
+					_update_reel_meter()
 
 		State.IDLE:
 			if is_instance_valid(bobber_node):
@@ -310,6 +320,8 @@ func _on_reel_timer_timeout() -> void:
 		return
 	if current_state != State.REELING:
 		return
+	if not _is_round_active():
+		return
 	var was_success: bool = _is_bar_in_zone()
 	if was_success:
 		current_state = State.SUCCESS
@@ -352,6 +364,8 @@ func cast(from_position: Vector3, forward_direction: Vector3) -> void:
 func _on_casting_timer_timeout() -> void:
 	if current_state != State.CASTING:
 		return
+	if not _is_round_active():
+		return
 	current_state = State.WAITING
 	var delay: float = randf_range(min_bite_delay, max_bite_delay)
 	bite_timer.start(delay)
@@ -359,6 +373,8 @@ func _on_casting_timer_timeout() -> void:
 
 
 func _on_bite_timer_timeout() -> void:
+	if not _is_round_active():
+		return
 	current_state = State.BITE
 	_bite_time = 0.0
 	if is_instance_valid(bobber_node):
@@ -526,6 +542,8 @@ func _generate_rumble_stream() -> AudioStreamWAV:
 
 
 func _on_catch_feedback_completed() -> void:
+	if not _is_round_active():
+		return
 	if current_state == State.SUCCESS:
 		_snap_bobber_to_rod()
 		current_state = State.IDLE

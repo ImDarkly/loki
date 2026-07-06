@@ -129,3 +129,27 @@ func test_shark_not_spawned_without_player_ref() -> void:
 	manager.current_state = 0
 	manager._on_spawn_timer_timeout()
 	assert_eq(manager.current_state, 0, "Should stay INACTIVE when no player ref")
+
+
+func test_physics_process_noops_when_round_inactive() -> void:
+	manager.current_state = 0
+	manager._on_spawn_timer_timeout()
+	var pos_before: Vector3 = manager.shark_node.position
+	manager._cached_round_active = false
+	manager._physics_process(1.0)
+	assert_eq(manager.shark_node.position, pos_before, "Shark should not move when round inactive")
+	assert_eq(manager.current_state, 1, "Should remain APPROACHING (1)")
+
+
+func test_spawn_timer_noops_when_round_inactive() -> void:
+	manager.current_state = 0
+	manager._cached_round_active = false
+	manager._on_spawn_timer_timeout()
+	assert_eq(manager.current_state, 0, "Should remain INACTIVE (0)")
+
+
+func test_return_timer_noops_when_round_inactive() -> void:
+	manager.current_state = 4
+	manager._cached_round_active = false
+	manager._on_return_timer_timeout()
+	assert_eq(manager.current_state, 4, "Should remain WAITING (4)")

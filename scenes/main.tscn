@@ -13,7 +13,9 @@ script = ExtResource("3_y6pqm")
 script = ExtResource("4_cu0i6")
 
 [node name="DangerManager" parent="." unique_id=621029984 instance=ExtResource("4_0we7i")]
+initial_spawn_delay = 5.0
 
 [node name="QuotaManager" parent="." unique_id=2032018860 instance=ExtResource("5_2ihsm")]
 
-[node name="RoundManager" parent="." instance=ExtResource("6_0f4gj")]
+[node name="RoundManager" parent="." unique_id=273981928 instance=ExtResource("6_0f4gj")]
+round_duration = 20.0
