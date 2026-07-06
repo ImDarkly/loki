@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dssphm27dhpip"]
 
 [ext_resource type="Script" uid="uid://208xm5t1nmmc" path="res://world/world_setup.gd" id="3_y6pqm"]
-[ext_resource type="Script" path="res://world/spawn_manager.gd" id="4_cu0i6"]
 [ext_resource type="PackedScene" path="res://systems/danger/danger_manager.tscn" id="4_0we7i"]
+[ext_resource type="Script" uid="uid://bgyet62minjw8" path="res://world/spawn_manager.gd" id="4_cu0i6"]
 [ext_resource type="PackedScene" path="res://systems/quota/quota_manager.tscn" id="5_2ihsm"]
 [ext_resource type="PackedScene" path="res://systems/round/round_manager.tscn" id="6_0f4gj"]
 
@@ -17,3 +17,4 @@ script = ExtResource("4_cu0i6")
 [node name="QuotaManager" parent="." instance=ExtResource("5_2ihsm")]
 
 [node name="RoundManager" parent="." instance=ExtResource("6_0f4gj")]
+[node name="QuotaManager" parent="." unique_id=2032018860 instance=ExtResource("5_2ihsm")]

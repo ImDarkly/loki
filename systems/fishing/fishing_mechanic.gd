@@ -73,7 +73,9 @@ func can_cast() -> bool:
 	return current_state == State.IDLE
 
 
-func on_fish_fled() -> void:
+func on_fish_fled(target_client_id: int = -1) -> void:
+	if target_client_id != -1 and target_client_id != _get_owner_client_id():
+		return
 	if not is_local_render:
 		return
 	if current_state not in [State.BITE, State.REELING]:
@@ -112,6 +114,7 @@ func _try_find_quota_manager() -> void:
 
 
 func _ready() -> void:
+	GDSync.expose_func(on_fish_fled)
 	_try_find_quota_manager()
 	bite_timer.one_shot = true
 	bite_timer.timeout.connect(_on_bite_timer_timeout)
@@ -526,3 +529,12 @@ func _on_catch_feedback_completed() -> void:
 	if current_state == State.SUCCESS:
 		_snap_bobber_to_rod()
 		current_state = State.IDLE
+
+
+func _get_owner_client_id() -> int:
+	var parent_player := get_parent()
+	if not (parent_player is Player):
+		return -1
+	if parent_player.spawn_index < game_manager.players.size():
+		return game_manager.players[parent_player.spawn_index].id
+	return -1
