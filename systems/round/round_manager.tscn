@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://systems/round/round_manager.gd" id="1_f6i0k"]
+
+[node name="RoundManager" type="Node3D"]
+script = ExtResource("1_f6i0k")
+
+[node name="Timer" type="Timer" parent="."]
