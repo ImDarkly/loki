@@ -14,7 +14,6 @@ script = ExtResource("4_cu0i6")
 
 [node name="DangerManager" parent="." unique_id=621029984 instance=ExtResource("4_0we7i")]
 
-[node name="QuotaManager" parent="." instance=ExtResource("5_2ihsm")]
+[node name="QuotaManager" parent="." unique_id=2032018860 instance=ExtResource("5_2ihsm")]
 
 [node name="RoundManager" parent="." instance=ExtResource("6_0f4gj")]
-[node name="QuotaManager" parent="." unique_id=2032018860 instance=ExtResource("5_2ihsm")]
