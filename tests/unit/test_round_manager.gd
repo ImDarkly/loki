@@ -47,6 +47,35 @@ func test_round_active_starts_true_when_host() -> void:
 		assert_false(manager.round_active, "round_active should be false for non-host")
 
 
+func test_round_success_true_after_win() -> void:
+	manager._end_round(true)
+	assert_true(manager.round_success, "round_success should be true after win")
+
+
+func test_round_success_false_after_fail() -> void:
+	manager._end_round(false)
+	assert_false(manager.round_success, "round_success should be false after fail")
+
+
+func test_synced_state_emits_round_ended_on_transition() -> void:
+	watch_signals(manager)
+	manager._apply_synced_state(false, true)
+	assert_signal_emitted(manager, "round_ended")
+	assert_signal_emitted_with_parameters(manager, "round_ended", [true])
+
+
+func test_synced_state_does_not_emit_on_no_transition() -> void:
+	manager.round_active = false
+	watch_signals(manager)
+	manager._apply_synced_state(false, true)
+	assert_signal_not_emitted(manager, "round_ended")
+
+
+func test_synced_state_stores_success() -> void:
+	manager._apply_synced_state(true, true)
+	assert_true(manager.round_success)
+
+
 func test_round_duration_has_default() -> void:
 	assert_eq(manager.round_duration, 900.0, "Default round duration should be 900 seconds")
 
