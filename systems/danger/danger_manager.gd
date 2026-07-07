@@ -340,6 +340,17 @@ func _apply_synced_state(state_value: int, shark_pos: Vector3, synced_spawn_posi
 	shark_node.visible = shark_visible
 
 
+func reset_for_restart() -> void:
+	if not GDSync.is_host():
+		return
+	_reset_escalation()
+	if is_instance_valid(shark_node):
+		shark_node.visible = false
+	current_state = State.INACTIVE
+	spawn_timer.start(initial_spawn_delay)
+	_sync_state_to_clients()
+
+
 func _get_player_client_id(player: Node3D) -> int:
 	if not (player is Player):
 		return -1
