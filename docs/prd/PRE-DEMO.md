@@ -1,4 +1,4 @@
-**Feature ID:** DSS-001
+﻿**Feature ID:** DSS-001
 
 **Status:** Ready for Development
 
@@ -155,7 +155,7 @@ Explicitly not covered by automated tests, per existing precedent: fish-slap's p
 ## Out of Scope
 
 - **Night phase entirely** — no monster, no barrier-defense minigame, no jump-scares. This slice is Day → Shop only, explicitly to playtest day mechanics before Night is built.
-- **Weapon system** — no scaring off the shark with a weapon; the shark is unaffected by anything except yelling triggering the existing danger-manager retreat-on-yell behavior already in place. (Yelling still only affects fish-fleeing per Decision 10 and the shark's existing yell-triggered retreat is untouched.)
+- **Weapon system** — no scaring off the shark with a weapon; the shark is unaffected by anything except yelling triggering the existing danger-manager retreat-on-yell behavior already in place. (Yelling therefore triggers two independent effects: the new fish-fleeing per Decision 10 and the existing shark retreat — neither is removed by this slice.)
 - **Seagulls** — never built, not part of this slice.
 - **Boat piloting and dusk dock-race** — dropped earlier in design discussion; this slice's map has no mobile boat.
 - **Hoard-vs-sell choice** — the shop only offers "Sell All"; no partial selling or carrying fish forward between rounds.

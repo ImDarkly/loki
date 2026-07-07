@@ -83,6 +83,7 @@ func test_apply_restart_resets_timer_stopped_on_client() -> void:
 	manager._apply_restart()
 	assert_true(manager.round_active)
 	assert_false(manager.round_success)
+	assert_true(manager.timer.is_stopped(), "timer should remain stopped on client after apply_restart")
 
 func test_restart_round_resets_timer_and_active() -> void:
 	manager._end_round(true)
@@ -90,6 +91,8 @@ func test_restart_round_resets_timer_and_active() -> void:
 		manager.restart_round()
 		assert_true(manager.round_active)
 		assert_false(manager.timer.is_stopped(), "timer should be running after restart")
+	else:
+		assert_false(manager.round_active, "round_active should remain false for non-host")
 
 func test_quota_target_has_default() -> void:
 	assert_eq(manager.quota_target, 20, "Default quota target should be 20")
