@@ -37,3 +37,16 @@ horizontal_alignment = 1
 theme_overrides = {
 "font_sizes/font_size": 36
 }
+
+[node name="RestartButton" type="Button" parent="CenterPanel/VBox"]
+visible = false
+layout_mode = 2
+text = "Restart Round"
+size_flags_horizontal = 4
+
+[node name="WaitLabel" type="Label" parent="CenterPanel/VBox"]
+visible = false
+layout_mode = 2
+text = "Waiting for host to restart..."
+horizontal_alignment = 1
+size_flags_horizontal = 4

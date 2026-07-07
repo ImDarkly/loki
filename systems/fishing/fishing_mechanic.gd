@@ -495,6 +495,15 @@ func _cleanup_all() -> void:
 	$FishManager.cleanup()
 
 
+func reset_for_restart() -> void:
+	_cleanup_all()
+	_exit_reeling()
+	bite_timer.stop()
+	current_state = State.IDLE
+	personal_catch_count = 0
+	personal_catch_changed.emit(personal_catch_count)
+
+
 func _snap_bobber_to_rod() -> void:
 	if is_instance_valid(bobber_node):
 		bobber_node.visible = true
