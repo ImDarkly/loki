@@ -33,6 +33,10 @@ func join_game(address: String, port: int = DEFAULT_PORT) -> void:
 		connection_failed_signal.emit()
 		return
 	multiplayer.multiplayer_peer = peer
+	if not multiplayer.connected_to_server.is_connected(_on_connected_to_server):
+		multiplayer.connected_to_server.connect(_on_connected_to_server)
+	if not multiplayer.connection_failed.is_connected(_on_async_connection_failed):
+		multiplayer.connection_failed.connect(_on_async_connection_failed)
 
 
 func disconnect_from_game() -> void:
@@ -55,6 +59,15 @@ func _on_ip_fetched(result: int, _code: int, _headers: PackedStringArray, body: 
 	if result == HTTPRequest.RESULT_SUCCESS:
 		public_ip = body.get_string_from_utf8().strip_edges()
 	http.queue_free()
+
+
+func _on_connected_to_server() -> void:
+	connection_success.emit()
+
+
+func _on_async_connection_failed() -> void:
+	push_error("NetworkManager: async connection failed")
+	connection_failed_signal.emit()
 
 
 func _find_local_ip() -> void:

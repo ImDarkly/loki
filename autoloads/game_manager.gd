@@ -106,6 +106,6 @@ func is_host() -> bool:
 
 
 func start_game() -> void:
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		return
 	GDSync.change_scene("res://scenes/main.tscn")
