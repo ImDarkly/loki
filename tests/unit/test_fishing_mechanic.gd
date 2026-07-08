@@ -75,23 +75,23 @@ func test_reel_failure_when_bar_outside_zone() -> void:
 	assert_eq(mechanic.current_state, 0, "Should be IDLE (0) after reel failure")
 
 
-func test_cast_ignored_when_round_inactive() -> void:
-	mechanic._cached_round_active = false
+func test_cast_ignored_when_fishing_inactive() -> void:
+	mechanic._cached_fishing_active = false
 	mechanic.current_state = 0
-	assert_false(mechanic.can_cast(), "can_cast should return false when round inactive")
+	assert_false(mechanic.can_cast(), "can_cast should return false when fishing inactive")
 
 
-func test_bite_timer_noops_when_round_inactive() -> void:
+func test_bite_timer_noops_when_fishing_inactive() -> void:
 	mechanic.current_state = 2
-	mechanic._cached_round_active = false
+	mechanic._cached_fishing_active = false
 	mechanic._on_bite_timer_timeout()
 	assert_eq(mechanic.current_state, 2, "Should remain WAITING (2)")
 
 
-func test_reel_timer_noops_when_round_inactive() -> void:
+func test_reel_timer_noops_when_fishing_inactive() -> void:
 	mechanic._enter_reeling()
 	mechanic.reel_timer.stop()
-	mechanic._cached_round_active = false
+	mechanic._cached_fishing_active = false
 	watch_signals(mechanic)
 	mechanic._on_reel_timer_timeout()
 	assert_eq(mechanic.current_state, 4, "Should remain REELING (4)")

@@ -1,13 +1,13 @@
 extends Node3D
 
+# Reserved for Night phase — not emitted during Fishing phase
 signal round_ended(success: bool)
 
 @export var round_duration: float = 900.0
-@export var quota_target: int = 20
 
 var round_active: bool = false
 var round_success: bool = false
-var _quota_manager_ref: Node3D = null
+var fishing_active: bool = true
 
 @onready var timer: Timer = $Timer
 
@@ -15,32 +15,14 @@ var _quota_manager_ref: Node3D = null
 func _ready() -> void:
 	timer.one_shot = true
 	timer.timeout.connect(_on_timer_timeout)
-	_try_find_quota_manager()
 	GDSync.expose_func(_apply_synced_state)
 	GDSync.expose_func(_apply_restart)
 
 	if GDSync.is_host():
 		timer.start(round_duration)
 		round_active = true
+		fishing_active = true
 		_sync_state_to_clients()
-
-
-func _try_find_quota_manager() -> void:
-	if _quota_manager_ref:
-		return
-	var qm := get_node_or_null("/root/main/QuotaManager")
-	if qm:
-		_quota_manager_ref = qm
-		qm.quota_updated.connect(_on_quota_updated)
-
-
-func _on_quota_updated(value: int) -> void:
-	if not GDSync.is_host():
-		return
-	if not round_active:
-		return
-	if value >= quota_target:
-		_end_round(true)
 
 
 func _on_timer_timeout() -> void:
@@ -48,9 +30,11 @@ func _on_timer_timeout() -> void:
 		return
 	if not round_active:
 		return
-	_end_round(false)
+	fishing_active = false
+	_sync_state_to_clients()
 
 
+# Reserved for Night phase — not called during Fishing phase
 func _end_round(success: bool) -> void:
 	round_active = false
 	round_success = success
@@ -62,7 +46,7 @@ func _end_round(success: bool) -> void:
 func _sync_state_to_clients() -> void:
 	if not GDSync.is_host():
 		return
-	GDSync.call_func_all(_apply_synced_state, round_active, round_success)
+	GDSync.call_func_all(_apply_synced_state, round_active, round_success, fishing_active)
 
 
 func restart_round() -> void:
@@ -70,12 +54,9 @@ func restart_round() -> void:
 		return
 	round_active = true
 	round_success = false
+	fishing_active = true
 	timer.start(round_duration)
 	_sync_state_to_clients()
-
-	var qm := get_node_or_null("/root/main/QuotaManager")
-	if qm:
-		GDSync.call_func_all(qm._sync_quota, 0)
 
 	var dm := get_node_or_null("/root/main/DangerManager")
 	if dm:
@@ -87,6 +68,7 @@ func restart_round() -> void:
 func _apply_restart() -> void:
 	round_active = true
 	round_success = false
+	fishing_active = true
 
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -102,9 +84,10 @@ func _apply_restart() -> void:
 				fm.reset_for_restart()
 
 
-func _apply_synced_state(active: bool, success: bool = false) -> void:
+func _apply_synced_state(active: bool, success: bool = false, active_fishing: bool = true) -> void:
 	var was_active := round_active
 	round_active = active
 	round_success = success
+	fishing_active = active_fishing
 	if was_active and not active:
 		round_ended.emit(success)

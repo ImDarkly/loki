@@ -70,8 +70,6 @@ func _is_round_active() -> bool:
 func _on_spawn_timer_timeout() -> void:
 	if not GDSync.is_host():
 		return
-	if not _is_round_active():
-		return
 	if current_state == State.INACTIVE or current_state == State.WAITING:
 		if _get_nearest_player() == null:
 			return
@@ -82,8 +80,6 @@ func _on_spawn_timer_timeout() -> void:
 
 func _on_return_timer_timeout() -> void:
 	if not GDSync.is_host():
-		return
-	if not _is_round_active():
 		return
 	if current_state == State.WAITING:
 		_spawn_shark()
@@ -181,8 +177,6 @@ func _create_shark_mesh() -> MeshInstance3D:
 
 func _physics_process(delta: float) -> void:
 	if not GDSync.is_host():
-		return
-	if not _is_round_active():
 		return
 	match current_state:
 		State.APPROACHING:
