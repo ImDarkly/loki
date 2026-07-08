@@ -2,12 +2,11 @@ extends Node
 
 signal player_list_changed()
 
-const PLAYER_LIST_KEY := "player_list"
-
 var players: Array = []
 var local_player_id: int = -1
 
-var _tracked_ids: Array = []
+var _players_dict: Dictionary[int, String] = {}
+var _player_order: Array[int] = []
 
 
 func _ready() -> void:
@@ -17,14 +16,12 @@ func _ready() -> void:
 	GDSync.lobby_joined.connect(_on_lobby_joined)
 	GDSync.client_joined.connect(_on_client_joined)
 	GDSync.client_left.connect(_on_client_left)
-	GDSync.lobby_data_changed.connect(_on_lobby_data_changed)
 
 	GDSync.start_multiplayer()
 
 
 func _on_connected() -> void:
 	local_player_id = GDSync.get_client_id()
-	GDSync.player_set_username("Player_%d" % local_player_id)
 
 
 func _on_connection_failed(error: int) -> void:
@@ -33,63 +30,49 @@ func _on_connection_failed(error: int) -> void:
 
 func _on_disconnected() -> void:
 	players = []
-	_tracked_ids.clear()
+	_players_dict.clear()
+	_player_order.clear()
 	local_player_id = -1
 	GDSync.change_scene("res://scenes/lobby.tscn")
 
 
 func _on_lobby_joined(_lobby_name: String) -> void:
-	if GDSync.is_host():
-		_add_to_tracked(local_player_id)
-		_publish_tracked_list()
-	_rebuild_from_lobby_data()
+	var all_clients := GDSync.lobby_get_all_clients()
+	for cid in all_clients:
+		add_player(cid, "Player_%d" % cid)
 
 
 func _on_client_joined(client_id: int) -> void:
-	if GDSync.is_host():
-		_add_to_tracked(client_id)
-		_publish_tracked_list()
-	_rebuild_from_lobby_data()
+	add_player(client_id, "Player_%d" % client_id)
 
 
 func _on_client_left(client_id: int) -> void:
-	if GDSync.is_host():
-		_tracked_ids.erase(client_id)
-		_publish_tracked_list()
-	_rebuild_from_lobby_data()
+	remove_player(client_id)
 
 
-func _on_lobby_data_changed(key: String, _value) -> void:
-	if key == PLAYER_LIST_KEY:
-		_rebuild_from_lobby_data()
-
-
-func _publish_tracked_list() -> void:
-	GDSync.lobby_set_data(PLAYER_LIST_KEY, _tracked_ids.duplicate())
-
-
-func _add_to_tracked(client_id: int) -> void:
-	if not client_id in _tracked_ids:
-		_tracked_ids.append(client_id)
-
-
-func _rebuild_from_lobby_data() -> void:
-	var list = GDSync.lobby_get_data(PLAYER_LIST_KEY, [])
-	if list.is_empty() and local_player_id != -1:
-		list = [local_player_id]
-	if list.is_empty():
+func add_player(id: int, name: String) -> void:
+	if id in _player_order:
 		return
-	_update_players(list)
+	_players_dict[id] = name
+	_player_order.append(id)
+	_rebuild_players()
 
 
-func _update_players(client_ids: Array) -> void:
+func remove_player(id: int) -> void:
+	if not id in _player_order:
+		return
+	_players_dict.erase(id)
+	_player_order.erase(id)
+	_rebuild_players()
+
+
+func _rebuild_players() -> void:
 	players = []
-	for i in client_ids.size():
-		var cid = client_ids[i]
-		var username = GDSync.player_get_username(cid, "Player_%d" % cid)
+	for i in _player_order.size():
+		var cid := _player_order[i]
 		players.append({
 			"id": cid,
-			"username": username,
+			"username": _players_dict.get(cid, "Player_%d" % cid),
 			"join_order": i
 		})
 	player_list_changed.emit()

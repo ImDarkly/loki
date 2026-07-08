@@ -265,17 +265,28 @@ func _physics_process(delta: float) -> void:
 
 
 func _multiplayer_ready() -> void:
+	var owner_id: int = game_manager.players[spawn_index].id if spawn_index < game_manager.players.size() else 1
+	setup_authority(owner_id)
+
+
+func setup_authority(owner_id: int) -> void:
 	var spawn_positions := [
 		Vector3(-2.25, 0, 2.5),
 		Vector3(-0.75, 0, 2.5),
 		Vector3(0.75, 0, 2.5),
 		Vector3(2.25, 0, 2.5),
 	]
-	position = spawn_positions[spawn_index] if spawn_index < spawn_positions.size() else spawn_positions[0]
-	var is_mine: bool = spawn_index < game_manager.players.size() and game_manager.players[spawn_index].id == GDSync.get_client_id()
 
-	if is_mine:
-		GDSync.set_gdsync_owner(self, GDSync.get_client_id())
+	spawn_index = 0
+	for i in game_manager.players.size():
+		if game_manager.players[i].id == owner_id:
+			spawn_index = i
+			break
+
+	position = spawn_positions[spawn_index] if spawn_index < spawn_positions.size() else spawn_positions[0]
+	set_multiplayer_authority(owner_id)
+
+	if GDSync.get_client_id() == owner_id:
 		_enable_player()
 	else:
 		_disable_player()
