@@ -17,9 +17,8 @@ func _on_round_ended(success: bool) -> void:
 	outcome_label.text = "SUCCESS" if success else "QUOTA FAILED"
 
 	var qm := get_node_or_null("/root/main/QuotaManager")
-	var rm := get_node_or_null("/root/main/RoundManager")
-	if qm and rm:
-		quota_label.text = "%d / %d fish" % [qm.shared_quota, rm.quota_target]
+	if qm:
+		quota_label.text = "%d fish caught" % qm.shared_quota
 
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	restart_button.visible = game_manager.is_host()

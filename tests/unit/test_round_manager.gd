@@ -10,18 +10,7 @@ func before_each() -> void:
 
 	manager.timer.stop()
 	manager.round_active = true
-
-func test_win_when_quota_reaches_target() -> void:
-	watch_signals(manager)
-	manager._end_round(true)
-	assert_signal_emitted(manager, "round_ended")
-	assert_signal_emitted_with_parameters(manager, "round_ended", [true])
-
-func test_fail_when_timer_expires() -> void:
-	watch_signals(manager)
-	manager._end_round(false)
-	assert_signal_emitted(manager, "round_ended")
-	assert_signal_emitted_with_parameters(manager, "round_ended", [false])
+	manager.fishing_active = true
 
 func test_round_active_false_after_win() -> void:
 	manager._end_round(true)
@@ -94,5 +83,32 @@ func test_restart_round_resets_timer_and_active() -> void:
 	else:
 		assert_false(manager.round_active, "round_active should remain false for non-host")
 
-func test_quota_target_has_default() -> void:
-	assert_eq(manager.quota_target, 20, "Default quota target should be 20")
+func test_fishing_active_starts_true() -> void:
+	assert_true(manager.fishing_active, "fishing_active should start true")
+
+func test_timer_timeout_sets_fishing_active_false() -> void:
+	manager._on_timer_timeout()
+	assert_false(manager.fishing_active, "fishing_active should be false after timer timeout")
+
+func test_timer_timeout_does_not_end_round() -> void:
+	watch_signals(manager)
+	manager._on_timer_timeout()
+	assert_true(manager.round_active, "round_active should remain true after timer timeout")
+	assert_signal_not_emitted(manager, "round_ended")
+
+func test_restart_round_sets_fishing_active_true() -> void:
+	manager.fishing_active = false
+	if GDSync.is_host():
+		manager.restart_round()
+		assert_true(manager.fishing_active, "fishing_active should be true after restart")
+	else:
+		assert_false(manager.fishing_active, "fishing_active should remain false for non-host")
+
+func test_apply_restart_sets_fishing_active_true() -> void:
+	manager.fishing_active = false
+	manager._apply_restart()
+	assert_true(manager.fishing_active, "fishing_active should be true after apply_restart")
+
+func test_synced_state_stores_fishing_active() -> void:
+	manager._apply_synced_state(true, false, false)
+	assert_false(manager.fishing_active, "fishing_active should match synced value")
