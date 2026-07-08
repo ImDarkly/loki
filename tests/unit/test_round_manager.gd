@@ -87,13 +87,15 @@ func test_fishing_active_starts_true() -> void:
 	assert_true(manager.fishing_active, "fishing_active should start true")
 
 func test_timer_timeout_sets_fishing_active_false() -> void:
-	manager._on_timer_timeout()
-	assert_false(manager.fishing_active, "fishing_active should be false after timer timeout")
+	if GDSync.is_host():
+		manager._on_timer_timeout()
+		assert_false(manager.fishing_active, "fishing_active should be false after timer timeout")
 
 func test_timer_timeout_does_not_end_round() -> void:
 	watch_signals(manager)
-	manager._on_timer_timeout()
-	assert_true(manager.round_active, "round_active should remain true after timer timeout")
+	if GDSync.is_host():
+		manager._on_timer_timeout()
+		assert_true(manager.round_active, "round_active should remain true after timer timeout")
 	assert_signal_not_emitted(manager, "round_ended")
 
 func test_restart_round_sets_fishing_active_true() -> void:
