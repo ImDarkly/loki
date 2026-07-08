@@ -10,44 +10,43 @@ var _player_order: Array[int] = []
 
 
 func _ready() -> void:
-	GDSync.connected.connect(_on_connected)
-	GDSync.connection_failed.connect(_on_connection_failed)
-	GDSync.disconnected.connect(_on_disconnected)
-	GDSync.lobby_joined.connect(_on_lobby_joined)
-	GDSync.client_joined.connect(_on_client_joined)
-	GDSync.client_left.connect(_on_client_left)
-
-	GDSync.start_multiplayer()
+	multiplayer.peer_connected.connect(_on_peer_connected)
+	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	multiplayer.connected_to_server.connect(_on_connected_to_server)
+	multiplayer.connection_failed.connect(_on_connection_failed)
 
 
-func _on_connected() -> void:
-	local_player_id = GDSync.get_client_id()
+func _on_peer_connected(id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	add_player(id, "Player_%d" % id)
+	_broadcast_player_list()
 
 
-func _on_connection_failed(error: int) -> void:
-	push_error("GameManager: Connection failed: ", error)
+func _on_peer_disconnected(id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	remove_player(id)
+	_broadcast_player_list()
 
 
-func _on_disconnected() -> void:
-	players = []
-	_players_dict.clear()
-	_player_order.clear()
-	local_player_id = -1
-	GDSync.change_scene("res://scenes/lobby.tscn")
+func _on_connected_to_server() -> void:
+	local_player_id = multiplayer.get_unique_id()
 
 
-func _on_lobby_joined(_lobby_name: String) -> void:
-	var all_clients := GDSync.lobby_get_all_clients()
-	for cid in all_clients:
-		add_player(cid, "Player_%d" % cid)
+func _on_connection_failed() -> void:
+	push_error("GameManager: Connection failed")
 
 
-func _on_client_joined(client_id: int) -> void:
-	add_player(client_id, "Player_%d" % client_id)
-
-
-func _on_client_left(client_id: int) -> void:
-	remove_player(client_id)
+@rpc("any_peer", "reliable")
+func _submit_username(name: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if sender in _player_order:
+		_players_dict[sender] = name
+		_rebuild_players()
+		_broadcast_player_list()
 
 
 func add_player(id: int, name: String) -> void:
@@ -78,11 +77,35 @@ func _rebuild_players() -> void:
 	player_list_changed.emit()
 
 
+func _broadcast_player_list() -> void:
+	if not multiplayer.is_server():
+		return
+	var data: Array[Dictionary] = []
+	for p in players:
+		data.append({"id": p.id, "username": p.username, "join_order": p.join_order})
+	_sync_players.rpc(data)
+
+
+@rpc("authority", "reliable", "call_local")
+func _sync_players(data: Array) -> void:
+	if multiplayer.is_server():
+		return
+	_players_dict.clear()
+	_player_order.clear()
+	players = []
+	for entry in data:
+		var pid: int = entry["id"]
+		_players_dict[pid] = entry["username"]
+		_player_order.append(pid)
+		players.append({"id": pid, "username": entry["username"], "join_order": entry["join_order"]})
+	player_list_changed.emit()
+
+
 func is_host() -> bool:
-	return GDSync.is_host()
+	return multiplayer.is_server()
 
 
 func start_game() -> void:
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		return
 	GDSync.change_scene("res://scenes/main.tscn")

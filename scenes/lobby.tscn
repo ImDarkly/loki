@@ -34,6 +34,13 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 
+[node name="UsernameInput" type="LineEdit" parent="CenterContainer/VBox/MainMenu"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Your name..."
+size_flags_horizontal = 4
+text = "Player"
+
 [node name="CreateButton" type="Button" parent="CenterContainer/VBox/MainMenu"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -52,11 +59,22 @@ layout_mode = 2
 size_flags_horizontal = 4
 visible = false
 
-[node name="JoinCodeInput" type="LineEdit" parent="CenterContainer/VBox/MainMenu/JoinRow"]
+[node name="IpInput" type="LineEdit" parent="CenterContainer/VBox/MainMenu/JoinRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "Enter join code..."
+placeholder_text = "Host IP..."
+
+[node name="PortInput" type="SpinBox" parent="CenterContainer/VBox/MainMenu/JoinRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 1
+min_value = 1024
+max_value = 65535
+value = 7777
+step = 1
+allow_lesser = false
+allow_greater = false
 
 [node name="JoinConfirmButton" type="Button" parent="CenterContainer/VBox/MainMenu/JoinRow"]
 unique_name_in_owner = true
@@ -69,22 +87,22 @@ layout_mode = 2
 size_flags_horizontal = 4
 visible = false
 
-[node name="JoinCodeRow" type="HBoxContainer" parent="CenterContainer/VBox/LobbyView"]
+[node name="IpDisplayRow" type="HBoxContainer" parent="CenterContainer/VBox/LobbyView"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 visible = false
 
-[node name="JoinCodeDisplay" type="Label" parent="CenterContainer/VBox/LobbyView/JoinCodeRow"]
+[node name="IpDisplay" type="Label" parent="CenterContainer/VBox/LobbyView/IpDisplayRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 horizontal_alignment = 1
 
-[node name="CopyCodeButton" type="Button" parent="CenterContainer/VBox/LobbyView/JoinCodeRow"]
+[node name="CopyIpButton" type="Button" parent="CenterContainer/VBox/LobbyView/IpDisplayRow"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Copy"
+text = "Copy IP"
 
 [node name="PlayersLabel" type="Label" parent="CenterContainer/VBox/LobbyView"]
 layout_mode = 2
@@ -110,3 +128,4 @@ layout_mode = 2
 text = "Start Game"
 size_flags_horizontal = 4
 visible = false
+disabled = true
