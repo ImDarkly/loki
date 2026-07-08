@@ -28,6 +28,7 @@ driver/enable_input=true
 
 GDSync="*uid://bt6tf85hp7w1"
 game_manager="*res://autoloads/game_manager.gd"
+NetworkManager="*res://autoloads/network_manager.gd"
 
 [editor_plugins]
 
