@@ -106,10 +106,10 @@ func _on_personal_catch_changed(count: int) -> void:
 func _report_catch_to_host(amount: int) -> void:
 	if not is_instance_valid(_quota_manager_ref):
 		return
-	if GDSync.is_host():
+	if multiplayer.is_server():
 		_quota_manager_ref.report_catch(amount)
 	else:
-		GDSync.call_func(_quota_manager_ref.report_catch, amount)
+		_quota_manager_ref.report_catch.rpc(amount)
 
 
 func _try_find_quota_manager() -> void:
@@ -122,7 +122,6 @@ func _try_find_quota_manager() -> void:
 
 
 func _ready() -> void:
-	GDSync.expose_func(on_fish_fled)
 	_try_find_quota_manager()
 	bite_timer.one_shot = true
 	bite_timer.timeout.connect(_on_bite_timer_timeout)

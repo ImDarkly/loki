@@ -15,7 +15,7 @@ func trigger_spawn() -> void:
 	if not multiplayer.is_server():
 		return
 	for i in game_manager.players.size():
-		var peer_id := game_manager.players[i].id
+		var peer_id: int = game_manager.players[i].id
 		spawner.spawn_function = _make_spawn_func(peer_id, i)
 		spawner.spawn()
 
