@@ -4,7 +4,34 @@
 [ext_resource type="PackedScene" path="res://systems/fishing/fishing_mechanic.tscn" id="2_jg4e3"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_manager.tscn" id="3_lh5f4"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/mic_level_bar.tscn" id="4_yshjx"]
-[ext_resource type="Script" path="res://addons/GD-Sync/Scripts/Types/PropertySynchronizer.gd" id="5_u3g5k"]
+
+[sub_resource type="SceneReplicationConfig" id="rsc_sync_transform"]
+properties/0/path = NodePath("..")
+properties/0/spawn = false
+properties/0/sync_mode = 0
+properties/0/interval = 0.033
+properties/0/properties = PackedStringArray("global_position", "rotation")
+
+[sub_resource type="SceneReplicationConfig" id="rsc_sync_head"]
+properties/0/path = NodePath("../Head")
+properties/0/spawn = false
+properties/0/sync_mode = 0
+properties/0/interval = 0.033
+properties/0/properties = PackedStringArray("rotation")
+
+[sub_resource type="SceneReplicationConfig" id="rsc_sync_fish_state"]
+properties/0/path = NodePath("../FishingMechanic")
+properties/0/spawn = false
+properties/0/sync_mode = 1
+properties/0/interval = 0.1
+properties/0/properties = PackedStringArray("current_state")
+
+[sub_resource type="SceneReplicationConfig" id="rsc_sync_cast_target"]
+properties/0/path = NodePath("../FishingMechanic")
+properties/0/spawn = false
+properties/0/sync_mode = 1
+properties/0/interval = 0.1
+properties/0/properties = PackedStringArray("cast_target_position")
 
 [node name="Player" type="CharacterBody3D"]
 collision_layer = 2
@@ -30,38 +57,18 @@ far = 1000.0
 
 [node name="MicLevelBar" parent="." instance=ExtResource("4_yshjx")]
 
-[node name="SyncTransform" type="Node" parent="."]
-script = ExtResource("5_u3g5k")
-node_path = NodePath("..")
-properties = PackedStringArray("global_position", "rotation")
-broadcast = 2
-process = 1
-refresh_rate = 30
-interpolated = true
-interpolation_speed = 10.0
+[node name="SyncTransform" type="MultiplayerSynchronizer" parent="."]
+root_path = NodePath("..")
+replication_config = SubResource("rsc_sync_transform")
 
-[node name="SyncHead" type="Node" parent="."]
-script = ExtResource("5_u3g5k")
-node_path = NodePath("../Head")
-properties = PackedStringArray("rotation")
-broadcast = 2
-process = 1
-refresh_rate = 30
-interpolated = true
-interpolation_speed = 10.0
+[node name="SyncHead" type="MultiplayerSynchronizer" parent="."]
+root_path = NodePath("../Head")
+replication_config = SubResource("rsc_sync_head")
 
-[node name="SyncFishingState" type="Node" parent="."]
-script = ExtResource("5_u3g5k")
-node_path = NodePath("../FishingMechanic")
-properties = PackedStringArray("current_state")
-broadcast = 2
-process = 0
-refresh_rate = 10
+[node name="SyncFishingState" type="MultiplayerSynchronizer" parent="."]
+root_path = NodePath("../FishingMechanic")
+replication_config = SubResource("rsc_sync_fish_state")
 
-[node name="SyncCastTarget" type="Node" parent="."]
-script = ExtResource("5_u3g5k")
-node_path = NodePath("../FishingMechanic")
-properties = PackedStringArray("cast_target_position")
-broadcast = 2
-process = 0
-refresh_rate = 10
+[node name="SyncCastTarget" type="MultiplayerSynchronizer" parent="."]
+root_path = NodePath("../FishingMechanic")
+replication_config = SubResource("rsc_sync_cast_target")

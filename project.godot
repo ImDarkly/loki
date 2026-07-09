@@ -8,12 +8,6 @@
 
 config_version=5
 
-[GD-Sync]
-
-version="1.0"
-publicKey="2f08e3264e99bd65"
-privateKey="19116ffb447abb3f"
-
 [application]
 
 config/name="Loki"
@@ -26,13 +20,12 @@ driver/enable_input=true
 
 [autoload]
 
-GDSync="*uid://bt6tf85hp7w1"
 game_manager="*res://autoloads/game_manager.gd"
 NetworkManager="*res://autoloads/network_manager.gd"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/GD-Sync/plugin.cfg", "res://addons/gut/plugin.cfg")
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [layer_names]
 

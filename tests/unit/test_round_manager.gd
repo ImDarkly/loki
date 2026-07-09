@@ -24,7 +24,7 @@ func test_round_active_starts_true_when_host() -> void:
 	manager = autofree(load("res://systems/round/round_manager.tscn").instantiate())
 	add_child(manager)
 	await get_tree().process_frame
-	if GDSync.is_host():
+	if multiplayer.is_server():
 		assert_true(manager.round_active, "round_active should be true for host after ready")
 	else:
 		assert_false(manager.round_active, "round_active should be false for non-host")
@@ -76,7 +76,7 @@ func test_apply_restart_resets_timer_stopped_on_client() -> void:
 
 func test_restart_round_resets_timer_and_active() -> void:
 	manager._end_round(true)
-	if GDSync.is_host():
+	if multiplayer.is_server():
 		manager.restart_round()
 		assert_true(manager.round_active)
 		assert_false(manager.timer.is_stopped(), "timer should be running after restart")
@@ -87,20 +87,20 @@ func test_fishing_active_starts_true() -> void:
 	assert_true(manager.fishing_active, "fishing_active should start true")
 
 func test_timer_timeout_sets_fishing_active_false() -> void:
-	if GDSync.is_host():
+	if multiplayer.is_server():
 		manager._on_timer_timeout()
 		assert_false(manager.fishing_active, "fishing_active should be false after timer timeout")
 
 func test_timer_timeout_does_not_end_round() -> void:
 	watch_signals(manager)
-	if GDSync.is_host():
+	if multiplayer.is_server():
 		manager._on_timer_timeout()
 		assert_true(manager.round_active, "round_active should remain true after timer timeout")
 	assert_signal_not_emitted(manager, "round_ended")
 
 func test_restart_round_sets_fishing_active_true() -> void:
 	manager.fishing_active = false
-	if GDSync.is_host():
+	if multiplayer.is_server():
 		manager.restart_round()
 		assert_true(manager.fishing_active, "fishing_active should be true after restart")
 	else:
