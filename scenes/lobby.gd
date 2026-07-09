@@ -158,4 +158,5 @@ func _on_player_list_changed() -> void:
 func _on_start_pressed() -> void:
 	start_button.disabled = true
 	start_button.text = "Starting..."
+	status_label.text = "Loading world..."
 	game_manager.start_game()

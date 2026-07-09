@@ -53,9 +53,6 @@ var is_yelling: bool = false
 
 func _ready() -> void:
 	randomize()
-	set_process(false)
-	set_physics_process(false)
-	set_process_unhandled_input(false)
 
 	_jump_velocity = sqrt(2.0 * _gravity * jump_height)
 
@@ -65,6 +62,9 @@ func _ready() -> void:
 
 	camera.position = Vector3.ZERO
 	_cam_home = Vector3.ZERO
+
+	_setup_authority_from_name()
+
 
 func _setup_collision_shape() -> void:
 	var shape := CylinderShape3D.new()
@@ -264,12 +264,10 @@ func _physics_process(delta: float) -> void:
 	_prev_yaw = rotation.y
 
 
-func _multiplayer_ready() -> void:
-	var owner_id: int = game_manager.players[spawn_index].id if spawn_index < game_manager.players.size() else 1
-	setup_authority(owner_id)
+func _setup_authority_from_name() -> void:
+	var owning_id := _parse_owner_id()
+	set_multiplayer_authority(owning_id)
 
-
-func setup_authority(owner_id: int) -> void:
 	var spawn_positions := [
 		Vector3(-2.25, 0, 2.5),
 		Vector3(-0.75, 0, 2.5),
@@ -279,17 +277,23 @@ func setup_authority(owner_id: int) -> void:
 
 	spawn_index = 0
 	for i in game_manager.players.size():
-		if game_manager.players[i].id == owner_id:
+		if game_manager.players[i].id == owning_id:
 			spawn_index = i
 			break
 
 	position = spawn_positions[spawn_index] if spawn_index < spawn_positions.size() else spawn_positions[0]
-	set_multiplayer_authority(owner_id)
 
-	if GDSync.get_client_id() == owner_id:
+	if owning_id == multiplayer.get_unique_id():
 		_enable_player()
 	else:
 		_disable_player()
+
+
+func _parse_owner_id() -> int:
+	if not name.begins_with("Player_"):
+		return 1
+	var id_str := name.trim_prefix("Player_")
+	return int(id_str) if id_str.is_valid_int() else 1
 
 
 func _enable_player() -> void:

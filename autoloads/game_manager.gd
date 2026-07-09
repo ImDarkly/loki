@@ -1,19 +1,24 @@
 extends Node
 
 signal player_list_changed()
+signal all_players_loaded()
 
 var players: Array = []
 var local_player_id: int = -1
 
 var _players_dict: Dictionary[int, String] = {}
 var _player_order: Array[int] = []
+var _players_ready: int = 0
+
+@export var spawn_manager: Node3D
 
 
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
-	multiplayer.connection_failed.connect(_on_connection_failed)
+	multiplayer.connection_failed.connect(_on_connection_failed_reset)
+	multiplayer.server_disconnected.connect(_on_disconnected)
 
 
 func _on_peer_connected(id: int) -> void:
@@ -34,8 +39,14 @@ func _on_connected_to_server() -> void:
 	local_player_id = multiplayer.get_unique_id()
 
 
-func _on_connection_failed() -> void:
+func _on_connection_failed_reset() -> void:
 	push_error("GameManager: Connection failed")
+	_on_disconnected()
+
+
+func _on_disconnected() -> void:
+	NetworkManager.disconnect_from_game()
+	get_tree().change_scene_to_file("res://scenes/lobby.tscn")
 
 
 @rpc("any_peer", "reliable")
@@ -108,4 +119,37 @@ func is_host() -> bool:
 func start_game() -> void:
 	if not multiplayer.is_server():
 		return
-	GDSync.change_scene("res://scenes/main.tscn")
+	var path := "res://scenes/main.tscn"
+	load_scene.rpc(path)
+	get_tree().change_scene_to_file(path)
+
+
+@rpc("authority", "call_local", "reliable")
+func load_scene(path: String) -> void:
+	if multiplayer.is_server():
+		return
+	get_tree().change_scene_to_file(path)
+
+
+func _on_scene_loaded() -> void:
+	if not multiplayer.is_server():
+		_report_scene_loaded.rpc_id(1)
+		return
+	_players_ready += 1
+	if _players_ready >= _player_order.size():
+		_players_ready = 0
+		if spawn_manager:
+			spawn_manager.trigger_spawn()
+		all_players_loaded.emit()
+
+
+@rpc("any_peer", "reliable")
+func _report_scene_loaded() -> void:
+	if not multiplayer.is_server():
+		return
+	_players_ready += 1
+	if _players_ready >= _player_order.size():
+		_players_ready = 0
+		if spawn_manager:
+			spawn_manager.trigger_spawn()
+		all_players_loaded.emit()
