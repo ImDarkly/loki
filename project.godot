@@ -8,6 +8,10 @@
 
 config_version=5
 
+[GD-Sync]
+
+version="1.0"
+
 [application]
 
 config/name="Loki"
@@ -17,6 +21,7 @@ config/features=PackedStringArray("4.6", "Mobile")
 [audio]
 
 driver/enable_input=true
+driver/mix_rate=48000
 
 [autoload]
 

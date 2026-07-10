@@ -1,9 +1,10 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://q81wy3dp7niu"]
 
-[ext_resource type="Script" path="res://entities/player/player.gd" id="1_q6y7j"]
+[ext_resource type="Script" uid="uid://i4odkxdn61c8" path="res://entities/player/player.gd" id="1_q6y7j"]
 [ext_resource type="PackedScene" path="res://systems/fishing/fishing_mechanic.tscn" id="2_jg4e3"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_manager.tscn" id="3_lh5f4"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/mic_level_bar.tscn" id="4_yshjx"]
+[ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_network.tscn" id="5_ih6f4"]
 
 [sub_resource type="SceneReplicationConfig" id="rsc_sync_transform"]
 properties/0/path = NodePath("..")
@@ -33,42 +34,42 @@ properties/0/sync_mode = 1
 properties/0/interval = 0.1
 properties/0/properties = PackedStringArray("cast_target_position")
 
-[node name="Player" type="CharacterBody3D"]
+[node name="Player" type="CharacterBody3D" unique_id=997464534]
 collision_layer = 2
-collision_mask = 1
 script = ExtResource("1_q6y7j")
 
-[node name="BodyMesh" type="MeshInstance3D" parent="."]
+[node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=2046980014]
 
-[node name="Head" type="Node3D" parent="."]
-position = Vector3(0, 1.6, 0)
+[node name="Head" type="Node3D" parent="." unique_id=1799613204]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 
-[node name="Camera3D" type="Camera3D" parent="Head"]
+[node name="Camera3D" type="Camera3D" parent="Head" unique_id=364228253]
 near = 0.1
 far = 1000.0
 
-[node name="HandLeft" type="MeshInstance3D" parent="Head"]
+[node name="HandLeft" type="MeshInstance3D" parent="Head" unique_id=1175910510]
 
-[node name="HandRight" type="MeshInstance3D" parent="Head"]
+[node name="HandRight" type="MeshInstance3D" parent="Head" unique_id=1476154063]
 
-[node name="FishingMechanic" parent="." instance=ExtResource("2_jg4e3")]
+[node name="FishingMechanic" parent="." unique_id=637666390 instance=ExtResource("2_jg4e3")]
 
-[node name="VoiceChatManager" parent="." instance=ExtResource("3_lh5f4")]
+[node name="VoiceChatManager" parent="." unique_id=1623257033 instance=ExtResource("3_lh5f4")]
 
-[node name="MicLevelBar" parent="." instance=ExtResource("4_yshjx")]
+[node name="MicLevelBar" parent="." unique_id=1553762921 instance=ExtResource("4_yshjx")]
 
-[node name="SyncTransform" type="MultiplayerSynchronizer" parent="."]
-root_path = NodePath("..")
+[node name="VoiceChatNetwork" parent="." unique_id=1582687195 instance=ExtResource("5_ih6f4")]
+
+[node name="SyncTransform" type="MultiplayerSynchronizer" parent="." unique_id=1873130312]
 replication_config = SubResource("rsc_sync_transform")
 
-[node name="SyncHead" type="MultiplayerSynchronizer" parent="."]
+[node name="SyncHead" type="MultiplayerSynchronizer" parent="." unique_id=295449997]
 root_path = NodePath("../Head")
 replication_config = SubResource("rsc_sync_head")
 
-[node name="SyncFishingState" type="MultiplayerSynchronizer" parent="."]
+[node name="SyncFishingState" type="MultiplayerSynchronizer" parent="." unique_id=1518630754]
 root_path = NodePath("../FishingMechanic")
 replication_config = SubResource("rsc_sync_fish_state")
 
-[node name="SyncCastTarget" type="MultiplayerSynchronizer" parent="."]
+[node name="SyncCastTarget" type="MultiplayerSynchronizer" parent="." unique_id=1193677522]
 root_path = NodePath("../FishingMechanic")
 replication_config = SubResource("rsc_sync_cast_target")
