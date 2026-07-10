@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://systems/voice_chat/voice_chat_network.gd" id="1_xqn68"]
+[ext_resource type="PackedScene" path="res://addons/twovoip/voiphelper/two_voip_mic.tscn" id="2_s87i6"]
+[ext_resource type="PackedScene" path="res://addons/twovoip/voiphelper/two_voip_speaker.tscn" id="3_a6ya8"]
+
+[node name="VoiceChatNetwork" type="Node"]
+script = ExtResource("1_xqn68")
+
+[node name="TwoVoipMic" parent="." instance=ExtResource("2_s87i6")]
+process_mode = 2
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+
+[node name="TwoVoipSpeaker" parent="AudioStreamPlayer" instance=ExtResource("3_a6ya8")]

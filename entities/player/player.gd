@@ -35,6 +35,7 @@ class_name Player extends CharacterBody3D
 @onready var hand_right: MeshInstance3D = $Head/HandRight
 @onready var body_mesh: MeshInstance3D = $BodyMesh
 @onready var _voice_chat: Node = $VoiceChatManager
+@onready var mic_level_bar: CanvasLayer = get_node_or_null("MicLevelBar")
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _jump_velocity: float
@@ -302,6 +303,12 @@ func _enable_player() -> void:
 	set_process(true)
 	set_physics_process(true)
 	set_process_unhandled_input(true)
+	if mic_level_bar != null:
+		mic_level_bar.visible = true
+	if _voice_chat != null:
+		_voice_chat.set_process(true)
+		if not _voice_chat.yelling_state_changed.is_connected(_on_yelling_state_changed):
+			_voice_chat.yelling_state_changed.connect(_on_yelling_state_changed)
 
 
 func _disable_player() -> void:
@@ -309,4 +316,19 @@ func _disable_player() -> void:
 	set_process(false)
 	set_physics_process(false)
 	set_process_unhandled_input(false)
+	if mic_level_bar != null:
+		mic_level_bar.visible = false
+	if _voice_chat != null:
+		_voice_chat.set_process(false)
+		if _voice_chat.yelling_state_changed.is_connected(_on_yelling_state_changed):
+			_voice_chat.yelling_state_changed.disconnect(_on_yelling_state_changed)
 	fishing_mechanic.is_local_render = false
+
+
+func _on_yelling_state_changed(is_yelling: bool) -> void:
+	sync_yelling.rpc(is_yelling)
+
+
+@rpc("any_peer", "unreliable", "call_remote")
+func sync_yelling(new_is_yelling: bool) -> void:
+	is_yelling = new_is_yelling
