@@ -7,12 +7,32 @@
 [ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_network.tscn" id="5_ih6f4"]
 
 [sub_resource type="SceneReplicationConfig" id="rsc_sync_transform"]
+properties/0/path = NodePath("..")
+properties/0/spawn = false
+properties/0/sync_mode = 0
+properties/0/interval = 0.033
+properties/0/properties = PackedStringArray("global_position", "rotation")
 
 [sub_resource type="SceneReplicationConfig" id="rsc_sync_head"]
+properties/0/path = NodePath("../Head")
+properties/0/spawn = false
+properties/0/sync_mode = 0
+properties/0/interval = 0.033
+properties/0/properties = PackedStringArray("rotation")
 
 [sub_resource type="SceneReplicationConfig" id="rsc_sync_fish_state"]
+properties/0/path = NodePath("../FishingMechanic")
+properties/0/spawn = false
+properties/0/sync_mode = 1
+properties/0/interval = 0.1
+properties/0/properties = PackedStringArray("current_state")
 
 [sub_resource type="SceneReplicationConfig" id="rsc_sync_cast_target"]
+properties/0/path = NodePath("../FishingMechanic")
+properties/0/spawn = false
+properties/0/sync_mode = 1
+properties/0/interval = 0.1
+properties/0/properties = PackedStringArray("cast_target_position")
 
 [node name="Player" type="CharacterBody3D" unique_id=997464534]
 collision_layer = 2

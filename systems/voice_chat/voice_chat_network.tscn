@@ -8,7 +8,7 @@
 script = ExtResource("1_xqn68")
 
 [node name="TwoVoipMic" parent="." instance=ExtResource("2_s87i6")]
-process_mode = 2
+process_mode = 4
 
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
 
