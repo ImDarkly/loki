@@ -34,9 +34,8 @@ var _cached_round_active: bool = true
 
 func _ready() -> void:
 	_reset_escalation()
-	GDSync.expose_func(_apply_synced_state)
 
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		set_physics_process(false)
 		spawn_timer.stop()
 		return_timer.stop()
@@ -68,7 +67,7 @@ func _is_round_active() -> bool:
 
 
 func _on_spawn_timer_timeout() -> void:
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		return
 	if current_state == State.INACTIVE or current_state == State.WAITING:
 		if _get_nearest_player() == null:
@@ -79,7 +78,7 @@ func _on_spawn_timer_timeout() -> void:
 
 
 func _on_return_timer_timeout() -> void:
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		return
 	if current_state == State.WAITING:
 		_spawn_shark()
@@ -176,7 +175,7 @@ func _create_shark_mesh() -> MeshInstance3D:
 
 
 func _physics_process(delta: float) -> void:
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		return
 	match current_state:
 		State.APPROACHING:
@@ -296,7 +295,8 @@ func _trigger_attack() -> void:
 	current_state = State.ATTACKING
 	var target_player := _get_nearest_player()
 	if target_player != null:
-		_broadcast_fish_fled(target_player)
+		var target_client_id := _get_player_client_id(target_player)
+		_broadcast_fish_fled_rpc.rpc(target_client_id)
 	fish_fled.emit()
 	quota_penalty.emit(3)
 	_reset_escalation()
@@ -308,22 +308,23 @@ func _trigger_attack() -> void:
 	_sync_state_to_clients()
 
 
-func _broadcast_fish_fled(target_player: Node3D) -> void:
-	var target_mechanic := target_player.get_node_or_null("FishingMechanic")
-	if target_mechanic == null:
-		return
-	var target_client_id := _get_player_client_id(target_player)
-	GDSync.call_func_all(target_mechanic.on_fish_fled, target_client_id)
+@rpc("authority", "call_local", "reliable")
+func _broadcast_fish_fled_rpc(target_client_id: int) -> void:
+	for player in _get_player_nodes():
+		var mechanic := player.get_node_or_null("FishingMechanic")
+		if mechanic:
+			mechanic.on_fish_fled(target_client_id)
 
 
 func _sync_state_to_clients() -> void:
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		return
 	var has_shark := is_instance_valid(shark_node)
 	var shark_pos := shark_node.position if has_shark else spawn_position
-	GDSync.call_func_all(_apply_synced_state, current_state, shark_pos, spawn_position, has_shark and shark_node.visible)
+	_apply_synced_state.rpc(current_state, shark_pos, spawn_position, has_shark and shark_node.visible)
 
 
+@rpc("authority", "call_local", "reliable")
 func _apply_synced_state(state_value: int, shark_pos: Vector3, synced_spawn_position: Vector3, shark_visible: bool) -> void:
 	current_state = state_value
 	spawn_position = synced_spawn_position
@@ -335,7 +336,7 @@ func _apply_synced_state(state_value: int, shark_pos: Vector3, synced_spawn_posi
 
 
 func reset_for_restart() -> void:
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		return
 	_reset_escalation()
 	if is_instance_valid(shark_node):

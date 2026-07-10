@@ -15,10 +15,8 @@ var fishing_active: bool = true
 func _ready() -> void:
 	timer.one_shot = true
 	timer.timeout.connect(_on_timer_timeout)
-	GDSync.expose_func(_apply_synced_state)
-	GDSync.expose_func(_apply_restart)
 
-	if GDSync.is_host():
+	if multiplayer.is_server():
 		timer.start(round_duration)
 		round_active = true
 		fishing_active = true
@@ -26,7 +24,7 @@ func _ready() -> void:
 
 
 func _on_timer_timeout() -> void:
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		return
 	if not round_active:
 		return
@@ -44,13 +42,13 @@ func _end_round(success: bool) -> void:
 
 
 func _sync_state_to_clients() -> void:
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		return
-	GDSync.call_func_all(_apply_synced_state, round_active, round_success, fishing_active)
+	_apply_synced_state.rpc(round_active, round_success, fishing_active)
 
 
 func restart_round() -> void:
-	if not GDSync.is_host():
+	if not multiplayer.is_server():
 		return
 	round_active = true
 	round_success = false
@@ -62,9 +60,10 @@ func restart_round() -> void:
 	if dm:
 		dm.reset_for_restart()
 
-	GDSync.call_func_all(_apply_restart)
+	_apply_restart.rpc()
 
 
+@rpc("authority", "call_local", "reliable")
 func _apply_restart() -> void:
 	round_active = true
 	round_success = false
@@ -84,6 +83,7 @@ func _apply_restart() -> void:
 				fm.reset_for_restart()
 
 
+@rpc("authority", "call_local", "reliable")
 func _apply_synced_state(active: bool, success: bool = false, active_fishing: bool = true) -> void:
 	var was_active := round_active
 	round_active = active
