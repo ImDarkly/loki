@@ -23,10 +23,11 @@ func take_damage(amount: int) -> void:
 func _apply_damage(amount: int) -> void:
 	if amount <= 0:
 		return
+	var was_alive := current_health > 0
 	var old := current_health
 	current_health = max(0, current_health - amount)
 	health_changed.emit(old, current_health)
-	if current_health == 0:
+	if was_alive and current_health == 0:
 		died.emit()
 
 

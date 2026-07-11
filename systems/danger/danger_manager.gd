@@ -27,8 +27,6 @@ var swim_speed: float
 var return_delay: float
 var shark_node: MeshInstance3D = null
 var spawn_position: Vector3
-var _cached_round_active: bool = true
-
 @onready var spawn_timer: Timer = $SpawnTimer
 @onready var return_timer: Timer = $ReturnTimer
 
@@ -58,13 +56,6 @@ func set_player_ref(player: Node3D) -> void:
 func _reset_escalation() -> void:
 	swim_speed = initial_swim_speed
 	return_delay = initial_return_delay
-
-
-func _is_round_active() -> bool:
-	var rm := get_node_or_null("/root/main/RoundManager")
-	if rm != null:
-		_cached_round_active = rm.round_active
-	return _cached_round_active
 
 
 func _on_spawn_timer_timeout() -> void:

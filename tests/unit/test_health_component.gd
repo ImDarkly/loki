@@ -54,6 +54,14 @@ func test_died_not_emitted_when_still_alive() -> void:
 	assert_signal_not_emitted(health, "died")
 
 
+func test_died_not_emitted_twice_on_repeated_zero_hp_damage() -> void:
+	health.current_health = 2
+	watch_signals(health)
+	health.take_damage(2)
+	health.take_damage(5)
+	assert_signal_emit_count(health, "died", 1, "Should emit exactly once, even on repeated damage at 0")
+
+
 func test_reset_to_max_restores_health() -> void:
 	health.current_health = 0
 	health.reset_to_max()
