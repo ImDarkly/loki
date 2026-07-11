@@ -6,7 +6,6 @@
 [ext_resource type="PackedScene" path="res://systems/quota/quota_manager.tscn" id="5_2ihsm"]
 [ext_resource type="PackedScene" path="res://systems/round/round_manager.tscn" id="6_0f4gj"]
 [ext_resource type="PackedScene" path="res://ui/end_screen.tscn" id="7_7tkbk"]
-[ext_resource type="PackedScene" uid="uid://b4whc7gyqcqbp" path="res://entities/player/player.tscn" id="8_ivwhi"]
 
 [node name="main" type="Node3D" unique_id=1783119357]
 script = ExtResource("3_y6pqm")
@@ -14,9 +13,8 @@ script = ExtResource("3_y6pqm")
 [node name="Players" type="Node3D" parent="." unique_id=1984856934]
 script = ExtResource("4_cu0i6")
 
-[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="Players"]
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="Players" unique_id=1948446566]
 spawn_path = NodePath("..")
-spawnable_scenes = [ExtResource("8_ivwhi")]
 
 [node name="DangerManager" parent="." unique_id=621029984 instance=ExtResource("4_0we7i")]
 initial_spawn_delay = 5.0
@@ -24,6 +22,6 @@ initial_spawn_delay = 5.0
 [node name="QuotaManager" parent="." unique_id=2032018860 instance=ExtResource("5_2ihsm")]
 
 [node name="RoundManager" parent="." unique_id=273981928 instance=ExtResource("6_0f4gj")]
-round_duration = 10.0
+round_duration = 30.0
 
 [node name="EndScreen" parent="." unique_id=174325840 instance=ExtResource("7_7tkbk")]

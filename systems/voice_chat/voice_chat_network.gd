@@ -40,24 +40,28 @@ func _enable_mic() -> void:
 
 	_mic.initvoipmic(mic_btn, device_sel, ptt_btn, vox_btn, denoise_btn, mat)
 	_mic.setopusvalues(48000, 20, 2, 12000, 5, true)
-	_mic.set_voxthreshhold(0.07)
+	_mic.set_voxthreshhold(0.01)
 
 	mic_btn.button_pressed = true
 	mic_btn.toggled.emit(true)
 
 	_mic.process_mode = Node.PROCESS_MODE_INHERIT
 	_mic_initialized = true
+	print("VOICE: mic enabled, authority=", is_multiplayer_authority())
 
 
 func _on_mic_audio_packet(opus_packet: PackedByteArray, _frame_count: int) -> void:
+	print("VOICE: tx audio packet size=%d frame=%d" % [opus_packet.size(), _frame_count])
 	send_voice_packet.rpc(opus_packet)
 
 
 func _on_mic_json_packet(data: Dictionary) -> void:
+	print("VOICE: tx json packet %s" % data)
 	send_voice_packet.rpc(JSON.stringify(data).to_ascii_buffer())
 
 
 @rpc("any_peer", "unreliable", "call_remote")
 func send_voice_packet(packet: PackedByteArray) -> void:
+	print("VOICE: rx packet first_byte=%d len=%d speaker=%s" % [packet[0] if packet.size() > 0 else -1, packet.size(), _speaker != null])
 	if _speaker:
 		_speaker.tv_incomingaudiopacket(packet)

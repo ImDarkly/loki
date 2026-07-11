@@ -120,7 +120,7 @@ func _on_connection_failed() -> void:
 
 
 func _on_peer_connected(_id: int) -> void:
-	if game_manager.is_host():
+	if game_manager.is_server():
 		start_button.disabled = game_manager.players.size() < 2
 		status_label.text = "Waiting for players..."
 
@@ -143,15 +143,15 @@ func _on_player_list_changed() -> void:
 	player_list.clear()
 	for p in game_manager.players:
 		var label: String = p.username
-		if game_manager.is_host() and p.id == game_manager.local_player_id:
+		if game_manager.is_server() and p.id == game_manager.local_player_id:
 			label += " (You, Host)"
 		elif p.id == game_manager.local_player_id:
 			label += " (You)"
-		elif game_manager.is_host():
+		elif game_manager.is_server():
 			label += " (Joined)"
 		player_list.add_item(label)
 
-	if game_manager.is_host():
+	if game_manager.is_server():
 		start_button.disabled = game_manager.players.size() < 2
 
 

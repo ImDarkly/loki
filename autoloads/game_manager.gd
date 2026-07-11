@@ -112,7 +112,7 @@ func _sync_players(data: Array) -> void:
 	player_list_changed.emit()
 
 
-func is_host() -> bool:
+func is_server() -> bool:
 	return multiplayer.is_server()
 
 
