@@ -51,17 +51,14 @@ func _enable_mic() -> void:
 
 
 func _on_mic_audio_packet(opus_packet: PackedByteArray, _frame_count: int) -> void:
-	print("VOICE: tx audio packet size=%d frame=%d" % [opus_packet.size(), _frame_count])
 	send_voice_packet.rpc(opus_packet)
 
 
 func _on_mic_json_packet(data: Dictionary) -> void:
-	print("VOICE: tx json packet %s" % data)
 	send_voice_packet.rpc(JSON.stringify(data).to_ascii_buffer())
 
 
 @rpc("any_peer", "unreliable", "call_remote")
 func send_voice_packet(packet: PackedByteArray) -> void:
-	print("VOICE: rx packet first_byte=%d len=%d speaker=%s" % [packet[0] if packet.size() > 0 else -1, packet.size(), _speaker != null])
 	if _speaker:
 		_speaker.tv_incomingaudiopacket(packet)

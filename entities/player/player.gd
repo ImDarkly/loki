@@ -364,11 +364,11 @@ func _sync_transform(pos: Vector3, rot: Vector3, head_rot: Vector3) -> void:
 	head.rotation = head_rot
 
 
-@rpc("authority", "unreliable", "call_remote")
+@rpc("authority", "reliable", "call_remote")
 func _sync_fishing_state(state: int) -> void:
 	fishing_mechanic.current_state = state
 
 
-@rpc("authority", "unreliable", "call_remote")
+@rpc("authority", "reliable", "call_remote")
 func _sync_cast_target(pos: Vector3) -> void:
 	fishing_mechanic.cast_target_position = pos
