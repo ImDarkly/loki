@@ -16,6 +16,7 @@ signal quota_penalty(amount: int)
 @export var min_swim_speed: float = 8.0
 @export var min_return_delay: float = 0.5
 @export var min_spawn_distance_from_player: float = 12.0
+@export var shark_bite_damage: int = 2
 
 const WATER_HALF_SIZE: float = 25.0
 const WATER_CENTER: Vector3 = Vector3(0, 0, -7)
@@ -297,8 +298,10 @@ func _trigger_attack() -> void:
 	if target_player != null:
 		var target_client_id := _get_player_client_id(target_player)
 		_broadcast_fish_fled_rpc.rpc(target_client_id)
+		var health := target_player.get_node_or_null("HealthComponent") as HealthComponent
+		if health:
+			health.take_damage(shark_bite_damage)
 	fish_fled.emit()
-	quota_penalty.emit(3)
 	_reset_escalation()
 	if is_instance_valid(shark_node):
 		shark_node.visible = false

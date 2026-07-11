@@ -14,12 +14,17 @@ func before_each() -> void:
 	manager.return_timer.stop()
 
 	mock_player = Node3D.new()
+	mock_player.name = "Player_1"
 	var mock_script := GDScript.new()
 	mock_script.source_code = "extends Node3D\nvar is_yelling: bool = false\n"
 	mock_script.reload()
 	mock_player.set_script(mock_script)
 	add_child(mock_player)
 	manager.set_player_ref(mock_player)
+
+	var health_component := HealthComponent.new()
+	health_component.name = "HealthComponent"
+	mock_player.add_child(health_component)
 
 
 func test_initial_state_is_inactive() -> void:
@@ -58,12 +63,16 @@ func test_attack_distance_triggers_signals() -> void:
 	manager.player_ref.global_position = Vector3(0, 0, -7)
 	manager.attack_range = 5.0
 
+	var health := mock_player.get_node("HealthComponent") as HealthComponent
+	health.current_health = 5
+
 	watch_signals(manager)
 	manager.current_state = 1
 	manager._physics_process(1.0)
 
 	assert_signal_emitted(manager, "fish_fled")
-	assert_signal_emitted(manager, "quota_penalty")
+	assert_signal_not_emitted(manager, "quota_penalty")
+	assert_eq(health.current_health, 3, "Health should be reduced by shark_bite_damage (2)")
 	assert_eq(manager.current_state, 4, "Should be WAITING (4) after attack")
 
 

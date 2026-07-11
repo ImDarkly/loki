@@ -92,9 +92,7 @@ func setup_water() -> void:
 
 
 func _setup_danger_system() -> void:
-	var danger := $DangerManager
-	var quota_manager := $QuotaManager
-	danger.quota_penalty.connect(quota_manager.apply_penalty)
+	pass
 
 
 func _add_fps_counter() -> void:
