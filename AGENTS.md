@@ -67,3 +67,11 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## Project-specific
 
 - Godot executable: `E:\Godot\Godot_v4.6.2-stable_win64.exe`
+
+## PowerShell encoding trap
+
+When writing markdown with backticks (`` ` ``) to files in PowerShell:
+- **NEVER use `@"..."@` here-strings** — PowerShell interprets backticks as escape characters (`` `t `` → tab, `` `r `` → CR, `` `n `` → newline), corrupting `` `code` `` into garbage.
+- **ALWAYS use the `write` tool** to create any file containing backticks, even temp files.
+- If you must use a shell string, use `@'...'@` (single-quoted here-string) which disables all escape processing.
+- For `gh pr create --body`, write the body to a file via `write` tool, then pass `--body-file <path>`.
