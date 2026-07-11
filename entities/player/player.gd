@@ -51,6 +51,10 @@ var _bounce_vel: float = 0.0
 var _hand_bounce: float = 0.0
 var is_yelling: bool = false
 
+var _last_fish_state: int = -1
+var _last_cast_target: Vector3 = Vector3.ZERO
+var _sync_tick: int = 0
+
 
 func _ready() -> void:
 	randomize()
@@ -61,10 +65,12 @@ func _ready() -> void:
 	_setup_meshes()
 	_setup_input_actions()
 
+	_setup_authority_from_name()
+
 	camera.position = Vector3.ZERO
 	_cam_home = Vector3.ZERO
 
-	_setup_authority_from_name()
+	_apply_player_visibility()
 
 
 func _setup_collision_shape() -> void:
@@ -264,6 +270,21 @@ func _physics_process(delta: float) -> void:
 
 	_prev_yaw = rotation.y
 
+	_sync_tick += 1
+	if _sync_tick >= 2:
+		_sync_tick = 0
+		rpc("_sync_transform", global_position, rotation, head.rotation)
+
+	var fs: int = fishing_mechanic.current_state
+	if fs != _last_fish_state:
+		_last_fish_state = fs
+		rpc("_sync_fishing_state", fs)
+
+	var ct: Vector3 = fishing_mechanic.cast_target_position
+	if ct != _last_cast_target:
+		_last_cast_target = ct
+		rpc("_sync_cast_target", ct)
+
 
 func _setup_authority_from_name() -> void:
 	var owning_id := _parse_owner_id()
@@ -284,7 +305,9 @@ func _setup_authority_from_name() -> void:
 
 	position = spawn_positions[spawn_index] if spawn_index < spawn_positions.size() else spawn_positions[0]
 
-	if owning_id == multiplayer.get_unique_id():
+
+func _apply_player_visibility() -> void:
+	if get_multiplayer_authority() == multiplayer.get_unique_id():
 		_enable_player()
 	else:
 		_disable_player()
@@ -332,3 +355,20 @@ func _on_yelling_state_changed(is_yelling: bool) -> void:
 @rpc("any_peer", "unreliable", "call_remote")
 func sync_yelling(new_is_yelling: bool) -> void:
 	is_yelling = new_is_yelling
+
+
+@rpc("authority", "unreliable", "call_remote")
+func _sync_transform(pos: Vector3, rot: Vector3, head_rot: Vector3) -> void:
+	global_position = pos
+	rotation = rot
+	head.rotation = head_rot
+
+
+@rpc("authority", "reliable", "call_remote")
+func _sync_fishing_state(state: int) -> void:
+	fishing_mechanic.current_state = state
+
+
+@rpc("authority", "reliable", "call_remote")
+func _sync_cast_target(pos: Vector3) -> void:
+	fishing_mechanic.cast_target_position = pos

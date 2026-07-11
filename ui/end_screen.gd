@@ -21,8 +21,8 @@ func _on_round_ended(success: bool) -> void:
 		quota_label.text = "%d fish caught" % qm.shared_quota
 
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	restart_button.visible = game_manager.is_host()
-	wait_label.visible = not game_manager.is_host()
+	restart_button.visible = game_manager.is_server()
+	wait_label.visible = not game_manager.is_server()
 	visible = true
 
 

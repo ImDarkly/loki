@@ -8,10 +8,6 @@
 
 config_version=5
 
-[GD-Sync]
-
-version="1.0"
-
 [application]
 
 config/name="Loki"
