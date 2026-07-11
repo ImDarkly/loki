@@ -5,6 +5,8 @@
 [ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_manager.tscn" id="3_lh5f4"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/mic_level_bar.tscn" id="4_yshjx"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_network.tscn" id="5_ih6f4"]
+[ext_resource type="Script" path="res://systems/health/health_label.gd" id="6_lm3n1"]
+[ext_resource type="PackedScene" path="res://systems/health/health_component.tscn" id="7_ok2f6"]
 
 [node name="Player" type="CharacterBody3D" unique_id=997464534]
 collision_layer = 2
@@ -31,4 +33,21 @@ far = 1000.0
 
 [node name="VoiceChatNetwork" parent="." unique_id=1582687195 instance=ExtResource("5_ih6f4")]
 
+[node name="HealthComponent" parent="." instance=ExtResource("7_ok2f6")]
+
+[node name="HealthLabel" type="CanvasLayer" parent="."]
+script = ExtResource("6_lm3n1")
+
+[node name="Label" type="Label" parent="HealthLabel"]
+anchors_preset = 2
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -80.0
+offset_top = 10.0
+offset_right = 80.0
+offset_bottom = 50.0
+text = "HP: 5/5"
+horizontal_alignment = 1
 

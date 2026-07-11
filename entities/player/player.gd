@@ -36,6 +36,7 @@ class_name Player extends CharacterBody3D
 @onready var body_mesh: MeshInstance3D = $BodyMesh
 @onready var _voice_chat: Node = $VoiceChatManager
 @onready var mic_level_bar: CanvasLayer = get_node_or_null("MicLevelBar")
+@onready var health_label: CanvasLayer = get_node_or_null("HealthLabel")
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _jump_velocity: float
@@ -328,6 +329,8 @@ func _enable_player() -> void:
 	set_process_unhandled_input(true)
 	if mic_level_bar != null:
 		mic_level_bar.visible = true
+	if health_label != null:
+		health_label.visible = true
 	if _voice_chat != null:
 		_voice_chat.set_process(true)
 		if not _voice_chat.yelling_state_changed.is_connected(_on_yelling_state_changed):
@@ -341,6 +344,8 @@ func _disable_player() -> void:
 	set_process_unhandled_input(false)
 	if mic_level_bar != null:
 		mic_level_bar.visible = false
+	if health_label != null:
+		health_label.visible = false
 	if _voice_chat != null:
 		_voice_chat.set_process(false)
 		if _voice_chat.yelling_state_changed.is_connected(_on_yelling_state_changed):
