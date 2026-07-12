@@ -86,7 +86,6 @@ func test_bite_timer_noops_when_fishing_inactive() -> void:
 	mechanic._cached_fishing_active = false
 	mechanic._on_bite_timer_timeout()
 	assert_eq(mechanic.current_state, 2, "Should remain WAITING (2)")
-	assert_eq(mechanic.current_state, 2, "Should remain WAITING (2)")
 
 
 func test_reel_timer_noops_when_fishing_inactive() -> void:
