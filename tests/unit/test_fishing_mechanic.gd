@@ -1,6 +1,7 @@
 extends GutTest
 
 var mechanic: Node3D
+var zone_manager: Node3D
 
 
 func before_each() -> void:
@@ -8,6 +9,13 @@ func before_each() -> void:
 	mechanic = autofree(scene.instantiate())
 	add_child(mechanic)
 	await get_tree().process_frame
+
+	var zone_scene: PackedScene = load("res://systems/zones/zone_manager.tscn")
+	zone_manager = autofree(zone_scene.instantiate())
+	add_child(zone_manager)
+	zone_manager.call("set_zones", [
+		{"center": Vector3(0, 0, 0), "radius": 10.0}
+	])
 
 
 func test_reel_success_when_bar_in_zone() -> void:
@@ -84,6 +92,7 @@ func test_cast_ignored_when_fishing_inactive() -> void:
 func test_bite_timer_fires_when_fishing_inactive() -> void:
 	mechanic.current_state = 2
 	mechanic._cached_fishing_active = false
+	mechanic.cast_target_position = Vector3(0, 0, 0)
 	mechanic._on_bite_timer_timeout()
 	assert_eq(mechanic.current_state, 3, "Should transition to BITE (3) regardless of fishing_active")
 
@@ -102,36 +111,46 @@ func test_reel_timer_resolves_when_fishing_inactive() -> void:
 	assert_signal_not_emitted(mechanic, "reel_failure")
 
 
+func test_bite_timer_uses_dead_zone_feedback_outside_zones() -> void:
+	mechanic.current_state = 2
+	mechanic.cast_target_position = Vector3(100, 0, 100)
+	watch_signals(mechanic.catch_feedback_manager)
+	mechanic._on_bite_timer_timeout()
+	assert_eq(mechanic.current_state, 0, "Should return to IDLE (0) when outside every zone")
+	assert_signal_not_emitted(mechanic, "bite_occurred")
+	assert_eq(mechanic.catch_feedback_manager.feedback_label.text, "Nothing's biting...")
+
+
 func test_arc_velocity_lands_at_target() -> void:
-	var start := Vector3(2, 1.6, 0)
-	var target := Vector3(10, 0, 3)
-	var duration := 0.5
-	var gravity := 9.8
-	var v := mechanic._compute_launch_velocity(start, target, duration, gravity)
-	var g := Vector3(0, -gravity, 0)
-	var pos := start + v * duration + 0.5 * g * duration * duration
+	var start: Vector3 = Vector3(2, 1.6, 0)
+	var target: Vector3 = Vector3(10, 0, 3)
+	var duration: float = 0.5
+	var gravity: float = 9.8
+	var v: Vector3 = mechanic._compute_launch_velocity(start, target, duration, gravity)
+	var g: Vector3 = Vector3(0, -gravity, 0)
+	var pos: Vector3 = start + v * duration + 0.5 * g * duration * duration
 	assert_eq(pos, target, "Arc should land at target at t=flight_duration")
 
 
 func test_arc_starts_at_rod_tip() -> void:
-	var start := Vector3(2, 1.6, 0)
-	var target := Vector3(10, 0, 3)
-	var duration := 0.5
-	var gravity := 9.8
-	var v := mechanic._compute_launch_velocity(start, target, duration, gravity)
-	var pos := start + v * 0.0 + 0.5 * Vector3(0, -gravity, 0) * 0.0 * 0.0
+	var start: Vector3 = Vector3(2, 1.6, 0)
+	var target: Vector3 = Vector3(10, 0, 3)
+	var duration: float = 0.5
+	var gravity: float = 9.8
+	var v: Vector3 = mechanic._compute_launch_velocity(start, target, duration, gravity)
+	var pos: Vector3 = start + v * 0.0 + 0.5 * Vector3(0, -gravity, 0) * 0.0 * 0.0
 	assert_eq(pos, start, "Arc should start at rod tip at t=0")
 
 
 func test_arc_is_deterministic() -> void:
-	var start := Vector3(2, 1.6, 0)
-	var target := Vector3(10, 0, 3)
-	var duration := 0.5
-	var gravity := 9.8
-	var t := duration * 0.3
-	var v1 := mechanic._compute_launch_velocity(start, target, duration, gravity)
-	var v2 := mechanic._compute_launch_velocity(start, target, duration, gravity)
-	var g := Vector3(0, -gravity, 0)
-	var pos1 := start + v1 * t + 0.5 * g * t * t
-	var pos2 := start + v2 * t + 0.5 * g * t * t
+	var start: Vector3 = Vector3(2, 1.6, 0)
+	var target: Vector3 = Vector3(10, 0, 3)
+	var duration: float = 0.5
+	var gravity: float = 9.8
+	var t: float = duration * 0.3
+	var v1: Vector3 = mechanic._compute_launch_velocity(start, target, duration, gravity)
+	var v2: Vector3 = mechanic._compute_launch_velocity(start, target, duration, gravity)
+	var g: Vector3 = Vector3(0, -gravity, 0)
+	var pos1: Vector3 = start + v1 * t + 0.5 * g * t * t
+	var pos2: Vector3 = start + v2 * t + 0.5 * g * t * t
 	assert_eq(pos1, pos2, "Same inputs should produce identical intermediate positions")

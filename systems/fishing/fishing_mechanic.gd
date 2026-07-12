@@ -53,6 +53,7 @@ var personal_catch_count: int = 0
 var reel_duration: float = 0.0
 
 var _quota_manager_ref: Node3D = null
+var _zone_manager_ref: Node3D = null
 
 var is_local_render: bool = true:
 	set(value):
@@ -125,8 +126,17 @@ func _try_find_quota_manager() -> void:
 		qm.quota_updated.connect(_on_quota_updated)
 
 
+func _try_find_zone_manager() -> void:
+	if _zone_manager_ref:
+		return
+	var zm := get_tree().root.find_child("ZoneManager", true, false)
+	if zm:
+		_zone_manager_ref = zm
+
+
 func _ready() -> void:
 	_try_find_quota_manager()
+	_try_find_zone_manager()
 	bite_timer.one_shot = true
 	bite_timer.timeout.connect(_on_bite_timer_timeout)
 	bite_audio.stream = _generate_rumble_stream()
@@ -398,6 +408,14 @@ func _on_casting_timer_timeout() -> void:
 
 
 func _on_bite_timer_timeout() -> void:
+	var zone_index := _get_zone_index_for_cast_target()
+	if zone_index == _get_no_zone_index():
+		current_state = State.IDLE
+		_snap_bobber_to_rod()
+		$FishManager.cleanup()
+		catch_feedback_manager.play_dead_zone_feedback()
+		return
+
 	current_state = State.BITE
 	_bite_time = 0.0
 	if is_instance_valid(bobber_node):
@@ -406,6 +424,20 @@ func _on_bite_timer_timeout() -> void:
 	$FishManager.spawn(cast_target_position)
 	bite_occurred.emit(cast_target_position)
 	print("Bite! Press left mouse to start reeling")
+
+
+func _get_zone_index_for_cast_target() -> int:
+	_try_find_zone_manager()
+	if not is_instance_valid(_zone_manager_ref):
+		return _get_no_zone_index()
+	return _zone_manager_ref.get_zone_index_for_point(cast_target_position)
+
+
+func _get_no_zone_index() -> int:
+	_try_find_zone_manager()
+	if is_instance_valid(_zone_manager_ref) and _zone_manager_ref.has_method("get_no_zone_index"):
+		return _zone_manager_ref.get_no_zone_index()
+	return -1
 
 
 func _create_line_node() -> void:
