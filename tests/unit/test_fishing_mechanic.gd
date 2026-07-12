@@ -81,19 +81,22 @@ func test_cast_ignored_when_fishing_inactive() -> void:
 	assert_false(mechanic.can_cast(), "can_cast should return false when fishing inactive")
 
 
-func test_bite_timer_noops_when_fishing_inactive() -> void:
+func test_bite_timer_fires_when_fishing_inactive() -> void:
 	mechanic.current_state = 2
 	mechanic._cached_fishing_active = false
 	mechanic._on_bite_timer_timeout()
-	assert_eq(mechanic.current_state, 2, "Should remain WAITING (2)")
+	assert_eq(mechanic.current_state, 3, "Should transition to BITE (3) regardless of fishing_active")
 
 
-func test_reel_timer_noops_when_fishing_inactive() -> void:
+func test_reel_timer_resolves_when_fishing_inactive() -> void:
 	mechanic._enter_reeling()
 	mechanic.reel_timer.stop()
+	mechanic.reel_meter.size = Vector2(40, 300)
+	mechanic.player_bar_position = 90.0
+	mechanic.green_zone_position = 30.0
 	mechanic._cached_fishing_active = false
 	watch_signals(mechanic)
 	mechanic._on_reel_timer_timeout()
-	assert_eq(mechanic.current_state, 4, "Should remain REELING (4)")
+	assert_eq(mechanic.current_state, 0, "Should transition to IDLE (0) regardless of fishing_active")
 	assert_signal_not_emitted(mechanic, "reel_success")
-	assert_signal_not_emitted(mechanic, "reel_failure")
+	assert_signal_emitted(mechanic, "reel_failure")
