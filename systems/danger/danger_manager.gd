@@ -237,7 +237,12 @@ func _direction_to_player(from: Vector3, target_player: Node3D) -> Vector3:
 func _get_nearest_player() -> Node3D:
 	var players := _get_player_nodes()
 	if players.is_empty():
-		return player_ref if is_instance_valid(player_ref) else null
+		if not is_instance_valid(player_ref):
+			return null
+		var hp := player_ref.get_node_or_null("HealthComponent") as HealthComponent
+		if hp == null or not hp.is_alive():
+			return null
+		return player_ref
 
 	var origin := Vector3.ZERO
 	if is_instance_valid(shark_node):
@@ -259,8 +264,12 @@ func _get_player_nodes() -> Array[Node3D]:
 	var players: Array[Node3D] = []
 	for child in players_container.get_children():
 		var player := child as Player
-		if player != null:
-			players.append(player)
+		if player == null:
+			continue
+		var hp := player.get_node_or_null("HealthComponent") as HealthComponent
+		if hp == null or not hp.is_alive():
+			continue
+		players.append(player)
 	return players
 
 
@@ -268,7 +277,12 @@ func _has_yelling_player() -> bool:
 	for player in _get_player_nodes():
 		if _player_is_yelling(player):
 			return true
-	return is_instance_valid(player_ref) and _player_is_yelling(player_ref)
+	if not is_instance_valid(player_ref):
+		return false
+	var hp := player_ref.get_node_or_null("HealthComponent") as HealthComponent
+	if hp == null or not hp.is_alive():
+		return false
+	return _player_is_yelling(player_ref)
 
 
 func _player_is_yelling(player: Object) -> bool:

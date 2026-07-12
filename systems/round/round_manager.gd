@@ -78,9 +78,11 @@ func _apply_restart() -> void:
 	var players_node := get_node_or_null("/root/main/Players")
 	if players_node:
 		for child in players_node.get_children():
-			var fm := child.get_node_or_null("FishingMechanic")
-			if fm:
-				fm.reset_for_restart()
+			if child is Player:
+				var fm := child.get_node_or_null("FishingMechanic")
+				if fm:
+					fm.reset_for_restart()
+				child._on_restart()
 
 
 @rpc("authority", "call_local", "reliable")
