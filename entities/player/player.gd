@@ -392,7 +392,10 @@ func _cycle_spectate_target() -> void:
 	if alive.is_empty():
 		_spectate_target = null
 		return
-	_spectate_target_index = (_spectate_target_index + 1) % alive.size()
+	var current_index := alive.find(_spectate_target)
+	if current_index == -1:
+		current_index = _spectate_target_index
+	_spectate_target_index = (current_index + 1) % alive.size()
 	_spectate_target = alive[_spectate_target_index]
 
 

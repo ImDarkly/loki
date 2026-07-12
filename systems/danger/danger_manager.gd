@@ -237,7 +237,12 @@ func _direction_to_player(from: Vector3, target_player: Node3D) -> Vector3:
 func _get_nearest_player() -> Node3D:
 	var players := _get_player_nodes()
 	if players.is_empty():
-		return player_ref if is_instance_valid(player_ref) else null
+		if not is_instance_valid(player_ref):
+			return null
+		var hp := player_ref.get_node_or_null("HealthComponent") as HealthComponent
+		if hp == null or not hp.is_alive():
+			return null
+		return player_ref
 
 	var origin := Vector3.ZERO
 	if is_instance_valid(shark_node):
