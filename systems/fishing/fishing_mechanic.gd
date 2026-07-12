@@ -218,7 +218,7 @@ func _process(delta: float) -> void:
 			_update_bobber()
 			_rebuild_line()
 
-			if current_state == State.BITE and _is_fishing_active():
+			if current_state == State.BITE:
 				_bite_time += delta
 				if is_local_render:
 					if _bite_time >= 2.5:
@@ -231,7 +231,7 @@ func _process(delta: float) -> void:
 				if is_local_render and Input.is_action_just_pressed("reel"):
 					_enter_reeling()
 
-			if is_local_render and current_state == State.WAITING and Input.is_action_just_pressed("reel") and _is_fishing_active():
+			if is_local_render and current_state == State.WAITING and Input.is_action_just_pressed("reel"):
 				bite_timer.stop()
 				_snap_bobber_to_rod()
 				current_state = State.IDLE
@@ -240,21 +240,20 @@ func _process(delta: float) -> void:
 			_update_bobber()
 			_rebuild_line()
 
-			if _is_fishing_active():
-				_reel_elapsed += delta
+			_reel_elapsed += delta
 
-				if is_local_render:
-					var holding: bool = Input.is_action_pressed("reel")
+			if is_local_render:
+				var holding: bool = Input.is_action_pressed("reel")
 
-					if holding:
-						player_bar_position += player_rise_speed * delta
-					else:
-						player_bar_position -= player_fall_speed * delta
+				if holding:
+					player_bar_position += player_rise_speed * delta
+				else:
+					player_bar_position -= player_fall_speed * delta
 
-					player_bar_position = clamp(player_bar_position, 0.0, 100.0)
+				player_bar_position = clamp(player_bar_position, 0.0, 100.0)
 
-					green_zone_position = lerp(green_zone_position, green_zone_target, green_zone_lerp_speed * delta)
-					_update_reel_meter()
+				green_zone_position = lerp(green_zone_position, green_zone_target, green_zone_lerp_speed * delta)
+				_update_reel_meter()
 
 		State.IDLE:
 			if is_instance_valid(bobber_node):
@@ -280,8 +279,6 @@ func _update_reel_meter() -> void:
 
 func _on_green_zone_timer_timeout() -> void:
 	if current_state != State.REELING:
-		return
-	if not _is_fishing_active():
 		return
 	green_zone_target += randf_range(-zone_move_amount, zone_move_amount)
 	green_zone_target = clamp(green_zone_target, 0.0, 100.0 - green_zone_width)
@@ -320,8 +317,6 @@ func _on_reel_timer_timeout() -> void:
 	if not is_local_render:
 		return
 	if current_state != State.REELING:
-		return
-	if not _is_fishing_active():
 		return
 	var was_success: bool = _is_bar_in_zone()
 	if was_success:
@@ -365,8 +360,6 @@ func cast(from_position: Vector3, forward_direction: Vector3) -> void:
 func _on_casting_timer_timeout() -> void:
 	if current_state != State.CASTING:
 		return
-	if not _is_fishing_active():
-		return
 	current_state = State.WAITING
 	var delay: float = randf_range(min_bite_delay, max_bite_delay)
 	bite_timer.start(delay)
@@ -374,8 +367,6 @@ func _on_casting_timer_timeout() -> void:
 
 
 func _on_bite_timer_timeout() -> void:
-	if not _is_fishing_active():
-		return
 	current_state = State.BITE
 	_bite_time = 0.0
 	if is_instance_valid(bobber_node):
@@ -552,8 +543,6 @@ func _generate_rumble_stream() -> AudioStreamWAV:
 
 
 func _on_catch_feedback_completed() -> void:
-	if not _is_fishing_active():
-		return
 	if current_state == State.SUCCESS:
 		_snap_bobber_to_rod()
 		current_state = State.IDLE
