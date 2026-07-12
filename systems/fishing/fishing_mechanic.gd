@@ -7,8 +7,6 @@ signal reel_success(quota: int)
 signal reel_failure()
 signal personal_catch_changed(count: int)
 
-@export var min_cast_distance: float = 5.0
-@export var max_cast_distance: float = 15.0
 @export var min_bite_delay: float = 3.0
 @export var max_bite_delay: float = 8.0
 
@@ -20,6 +18,9 @@ signal personal_catch_changed(count: int)
 
 @export var min_reel_duration: float = 10.0
 @export var max_reel_duration: float = 20.0
+@export var gravity_strength: float = 9.8
+
+var _current_flight_duration: float
 
 @onready var bite_timer: Timer = $BiteTimer
 @onready var bite_audio: AudioStreamPlayer = $BiteAudio
@@ -39,6 +40,9 @@ var visual_line_node: MeshInstance3D = null
 var line_material: ORMMaterial3D = null
 var bobber_node: MeshInstance3D = null
 var cast_target_position: Vector3
+var _flight_start_position: Vector3
+var _flight_start_time: int
+var _launch_velocity: Vector3
 
 var player_bar_position: float = 50.0
 var green_zone_position: float = 50.0
@@ -167,10 +171,21 @@ func set_rod_tip(tip: Node3D) -> void:
 	_rod_tip_ref = tip
 
 
+func get_rod_tip_position() -> Vector3:
+	return _get_rod_tip_position()
+
+
 func _get_rod_tip_position() -> Vector3:
 	if _rod_tip_ref and is_instance_valid(_rod_tip_ref):
 		return _rod_tip_ref.global_position
 	return global_position + Vector3(0, 1.6, -0.5)
+
+
+static func _compute_launch_velocity(
+	start: Vector3, target: Vector3, duration: float, gravity: float
+) -> Vector3:
+	var g := Vector3(0, -gravity, 0)
+	return (target - start - 0.5 * g * duration * duration) / duration
 
 
 func _get_bobber_position() -> Vector3:
@@ -178,7 +193,13 @@ func _get_bobber_position() -> Vector3:
 		var fish: Node3D = $FishManager.get_fish()
 		if is_instance_valid(fish):
 			return fish.position
-	if current_state in [State.CASTING, State.WAITING, State.BITE]:
+	if current_state == State.CASTING:
+		var elapsed := (Time.get_ticks_msec() - _flight_start_time) / 1000.0
+		elapsed = min(elapsed, _current_flight_duration)
+		return _flight_start_position \
+			+ _launch_velocity * elapsed \
+			+ 0.5 * Vector3(0, -gravity_strength, 0) * elapsed * elapsed
+	if current_state in [State.WAITING, State.BITE]:
 		return cast_target_position
 	if is_instance_valid(bobber_node):
 		return bobber_node.position
@@ -189,6 +210,10 @@ func _handle_remote_transition(to_state: int) -> void:
 	match to_state:
 		State.CASTING:
 			_cleanup_all()
+			_launch_velocity = _compute_launch_velocity(
+				_flight_start_position, cast_target_position, _current_flight_duration, gravity_strength
+			)
+			_flight_start_time = Time.get_ticks_msec()
 			_create_bobber(cast_target_position)
 			_create_line_node()
 			_rebuild_line()
@@ -337,7 +362,7 @@ func _on_reel_timer_timeout() -> void:
 	print("Reel ended. State: %s, Personal catches: %d" % ["SUCCESS" if was_success else "ESCAPE", personal_catch_count])
 
 
-func cast(from_position: Vector3, forward_direction: Vector3) -> void:
+func cast(target_position: Vector3, flight_time: float) -> void:
 	if current_state in [State.BITE, State.REELING, State.SUCCESS]:
 		_exit_reeling()
 
@@ -345,16 +370,22 @@ func cast(from_position: Vector3, forward_direction: Vector3) -> void:
 
 	current_state = State.CASTING
 
-	var random_distance: float = randf_range(min_cast_distance, max_cast_distance)
-	cast_target_position = from_position + (forward_direction * random_distance)
+	cast_target_position = target_position
 	cast_target_position.y = 0.0
 
-	_create_bobber(cast_target_position)
+	_current_flight_duration = flight_time
+	_flight_start_position = _get_rod_tip_position()
+	_flight_start_time = Time.get_ticks_msec()
+	_launch_velocity = _compute_launch_velocity(
+		_flight_start_position, cast_target_position, _current_flight_duration, gravity_strength
+	)
+
+	_create_bobber(_get_bobber_position())
 	_create_line_node()
 	_rebuild_line()
 
-	casting_timer.start(0.3)
-	print("Cast: line in water, entering CASTING state")
+	casting_timer.start(_current_flight_duration)
+	print("Cast: projectile arc, entering CASTING state")
 
 
 func _on_casting_timer_timeout() -> void:

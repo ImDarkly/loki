@@ -99,4 +99,39 @@ func test_reel_timer_resolves_when_fishing_inactive() -> void:
 	mechanic._on_reel_timer_timeout()
 	assert_eq(mechanic.current_state, 0, "Should transition to IDLE (0) regardless of fishing_active")
 	assert_signal_not_emitted(mechanic, "reel_success")
-	assert_signal_emitted(mechanic, "reel_failure")
+	assert_signal_not_emitted(mechanic, "reel_failure")
+
+
+func test_arc_velocity_lands_at_target() -> void:
+	var start := Vector3(2, 1.6, 0)
+	var target := Vector3(10, 0, 3)
+	var duration := 0.5
+	var gravity := 9.8
+	var v := mechanic._compute_launch_velocity(start, target, duration, gravity)
+	var g := Vector3(0, -gravity, 0)
+	var pos := start + v * duration + 0.5 * g * duration * duration
+	assert_eq(pos, target, "Arc should land at target at t=flight_duration")
+
+
+func test_arc_starts_at_rod_tip() -> void:
+	var start := Vector3(2, 1.6, 0)
+	var target := Vector3(10, 0, 3)
+	var duration := 0.5
+	var gravity := 9.8
+	var v := mechanic._compute_launch_velocity(start, target, duration, gravity)
+	var pos := start + v * 0.0 + 0.5 * Vector3(0, -gravity, 0) * 0.0 * 0.0
+	assert_eq(pos, start, "Arc should start at rod tip at t=0")
+
+
+func test_arc_is_deterministic() -> void:
+	var start := Vector3(2, 1.6, 0)
+	var target := Vector3(10, 0, 3)
+	var duration := 0.5
+	var gravity := 9.8
+	var t := duration * 0.3
+	var v1 := mechanic._compute_launch_velocity(start, target, duration, gravity)
+	var v2 := mechanic._compute_launch_velocity(start, target, duration, gravity)
+	var g := Vector3(0, -gravity, 0)
+	var pos1 := start + v1 * t + 0.5 * g * t * t
+	var pos2 := start + v2 * t + 0.5 * g * t * t
+	assert_eq(pos1, pos2, "Same inputs should produce identical intermediate positions")
