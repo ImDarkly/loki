@@ -37,6 +37,9 @@ class_name Player extends CharacterBody3D
 @onready var _voice_chat: Node = $VoiceChatManager
 @onready var mic_level_bar: CanvasLayer = get_node_or_null("MicLevelBar")
 @onready var health_label: CanvasLayer = get_node_or_null("HealthLabel")
+@onready var spectate_camera: Node3D = $SpectateCamera
+@onready var spectate_cam_camera: Camera3D = $SpectateCamera/Camera3D
+@onready var _players_container: Node = get_node_or_null("/root/main/Players")
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _jump_velocity: float
@@ -51,6 +54,14 @@ var _bounce_pos: float = 0.0
 var _bounce_vel: float = 0.0
 var _hand_bounce: float = 0.0
 var is_yelling: bool = false
+
+enum PlayerState { ALIVE, SPECTATE }
+
+var player_state: PlayerState = PlayerState.ALIVE
+var _spectate_yaw: float = 0.0
+var _spectate_pitch: float = 0.0
+var _spectate_target: Node3D = null
+var _spectate_target_index: int = 0
 
 var _last_fish_state: int = -1
 var _last_cast_target: Vector3 = Vector3.ZERO
@@ -72,6 +83,8 @@ func _ready() -> void:
 	_cam_home = Vector3.ZERO
 
 	_apply_player_visibility()
+
+	$HealthComponent.died.connect(_enter_spectate)
 
 
 func _setup_collision_shape() -> void:
@@ -181,7 +194,12 @@ func _remove_key_from_action(action: String, keycode: Key) -> void:
 
 
 func _process(delta: float) -> void:
+	if player_state == PlayerState.SPECTATE:
+		_update_spectate_camera(delta)
+		return
+
 	is_yelling = _voice_chat.is_yelling if _voice_chat != null else false
+
 	var speed := Vector2(velocity.x, velocity.z).length()
 	var t := Time.get_ticks_msec() / 1000.0
 
@@ -205,6 +223,17 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if player_state == PlayerState.SPECTATE:
+		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			_spectate_yaw -= event.relative.x * mouse_sensitivity
+			_spectate_pitch -= event.relative.y * mouse_sensitivity
+			_spectate_pitch = clamp(_spectate_pitch, deg_to_rad(-89.0), deg_to_rad(89.0))
+			spectate_camera.rotation.y = _spectate_yaw
+			spectate_camera.rotation.x = _spectate_pitch
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			_cycle_spectate_target()
+		return
+
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		head.rotate_x(-event.relative.y * mouse_sensitivity)
@@ -215,6 +244,27 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if player_state == PlayerState.SPECTATE:
+		if not is_on_floor():
+			velocity.y -= _gravity * delta
+		else:
+			velocity.x = 0.0
+			velocity.z = 0.0
+		move_and_slide()
+		_sync_tick += 1
+		if _sync_tick >= 2:
+			_sync_tick = 0
+			rpc("_sync_transform", global_position, rotation, head.rotation)
+		var fs: int = fishing_mechanic.current_state
+		if fs != _last_fish_state:
+			_last_fish_state = fs
+			rpc("_sync_fishing_state", fs)
+		var ct: Vector3 = fishing_mechanic.cast_target_position
+		if ct != _last_cast_target:
+			_last_cast_target = ct
+			rpc("_sync_cast_target", ct)
+		return
+
 	if not is_on_floor():
 		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
 		velocity.y -= _gravity * mult * delta
@@ -285,6 +335,80 @@ func _physics_process(delta: float) -> void:
 	if ct != _last_cast_target:
 		_last_cast_target = ct
 		rpc("_sync_cast_target", ct)
+
+
+func _enter_spectate() -> void:
+	if get_multiplayer_authority() != multiplayer.get_unique_id():
+		return
+	player_state = PlayerState.SPECTATE
+	camera.current = false
+	spectate_cam_camera.current = true
+	_spectate_yaw = 0.0
+	_spectate_pitch = 0.0
+	_spectate_target = _find_spectate_target()
+	is_yelling = false
+	sync_yelling.rpc(false)
+
+
+func _update_spectate_camera(delta: float) -> void:
+	if _spectate_target == null or not is_instance_valid(_spectate_target):
+		_spectate_target = _find_spectate_target()
+	elif _spectate_target != self:
+		var hp := _spectate_target.get_node_or_null("HealthComponent") as HealthComponent
+		if hp == null or not hp.is_alive():
+			_spectate_target = _find_spectate_target()
+	var target := _spectate_target if _spectate_target != null else self
+	spectate_camera.global_position = target.global_position
+	spectate_cam_camera.look_at(target.global_position + Vector3(0, 1.0, 0))
+
+
+func _find_spectate_target() -> Node3D:
+	if _players_container == null:
+		return null
+	for child in _players_container.get_children():
+		if child == self:
+			continue
+		var hp := child.get_node_or_null("HealthComponent") as HealthComponent
+		if hp and hp.is_alive():
+			return child
+	return null
+
+
+func _get_alive_players() -> Array[Node3D]:
+	var alive: Array = []
+	if _players_container == null:
+		return alive
+	for child in _players_container.get_children():
+		if child == self:
+			continue
+		var hp := child.get_node_or_null("HealthComponent") as HealthComponent
+		if hp and hp.is_alive():
+			alive.append(child)
+	return alive
+
+
+func _cycle_spectate_target() -> void:
+	var alive := _get_alive_players()
+	if alive.is_empty():
+		_spectate_target = null
+		return
+	_spectate_target_index = (_spectate_target_index + 1) % alive.size()
+	_spectate_target = alive[_spectate_target_index]
+
+
+func _on_restart() -> void:
+	var hp := $HealthComponent as HealthComponent
+	if hp:
+		hp.reset_to_max()
+	_spectate_target = null
+	if get_multiplayer_authority() != multiplayer.get_unique_id():
+		return
+	player_state = PlayerState.ALIVE
+	_spectate_yaw = 0.0
+	_spectate_pitch = 0.0
+	camera.current = true
+	spectate_cam_camera.current = false
+	set_process_unhandled_input(true)
 
 
 func _setup_authority_from_name() -> void:

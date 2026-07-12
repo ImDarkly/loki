@@ -75,6 +75,16 @@ func test_reset_to_max_emits_health_changed() -> void:
 	assert_signal_emitted(health, "health_changed")
 
 
+func test_reset_to_max_allows_died_to_be_emitted_again() -> void:
+	health.current_health = 2
+	health.take_damage(2)
+	assert_eq(health.current_health, 0)
+	watch_signals(health)
+	health.reset_to_max()
+	health.take_damage(health.max_health)
+	assert_signal_emitted(health, "died", "died should emit again after reset_to_max and new lethal damage")
+
+
 func test_is_alive_returns_true_when_positive() -> void:
 	health.current_health = 1
 	assert_true(health.is_alive(), "Should be alive when health > 0")

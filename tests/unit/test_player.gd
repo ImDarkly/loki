@@ -37,6 +37,18 @@ func before_each() -> void:
 	voice_chat_manager.set_script(load("res://systems/voice_chat/voice_chat_manager.gd"))
 	player_node.add_child(voice_chat_manager)
 
+	var health_component := HealthComponent.new()
+	health_component.name = "HealthComponent"
+	player_node.add_child(health_component)
+
+	var spectate_camera := Node3D.new()
+	spectate_camera.name = "SpectateCamera"
+	player_node.add_child(spectate_camera)
+
+	var spectate_cam_camera := Camera3D.new()
+	spectate_cam_camera.name = "Camera3D"
+	spectate_camera.add_child(spectate_cam_camera)
+
 	player_node.set_script(load("res://entities/player/player.gd"))
 
 	player = autofree(player_node)
