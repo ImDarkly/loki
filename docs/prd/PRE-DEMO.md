@@ -4,7 +4,7 @@
 
 **Owner:** Solo Developer
 
-**Tech Stack:** Godot 4.6, GDScript, GD-Sync
+**Tech Stack:** Godot 4.6, GDScript, ENet
 
 ---
 
@@ -112,9 +112,9 @@ DangerManager's existing `round_active` guard (added in Round Lifecycle) is remo
 
 This slice has no win/fail condition — only a timer. RoundManager's existing `_on_quota_updated` early-win check and `quota_target` field are removed for this feature. The round always proceeds to its timer expiry, at which point `fishing_active` is set false (Decision 3) rather than the round ending in success or failure. There is no end screen shown at this point — the shop (Decision 8) is the only post-timer destination, and the round only truly "ends" and resets via the host's restart control, same mechanism as today.
 
-### Decision 5: Carryable Fish and Storage Deposit
+### Decision 5: Carryable Fish and Storage Deposit — Superseded by a Standalone Spec
 
-`FishingMechanic`'s existing reel-success path no longer calls `_report_catch_to_host` directly. Instead, on reel success, a small carryable fish object attaches to the player (visually held in-hand) and the player enters a "carrying" state — one fish at a time, no queueing. A new `StorageArea` (an `Area3D` around a physical storage container) exposes an interact prompt; interacting while carrying deposits the fish, which is what actually calls `report_catch(1)` on QuotaManager (reused as-is — `QuotaManager.shared_quota` now represents "fish in team storage," not "progress toward a win quota"). Taking any `PlayerHealth.take_damage` call while carrying immediately drops/destroys the held fish with no storage credit.
+**This decision has been carved out into its own focused PRD, Carryable Fish + Storage Deposit (CFS-001), which supersedes the prose below with a more detailed interaction model (camera-forward raycast interact on a hardcoded storage box, not a proximity `Area3D`).** The original intent is preserved for historical context: on reel success, `FishingMechanic` no longer calls `_report_catch_to_host` directly; the player instead enters a carrying state (one fish at a time), and depositing at a storage point is what actually calls `report_catch(1)` on QuotaManager. Refer to CFS-001 for the authoritative implementation and testing decisions.
 
 ### Decision 6: PlayerRodTarget as a Separate Module From FishingMechanic
 
@@ -150,12 +150,12 @@ Modules to test (deep, no live network required):
 - **RoundManager fishing_active decoupling** (new tests, replacing the removed quota-win tests) — timer expiry sets `fishing_active` false and leaves `round_active` untouched; DangerManager's `_physics_process` continues to run when `fishing_active` is false, confirming the two flags are independent.
 - **FishingMechanic yell-flee** (one new test added to the existing `test_fishing_mechanic.gd`) — given a yelling player in range during BITE or WAITING state, the fish flees the same way `on_fish_fled` already handles it.
 
-Explicitly not covered by automated tests, per existing precedent: fish-slap's physics feel, water float's buoyancy feel, the shop hut's 3D interaction prompt, and the `GDSync.call_func_all` broadcast plumbing for any of the above — these are validated through manual multi-instance playtesting, consistent with how this project already excludes rendering and live-network plumbing from its test suite.
+Explicitly not covered by automated tests, per existing precedent: fish-slap's physics feel, water float's buoyancy feel, the shop hut's 3D interaction prompt, and the `@rpc` broadcast plumbing for any of the above — these are validated through manual multi-instance playtesting, consistent with how this project already excludes rendering and live-network plumbing from its test suite.
 
 ## Out of Scope
 
 - **Night phase entirely** — no monster, no barrier-defense minigame, no jump-scares. This slice is Day → Shop only, explicitly to playtest day mechanics before Night is built.
-- **Weapon system** — no scaring off the shark with a weapon; the shark is unaffected by anything except yelling triggering the existing danger-manager retreat-on-yell behavior already in place. (Yelling therefore triggers two independent effects: the new fish-fleeing per Decision 10 and the existing shark retreat — neither is removed by this slice.)
+- **Weapon system** — no scaring off the shark with a weapon; the shark is unaffected by anything except yelling triggering the existing danger-manager retreat-on-yell behavior already in place. (Yelling still only affects fish-fleeing per Decision 10 and the shark's existing yell-triggered retreat is untouched.)
 - **Seagulls** — never built, not part of this slice.
 - **Boat piloting and dusk dock-race** — dropped earlier in design discussion; this slice's map has no mobile boat.
 - **Hoard-vs-sell choice** — the shop only offers "Sell All"; no partial selling or carrying fish forward between rounds.
@@ -174,12 +174,13 @@ This feature builds directly on top of the already-shipped Round Lifecycle, Dang
 
 ### Suggested Build Order
 
-1. PlayerHealth module, tested in isolation, wired into DangerManager's attack (Decisions 1-2).
-2. RoundManager's fishing_active/round_active split, replacing the quota-win branch (Decisions 3-4).
-3. Carryable fish + StorageArea deposit flow, replacing the auto-report-catch path (Decision 5).
-4. Shop hut, interaction, ShopUI, CoinManager, upgrade purchase and persistence (Decisions 8-9).
-5. PlayerRodTarget, fish-slap, water float — the chaos/clip layer, built once the core loop above is functional (Decisions 6-7).
-6. Yell-scares-fish wiring, last since it's a small independent addition (Decision 10).
+1. PlayerHealth module, tested in isolation, wired into DangerManager's attack (Decisions 1-2). **Shipped.**
+2. RoundManager's fishing_active/round_active split, replacing the quota-win branch (Decisions 3-4) — implemented in full detail by 🔁 Round Structure Rework (RSR-001). **Shipped.**
+3. **Fishing cast physics + designated fishing zones** — a new, additive slice (Fishing Zones & Cast Physics, FZP-001, not originally part of this PRD) that gives the bobber a real gravity-arced flight and gates bites to Stardew-style circular zones. Inserted here because it touches the same `FishingMechanic` cast/bite entry points as step 4 below, and landing it first avoids that step rebasing around it.
+4. Carryable fish + storage deposit flow, replacing the auto-report-catch path (Decision 5) — detailed implementation lives in Carryable Fish + Storage Deposit (CFS-001).
+5. Shop hut, interaction, ShopUI, CoinManager, upgrade purchase and persistence (Decisions 8-9).
+6. PlayerRodTarget, fish-slap, water float — the chaos/clip layer, built once the core loop above is functional (Decisions 6-7).
+7. Yell-scares-fish wiring, last since it's a small independent addition (Decision 10).
 
 Each slice should be manually playtested with multiple local instances before moving to the next, consistent with this project's existing build-order convention.
 

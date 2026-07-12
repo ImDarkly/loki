@@ -26,6 +26,8 @@ class_name Player extends CharacterBody3D
 @export var hand_bounce_decay: float = 10.0
 @export var jump_cut_multiplier: float = 0.5
 @export var spawn_index: int = 0
+@export var launch_speed: float = 15.0
+@export var max_cast_range: float = 20.0
 
 
 @onready var head: Node3D = $Head
@@ -54,6 +56,8 @@ var is_yelling: bool = false
 
 var _last_fish_state: int = -1
 var _last_cast_target: Vector3 = Vector3.ZERO
+var _last_flight_duration: float = 0.0
+var _last_flight_start: Vector3 = Vector3.ZERO
 var _sync_tick: int = 0
 
 
@@ -211,7 +215,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 
 	if event.is_action_pressed("cast_line") and fishing_mechanic.can_cast():
-		fishing_mechanic.cast(global_position, -global_transform.basis.z)
+		var rod_tip: Vector3 = fishing_mechanic.get_rod_tip_position()
+		var dir := -camera.global_transform.basis.z
+		var v := dir * launch_speed
+		var discriminant: float = v.y * v.y + 2.0 * _gravity * rod_tip.y
+		var flight_time := (v.y + sqrt(max(discriminant, 0.0))) / _gravity
+		flight_time = max(flight_time, 0.1)
+		var target := Vector3(rod_tip.x + v.x * flight_time, 0.0, rod_tip.z + v.z * flight_time)
+		var offset := Vector2(target.x - global_position.x, target.z - global_position.z)
+		if offset.length() > max_cast_range:
+			offset = offset.normalized() * max_cast_range
+			target.x = global_position.x + offset.x
+			target.z = global_position.z + offset.y
+		fishing_mechanic.cast(target, flight_time)
 
 
 func _physics_process(delta: float) -> void:
@@ -285,6 +301,16 @@ func _physics_process(delta: float) -> void:
 	if ct != _last_cast_target:
 		_last_cast_target = ct
 		rpc("_sync_cast_target", ct)
+
+	var fd: float = fishing_mechanic._current_flight_duration
+	if fd != _last_flight_duration:
+		_last_flight_duration = fd
+		rpc("_sync_flight_duration", fd)
+
+	var fsp: Vector3 = fishing_mechanic._flight_start_position
+	if fsp != _last_flight_start:
+		_last_flight_start = fsp
+		rpc("_sync_flight_start", fsp)
 
 
 func _setup_authority_from_name() -> void:
@@ -377,3 +403,13 @@ func _sync_fishing_state(state: int) -> void:
 @rpc("authority", "reliable", "call_remote")
 func _sync_cast_target(pos: Vector3) -> void:
 	fishing_mechanic.cast_target_position = pos
+
+
+@rpc("authority", "reliable", "call_remote")
+func _sync_flight_duration(dur: float) -> void:
+	fishing_mechanic._current_flight_duration = dur
+
+
+@rpc("authority", "reliable", "call_remote")
+func _sync_flight_start(pos: Vector3) -> void:
+	fishing_mechanic._flight_start_position = pos
