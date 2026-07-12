@@ -35,6 +35,15 @@ far = 1000.0
 
 [node name="HealthComponent" parent="." instance=ExtResource("7_ok2f6")]
 
+[node name="SpectateCamera" type="Node3D" parent="."]
+top_level = true
+
+[node name="Camera3D" type="Camera3D" parent="SpectateCamera"]
+current = false
+near = 0.1
+far = 1000.0
+position = Vector3(0, 0, -5.0)
+
 [node name="HealthLabel" type="CanvasLayer" parent="."]
 script = ExtResource("6_lm3n1")
 
