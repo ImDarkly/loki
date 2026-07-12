@@ -60,6 +60,10 @@ func restart_round() -> void:
 	if dm:
 		dm.reset_for_restart()
 
+	var zm := get_node_or_null("/root/main/ZoneManager")
+	if zm:
+		zm.reset_for_restart()
+
 	_apply_restart.rpc()
 
 

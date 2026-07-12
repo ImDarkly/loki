@@ -7,10 +7,12 @@ signal feedback_completed
 @onready var screen_flash: ColorRect = $CanvasLayer/ScreenFlash
 
 var feedback_tween: Tween = null
+var _default_feedback_text: String = ""
 
 
 func _ready() -> void:
 	catch_audio.stream = _generate_ding_stream()
+	_default_feedback_text = feedback_label.text
 	feedback_label.visible = false
 	screen_flash.modulate = Color(1, 1, 1, 0)
 
@@ -33,8 +35,23 @@ func play_catch_success() -> void:
 	feedback_tween.tween_callback(_on_feedback_complete)
 
 
+func play_dead_zone_feedback() -> void:
+	if feedback_tween and feedback_tween.is_valid():
+		feedback_tween.kill()
+
+	screen_flash.modulate = Color(1, 1, 1, 0)
+	feedback_label.text = "Nothing's biting..."
+	feedback_label.visible = true
+	feedback_label.modulate = Color(1, 1, 1, 1)
+
+	feedback_tween = create_tween()
+	feedback_tween.tween_interval(2.0)
+	feedback_tween.tween_callback(_on_feedback_complete)
+
+
 func _on_feedback_complete() -> void:
 	feedback_label.visible = false
+	feedback_label.text = _default_feedback_text
 	feedback_completed.emit()
 
 
