@@ -114,7 +114,7 @@ func test_reel_timer_resolves_when_fishing_inactive() -> void:
 func test_bite_timer_uses_dead_zone_feedback_outside_zones() -> void:
 	mechanic.current_state = 2
 	mechanic.cast_target_position = Vector3(100, 0, 100)
-	watch_signals(mechanic.catch_feedback_manager)
+	watch_signals(mechanic)
 	mechanic._on_bite_timer_timeout()
 	assert_eq(mechanic.current_state, 0, "Should return to IDLE (0) when outside every zone")
 	assert_signal_not_emitted(mechanic, "bite_occurred")
