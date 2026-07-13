@@ -4,3 +4,6 @@
 
 [node name="ZoneManager" type="Node3D"]
 script = ExtResource("1_znm01")
+
+[node name="ReshuffleTimer" type="Timer" parent="."]
+one_shot = true
