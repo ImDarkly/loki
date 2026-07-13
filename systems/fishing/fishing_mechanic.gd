@@ -1,11 +1,12 @@
 extends Node3D
 
-enum State { IDLE, CASTING, WAITING, BITE, REELING, SUCCESS }
+enum State { IDLE, CASTING, WAITING, BITE, REELING, SUCCESS, CARRYING }
 
 signal bite_occurred(fish_position: Vector3)
 signal reel_success(quota: int)
 signal reel_failure()
 signal personal_catch_changed(count: int)
+signal carry_state_changed(is_carrying: bool)
 
 @export var min_bite_delay: float = 3.0
 @export var max_bite_delay: float = 8.0
@@ -51,6 +52,9 @@ var green_zone_lerp_speed: float = 4.0
 
 var personal_catch_count: int = 0
 var reel_duration: float = 0.0
+
+var is_carrying: bool:
+	get: return current_state == State.CARRYING
 
 var _quota_manager_ref: Node3D = null
 var _zone_manager_ref: Node3D = null
@@ -239,10 +243,17 @@ func _handle_remote_transition(to_state: int) -> void:
 			tw.tween_property(self, "_line_twitch", 0.0, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 			$FishManager.spawn(cast_target_position)
 
+		State.CARRYING:
+			_snap_bobber_to_rod()
+			$FishManager.cleanup()
+			_exit_reeling()
+			carry_state_changed.emit(true)
+
 		State.IDLE, State.SUCCESS:
 			_snap_bobber_to_rod()
 			$FishManager.cleanup()
 			_exit_reeling()
+			carry_state_changed.emit(false)
 
 
 func _process(delta: float) -> void:
@@ -323,6 +334,23 @@ func _on_green_zone_timer_timeout() -> void:
 	green_zone_target = clamp(green_zone_target, 0.0, 100.0 - green_zone_width)
 
 
+func start_carrying() -> void:
+	current_state = State.CARRYING
+	_report_zone_leave()
+	_exit_reeling()
+	$FishManager.cleanup()
+	catch_feedback_manager.play_catch_success()
+	carry_state_changed.emit(true)
+
+
+func drop_carried_fish() -> void:
+	if current_state != State.CARRYING:
+		return
+	_snap_bobber_to_rod()
+	current_state = State.IDLE
+	carry_state_changed.emit(false)
+
+
 func _enter_reeling() -> void:
 	current_state = State.REELING
 	player_bar_position = 50.0
@@ -359,15 +387,10 @@ func _on_reel_timer_timeout() -> void:
 		return
 	var was_success: bool = _is_bar_in_zone()
 	if was_success:
-		current_state = State.SUCCESS
 		personal_catch_count += 1
 		personal_catch_changed.emit(personal_catch_count)
 		reel_success.emit(personal_catch_count)
-		_report_zone_leave()
-		_report_catch_to_host(1)
-		_exit_reeling()
-		$FishManager.cleanup()
-		catch_feedback_manager.play_catch_success()
+		start_carrying()
 	else:
 		_report_zone_leave()
 		_snap_bobber_to_rod()
@@ -561,6 +584,7 @@ func _cleanup_all() -> void:
 
 
 func reset_for_restart() -> void:
+	var was_carrying := current_state == State.CARRYING
 	_report_zone_leave()
 	_cleanup_all()
 	_exit_reeling()
@@ -569,6 +593,8 @@ func reset_for_restart() -> void:
 	personal_catch_count = 0
 	_active_zone_index = -1
 	personal_catch_changed.emit(personal_catch_count)
+	if was_carrying:
+		carry_state_changed.emit(false)
 
 
 func _snap_bobber_to_rod() -> void:
@@ -623,6 +649,8 @@ func _on_catch_feedback_completed() -> void:
 	if current_state == State.SUCCESS:
 		_snap_bobber_to_rod()
 		current_state = State.IDLE
+	elif current_state == State.CARRYING:
+		_cleanup_all()
 
 
 func _get_owner_client_id() -> int:

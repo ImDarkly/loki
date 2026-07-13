@@ -27,10 +27,10 @@ func test_reel_success_when_bar_in_zone() -> void:
 	mechanic.personal_catch_count = 0
 	mechanic._on_reel_timer_timeout()
 	assert_eq(mechanic.personal_catch_count, 1)
-	assert_eq(mechanic.current_state, 5, "Should be SUCCESS (5)")
+	assert_eq(mechanic.current_state, 6, "Should be CARRYING (6)")
 
 
-func test_success_feedback_transitions_to_idle() -> void:
+func test_carry_feedback_does_not_transition_to_idle() -> void:
 	mechanic._enter_reeling()
 	mechanic.reel_timer.stop()
 	mechanic.reel_meter.size = Vector2(40, 300)
@@ -38,9 +38,9 @@ func test_success_feedback_transitions_to_idle() -> void:
 	mechanic.green_zone_position = 30.0
 	mechanic.personal_catch_count = 0
 	mechanic._on_reel_timer_timeout()
-	assert_eq(mechanic.current_state, 5, "Should be SUCCESS (5) after reel timeout")
+	assert_eq(mechanic.current_state, 6, "Should be CARRYING (6) after reel timeout")
 	mechanic._on_catch_feedback_completed()
-	assert_eq(mechanic.current_state, 0, "Should be IDLE (0) after feedback completes")
+	assert_eq(mechanic.current_state, 6, "Should remain CARRYING (6) after feedback completes")
 
 
 func test_fish_fled_during_reeling_transitions_to_idle() -> void:
@@ -155,3 +155,34 @@ func test_arc_is_deterministic() -> void:
 	var pos1: Vector3 = start + v1 * t + 0.5 * g * t * t
 	var pos2: Vector3 = start + v2 * t + 0.5 * g * t * t
 	assert_eq(pos1, pos2, "Same inputs should produce identical intermediate positions")
+
+
+func test_is_carrying_true_after_start_carrying() -> void:
+	mechanic.start_carrying()
+	assert_true(mechanic.is_carrying, "is_carrying should be true after start_carrying")
+
+
+func test_is_carrying_false_after_drop_carried_fish() -> void:
+	mechanic.start_carrying()
+	assert_true(mechanic.is_carrying)
+	mechanic.drop_carried_fish()
+	assert_false(mechanic.is_carrying, "is_carrying should be false after drop_carried_fish")
+
+
+func test_can_cast_returns_false_when_carrying() -> void:
+	mechanic.start_carrying()
+	assert_false(mechanic.can_cast(), "can_cast should return false while carrying")
+
+
+func test_reset_for_restart_clears_carry_state() -> void:
+	mechanic.start_carrying()
+	assert_true(mechanic.is_carrying)
+	mechanic.reset_for_restart()
+	assert_eq(mechanic.current_state, 0, "Should be IDLE (0) after restart")
+	assert_eq(mechanic.personal_catch_count, 0, "Personal catch should be 0 after restart")
+
+
+func test_drop_carried_fish_snaps_bobber_to_idle() -> void:
+	mechanic.start_carrying()
+	mechanic.drop_carried_fish()
+	assert_eq(mechanic.current_state, 0, "Should be IDLE (0) after drop")
