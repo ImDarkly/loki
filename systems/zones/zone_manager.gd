@@ -292,5 +292,7 @@ func _apply_synced_state(centers: Array[Vector3], radii: Array[float]) -> void:
 func reset_for_restart() -> void:
 	if not multiplayer.is_server():
 		return
-	_sync_state_to_clients()
+	_rebuild_occupancy_state()
+	reshuffle_timer.stop()
 	_start_reshuffle_timer()
+	_sync_state_to_clients()

@@ -91,6 +91,7 @@ func test_cast_ignored_when_fishing_inactive() -> void:
 
 func test_bite_timer_fires_when_fishing_inactive() -> void:
 	mechanic.current_state = 2
+	mechanic._active_zone_index = 0
 	mechanic._cached_fishing_active = false
 	mechanic.cast_target_position = Vector3(0, 0, 0)
 	mechanic._on_bite_timer_timeout()

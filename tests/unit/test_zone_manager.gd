@@ -84,3 +84,39 @@ func test_disconnect_clears_peer_occupancy() -> void:
 	manager.enter_zone(0, 101)
 	manager._clear_peer_occupancy(101)
 	assert_eq(manager.zone_occupant_counts[0], 0)
+
+
+func test_reset_for_restart_clears_occupancy() -> void:
+	manager.enter_zone(0, 101)
+	manager.enter_zone(0, 202)
+	manager.enter_zone(1, 101)
+	assert_eq(manager.zone_occupant_counts[0], 2)
+	assert_eq(manager.zone_occupant_counts[1], 1)
+
+	manager.reset_for_restart()
+
+	assert_eq(manager.zone_occupant_counts[0], 0)
+	assert_eq(manager.zone_occupant_counts[1], 0)
+
+
+func test_reset_for_restart_starts_timer() -> void:
+	manager.reshuffle_timer.stop()
+	assert_true(manager.reshuffle_timer.is_stopped())
+
+	manager.reset_for_restart()
+
+	assert_false(manager.reshuffle_timer.is_stopped())
+
+
+func test_reset_for_restart_preserves_positions() -> void:
+	var positions_before: Array[Vector3] = []
+	for zone in manager.zones:
+		positions_before.append(zone["center"])
+
+	manager.reset_for_restart()
+
+	for i in range(manager.zones.size()):
+		assert_eq(manager.zones[i]["center"], positions_before[i])
+
+
+

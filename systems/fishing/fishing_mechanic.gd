@@ -382,6 +382,8 @@ func cast(target_position: Vector3, flight_time: float) -> void:
 	if current_state in [State.BITE, State.REELING, State.SUCCESS]:
 		_exit_reeling()
 
+	_report_zone_leave()
+	_active_zone_index = -1
 	_cleanup_all()
 
 	current_state = State.CASTING
@@ -408,14 +410,17 @@ func _on_casting_timer_timeout() -> void:
 	if current_state != State.CASTING:
 		return
 	current_state = State.WAITING
+	var zone_index := _get_zone_index_for_cast_target()
+	if zone_index != _get_no_zone_index():
+		_active_zone_index = zone_index
+		_report_zone_enter(zone_index)
 	var delay: float = randf_range(min_bite_delay, max_bite_delay)
 	bite_timer.start(delay)
 	print("Cast: waiting %.2f seconds for bite" % delay)
 
 
 func _on_bite_timer_timeout() -> void:
-	var zone_index := _get_zone_index_for_cast_target()
-	if zone_index == _get_no_zone_index():
+	if _active_zone_index == -1:
 		_report_zone_leave()
 		current_state = State.IDLE
 		_snap_bobber_to_rod()
@@ -423,8 +428,6 @@ func _on_bite_timer_timeout() -> void:
 		catch_feedback_manager.play_dead_zone_feedback()
 		return
 
-	_active_zone_index = zone_index
-	_report_zone_enter(zone_index)
 	current_state = State.BITE
 	_bite_time = 0.0
 	if is_instance_valid(bobber_node):
