@@ -54,6 +54,7 @@ var reel_duration: float = 0.0
 
 var _quota_manager_ref: Node3D = null
 var _zone_manager_ref: Node3D = null
+var _active_zone_index: int = -1
 
 var is_local_render: bool = true:
 	set(value):
@@ -93,6 +94,7 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 		return
 	if current_state not in [State.BITE, State.REELING]:
 		return
+	_report_zone_leave()
 	_snap_bobber_to_rod()
 	$FishManager.cleanup()
 	current_state = State.IDLE
@@ -257,6 +259,7 @@ func _process(delta: float) -> void:
 				_bite_time += delta
 				if is_local_render:
 					if _bite_time >= 2.5:
+						_report_zone_leave()
 						_snap_bobber_to_rod()
 						current_state = State.IDLE
 						$FishManager.cleanup()
@@ -268,6 +271,7 @@ func _process(delta: float) -> void:
 
 			if is_local_render and current_state == State.WAITING and Input.is_action_just_pressed("reel"):
 				bite_timer.stop()
+				_report_zone_leave()
 				_snap_bobber_to_rod()
 				current_state = State.IDLE
 
@@ -359,11 +363,13 @@ func _on_reel_timer_timeout() -> void:
 		personal_catch_count += 1
 		personal_catch_changed.emit(personal_catch_count)
 		reel_success.emit(personal_catch_count)
+		_report_zone_leave()
 		_report_catch_to_host(1)
 		_exit_reeling()
 		$FishManager.cleanup()
 		catch_feedback_manager.play_catch_success()
 	else:
+		_report_zone_leave()
 		_snap_bobber_to_rod()
 		$FishManager.cleanup()
 		current_state = State.IDLE
@@ -410,12 +416,15 @@ func _on_casting_timer_timeout() -> void:
 func _on_bite_timer_timeout() -> void:
 	var zone_index := _get_zone_index_for_cast_target()
 	if zone_index == _get_no_zone_index():
+		_report_zone_leave()
 		current_state = State.IDLE
 		_snap_bobber_to_rod()
 		$FishManager.cleanup()
 		catch_feedback_manager.play_dead_zone_feedback()
 		return
 
+	_active_zone_index = zone_index
+	_report_zone_enter(zone_index)
 	current_state = State.BITE
 	_bite_time = 0.0
 	if is_instance_valid(bobber_node):
@@ -549,11 +558,13 @@ func _cleanup_all() -> void:
 
 
 func reset_for_restart() -> void:
+	_report_zone_leave()
 	_cleanup_all()
 	_exit_reeling()
 	bite_timer.stop()
 	current_state = State.IDLE
 	personal_catch_count = 0
+	_active_zone_index = -1
 	personal_catch_changed.emit(personal_catch_count)
 
 
@@ -618,3 +629,29 @@ func _get_owner_client_id() -> int:
 	if parent_player.spawn_index < game_manager.players.size():
 		return game_manager.players[parent_player.spawn_index].id
 	return -1
+
+
+func _report_zone_enter(zone_index: int) -> void:
+	if zone_index == -1:
+		return
+	_try_find_zone_manager()
+	if not is_instance_valid(_zone_manager_ref):
+		return
+	if multiplayer.is_server():
+		_zone_manager_ref.enter_zone(zone_index)
+	else:
+		_zone_manager_ref.enter_zone.rpc(zone_index)
+
+
+func _report_zone_leave() -> void:
+	if _active_zone_index == -1:
+		return
+	_try_find_zone_manager()
+	if not is_instance_valid(_zone_manager_ref):
+		_active_zone_index = -1
+		return
+	if multiplayer.is_server():
+		_zone_manager_ref.leave_zone(_active_zone_index)
+	else:
+		_zone_manager_ref.leave_zone.rpc(_active_zone_index)
+	_active_zone_index = -1

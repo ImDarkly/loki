@@ -23,6 +23,8 @@ respawn_interval_min = 5.0
 respawn_interval_max = 5.0
 
 [node name="ZoneManager" parent="." unique_id=621029985 instance=ExtResource("4_zm01")]
+reshuffle_interval_min = 5.0
+reshuffle_interval_max = 10.0
 
 [node name="QuotaManager" parent="." unique_id=2032018860 instance=ExtResource("5_2ihsm")]
 
