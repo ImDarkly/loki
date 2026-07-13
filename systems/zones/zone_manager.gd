@@ -107,11 +107,11 @@ func leave_zone(zone_index: int, peer_id: int = -1) -> void:
 
 
 func _resolve_peer_id(peer_id: int) -> int:
-	if peer_id != -1:
-		return peer_id
 	var sender_id := multiplayer.get_remote_sender_id()
 	if sender_id != 0:
 		return sender_id
+	if peer_id != -1:
+		return peer_id
 	if multiplayer.is_server():
 		return multiplayer.get_unique_id()
 	return -1

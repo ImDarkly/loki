@@ -53,13 +53,13 @@ func test_leave_without_prior_enter_is_noop() -> void:
 
 func test_occupied_zone_is_skipped_during_reshuffle() -> void:
 	manager.enter_zone(0, 101)
-	var before := manager.zones[0]["center"]
+	var before = manager.zones[0]["center"]
 	manager._reshuffle_unoccupied_zones()
 	assert_eq(manager.zones[0]["center"], before)
 
 
 func test_unoccupied_zone_is_eligible_during_reshuffle() -> void:
-	var before := manager.zones[1]["center"]
+	var before = manager.zones[1]["center"]
 	manager._reshuffle_unoccupied_zones()
 	assert_ne(manager.zones[1]["center"], before)
 
