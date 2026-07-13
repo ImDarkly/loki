@@ -56,8 +56,6 @@ var _bounce_pos: float = 0.0
 var _bounce_vel: float = 0.0
 var _hand_bounce: float = 0.0
 var is_yelling: bool = false
-var _fishing_rod: Node3D = null
-var _carried_fish: Node3D = null
 
 enum PlayerState { ALIVE, SPECTATE }
 
@@ -124,8 +122,6 @@ func _setup_meshes() -> void:
 
 	_setup_fishing_rod()
 	fishing_mechanic.set_rod_tip($Head/HandRight/FishingRod/RodTip)
-	fishing_mechanic.carry_state_changed.connect(_on_carry_state_changed)
-	_create_carried_fish()
 
 
 func _setup_fishing_rod() -> void:
@@ -155,28 +151,6 @@ func _setup_fishing_rod() -> void:
 	rod_pivot.add_child(tip)
 
 	hand_right.add_child(rod_pivot)
-	_fishing_rod = rod_pivot
-
-
-func _create_carried_fish() -> void:
-	_carried_fish = MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.3, 0.1, 0.5)
-	var mat := ORMMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.5, 0.0)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mesh.material = mat
-	_carried_fish.mesh = mesh
-	_carried_fish.position = Vector3(0, 0.7, -0.6)
-	_carried_fish.visible = false
-	add_child(_carried_fish)
-
-
-func _on_carry_state_changed(is_carrying: bool) -> void:
-	if is_instance_valid(_fishing_rod):
-		_fishing_rod.visible = not is_carrying
-	if is_instance_valid(_carried_fish):
-		_carried_fish.visible = is_carrying
 
 
 func _setup_hand(hand: MeshInstance3D, position_offset: Vector3) -> void:
@@ -201,8 +175,6 @@ func _setup_input_actions() -> void:
 
 	_ensure_action("cast_line")
 	_remove_key_from_action("cast_line", KEY_SPACE)
-
-	_ensure_action("drop_fish", KEY_F)
 
 	_remove_key_from_action("reel", KEY_SPACE)
 
@@ -270,10 +242,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		head.rotate_x(-event.relative.y * mouse_sensitivity)
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
-
-	if event.is_action_pressed("drop_fish") and fishing_mechanic.is_carrying:
-		fishing_mechanic.drop_carried_fish()
-		return
 
 	if event.is_action_pressed("cast_line") and fishing_mechanic.can_cast():
 		var rod_tip: Vector3 = fishing_mechanic.get_rod_tip_position()
