@@ -382,6 +382,8 @@ func cast(target_position: Vector3, flight_time: float) -> void:
 	if current_state in [State.BITE, State.REELING, State.SUCCESS]:
 		_exit_reeling()
 
+	_report_zone_leave()
+	_active_zone_index = -1
 	_cleanup_all()
 
 	current_state = State.CASTING
