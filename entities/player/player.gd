@@ -78,6 +78,7 @@ var _held_fish: Node3D = null
 var _ray_hit_box: bool = false
 var _interact_prompt: CanvasLayer = null
 var _quota_manager_ref: Node3D = null
+var _is_shop_open: bool = false
 @export var interact_range: float = 3.0
 
 const INTERACTABLE_LAYER: int = 1 << 5
@@ -102,6 +103,8 @@ func _ready() -> void:
 	_health_component.died.connect(_enter_spectate)
 	_health_component.health_changed.connect(_on_health_changed)
 	fishing_mechanic.reel_success.connect(_on_reel_success)
+	
+	get_node("/root/game_manager").shop_toggled.connect(_on_shop_toggled)
 
 	_setup_interact_prompt()
 
@@ -303,8 +306,9 @@ func _update_prompt_visibility(interactable = null) -> void:
 	if not label:
 		return
 	
-	if _ray_hit_box and interactable:
+	if _ray_hit_box and interactable and not _is_shop_open:
 		label.text = interactable.prompt_text
+		label.add_theme_color_override("font_color", interactable.prompt_color)
 		label.visible = true
 	else:
 		label.visible = false
@@ -619,6 +623,10 @@ func _disable_player() -> void:
 
 func _on_reel_success(_personal_count: int) -> void:
 	start_carrying()
+
+func _on_shop_toggled(is_open: bool) -> void:
+	_is_shop_open = is_open
+	_update_prompt_visibility()
 
 
 func _on_health_changed(old: int, new: int) -> void:

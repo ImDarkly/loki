@@ -1,10 +1,16 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
-[ext_resource type="Script" uid="uid://dssphm27dhpip" path="res://systems/interaction/interactable_component.gd" id="1_comp"]
+[ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="1_comp"]
 [ext_resource type="Script" path="res://entities/shop_hut.gd" id="2_script"]
 
 [sub_resource type="BoxShape3D" id="shape"]
 size = Vector3(2, 2, 2)
+
+[sub_resource type="BoxMesh" id="mesh_body"]
+size = Vector3(2, 2, 2)
+
+[sub_resource type="BoxMesh" id="mesh_roof"]
+size = Vector3(2.2, 0.2, 2.2)
 
 [node name="ShopHut" type="StaticBody3D"]
 collision_layer = 32
@@ -14,8 +20,11 @@ script = ExtResource("2_script")
 shape = SubResource("shape")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-# Using a simple box mesh as placeholder
-mesh = BoxMesh.new()
+mesh = SubResource("mesh_body")
+
+[node name="Roof" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+mesh = SubResource("mesh_roof")
 
 [node name="InteractableComponent" type="Node" parent="."]
 script = ExtResource("1_comp")
