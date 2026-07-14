@@ -27,6 +27,9 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	var peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if peer != null:
+		peer.close()
 	multiplayer.multiplayer_peer = null
 	if is_instance_valid(_main):
 		_main.free()
@@ -104,8 +107,9 @@ func test_buy_upgrade_rejects_unknown_upgrade() -> void:
 
 
 func test_non_server_does_not_change_coins() -> void:
-	if multiplayer.has_multiplayer_peer():
-		multiplayer.multiplayer_peer = null
+	var peer := ENetMultiplayerPeer.new()
+	peer.create_client("127.0.0.1", 12345)
+	multiplayer.multiplayer_peer = peer
 	quota_manager.shared_quota = 10
 	manager.coins = 0
 

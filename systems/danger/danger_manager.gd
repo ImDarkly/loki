@@ -304,6 +304,8 @@ func _trigger_attack() -> void:
 		var target_client_id := _get_player_client_id(target_player)
 		if multiplayer.has_multiplayer_peer():
 			_broadcast_fish_fled_rpc.rpc(target_client_id)
+		else:
+			_broadcast_fish_fled_rpc(target_client_id)
 		var health := target_player.get_node_or_null("HealthComponent") as HealthComponent
 		if health:
 			health.take_damage(shark_bite_damage)

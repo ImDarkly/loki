@@ -11,7 +11,7 @@ var _upgrades: Dictionary = {}
 
 @rpc("any_peer", "call_remote", "reliable")
 func sell_all() -> void:
-	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	var qm := get_node_or_null("/root/main/QuotaManager")
 	if not qm:
@@ -21,12 +21,13 @@ func sell_all() -> void:
 		return
 	coins += fish_count * coins_per_fish
 	qm.apply_penalty(fish_count)
-	_sync_coins.rpc(coins)
+	if multiplayer.has_multiplayer_peer():
+		_sync_coins.rpc(coins)
 
 
 @rpc("any_peer", "call_remote", "reliable")
 func buy_upgrade(upgrade_name: String) -> void:
-	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	if _upgrades.get(upgrade_name, false):
 		return
@@ -35,7 +36,8 @@ func buy_upgrade(upgrade_name: String) -> void:
 		return
 	coins -= cost
 	_upgrades[upgrade_name] = true
-	_sync_coins.rpc(coins)
+	if multiplayer.has_multiplayer_peer():
+		_sync_coins.rpc(coins)
 
 
 @rpc("authority", "call_local", "reliable")
