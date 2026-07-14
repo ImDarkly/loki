@@ -1,5 +1,7 @@
 class_name Player extends CharacterBody3D
 
+const _InteractableComponentScript = preload("res://systems/interactable/interactable_component.gd")
+
 @export var move_speed: float = 5.0
 @export var jump_height: float = 2.0
 @export var mouse_sensitivity: float = 0.002
@@ -75,7 +77,7 @@ var _rod_pivot: Node3D = null
 
 var is_carrying: bool = false
 var _held_fish: Node3D = null
-var _ray_hit_box: bool = false
+var _target_interactable: InteractableComponent = null
 var _interact_prompt: CanvasLayer = null
 var _quota_manager_ref: Node3D = null
 @export var interact_range: float = 3.0
@@ -287,10 +289,26 @@ func _update_interact_raycast() -> void:
 	params.collision_mask = INTERACTABLE_LAYER
 	var result := space_state.intersect_ray(params)
 
-	var prev_hit := _ray_hit_box
-	_ray_hit_box = result and not result.is_empty()
-	if _ray_hit_box != prev_hit:
+	var found: InteractableComponent = null
+	if result and not result.is_empty():
+		var collider := result.collider as Node
+		found = _find_interactable_component(collider)
+
+	if found != _target_interactable:
+		_target_interactable = found
 		_update_prompt_visibility()
+
+
+func _find_interactable_component(from: Node) -> InteractableComponent:
+	if from == null:
+		return null
+	var node := from
+	while node:
+		for child in node.get_children():
+			if child is InteractableComponent:
+				return child
+		node = node.get_parent()
+	return null
 
 
 func _update_prompt_visibility() -> void:
@@ -299,7 +317,11 @@ func _update_prompt_visibility() -> void:
 	var label := _interact_prompt.get_node_or_null("PromptLabel") as Label
 	if not label:
 		return
-	label.visible = _ray_hit_box and is_carrying
+	if _target_interactable != null and _target_interactable.can_interact(self):
+		label.text = "[Right-click] " + _target_interactable.prompt_text
+		label.visible = true
+	else:
+		label.visible = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -334,8 +356,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			target.z = global_position.z + offset.y
 		fishing_mechanic.cast(target, flight_time)
 
-	if event.is_action_pressed("interact") and _ray_hit_box and is_carrying:
-		deposit_carried_fish()
+	if event.is_action_pressed("interact") and _target_interactable != null and _target_interactable.can_interact(self):
+		_target_interactable.interacted.emit(self)
 
 
 func _physics_process(delta: float) -> void:
