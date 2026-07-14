@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://bgyet62minjw8" path="res://world/spawn_manager.gd" id="4_cu0i6"]
 [ext_resource type="PackedScene" path="res://systems/zones/zone_manager.tscn" id="4_zm01"]
 [ext_resource type="PackedScene" path="res://systems/quota/quota_manager.tscn" id="5_2ihsm"]
+[ext_resource type="PackedScene" path="res://systems/coin_manager/coin_manager.tscn" id="5_kdo4k"]
 [ext_resource type="PackedScene" path="res://systems/round/round_manager.tscn" id="6_0f4gj"]
 [ext_resource type="PackedScene" path="res://ui/end_screen.tscn" id="7_7tkbk"]
 
@@ -31,6 +32,8 @@ spawn_path = NodePath("..")
 [node name="ZoneManager" parent="." unique_id=621029985 instance=ExtResource("4_zm01")]
 
 [node name="QuotaManager" parent="." unique_id=2032018860 instance=ExtResource("5_2ihsm")]
+
+[node name="CoinManager" parent="." instance=ExtResource("5_kdo4k")]
 
 [node name="RoundManager" parent="." unique_id=273981928 instance=ExtResource("6_0f4gj")]
 

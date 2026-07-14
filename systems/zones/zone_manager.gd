@@ -24,7 +24,7 @@ func _ready() -> void:
 	reshuffle_timer.one_shot = true
 	reshuffle_timer.timeout.connect(_on_reshuffle_timer_timeout)
 
-	if multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 		_generate_zones()
 		_start_reshuffle_timer()
@@ -36,7 +36,7 @@ func _ready() -> void:
 
 
 func _on_peer_disconnected(id: int) -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	_clear_peer_occupancy(id)
 
@@ -112,7 +112,7 @@ func _resolve_peer_id(peer_id: int) -> int:
 		return sender_id
 	if peer_id != -1:
 		return peer_id
-	if multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		return multiplayer.get_unique_id()
 	return -1
 
@@ -162,14 +162,14 @@ func _rebuild_occupancy_state() -> void:
 
 
 func _start_reshuffle_timer() -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	var interval := randf_range(reshuffle_interval_min, reshuffle_interval_max)
 	reshuffle_timer.start(interval)
 
 
 func _on_reshuffle_timer_timeout() -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	_reshuffle_unoccupied_zones()
 	_sync_state_to_clients()
@@ -269,7 +269,7 @@ func _create_zone_marker() -> MeshInstance3D:
 
 
 func _sync_state_to_clients() -> void:
-	if not multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
 		return
 	var centers: Array[Vector3] = []
 	var radii: Array[float] = []
@@ -290,7 +290,7 @@ func _apply_synced_state(centers: Array[Vector3], radii: Array[float]) -> void:
 
 
 func reset_for_restart() -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	_rebuild_occupancy_state()
 	reshuffle_timer.stop()

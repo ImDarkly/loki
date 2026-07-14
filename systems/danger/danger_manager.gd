@@ -34,7 +34,7 @@ var spawn_position: Vector3
 func _ready() -> void:
 	_reset_escalation()
 
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		set_physics_process(false)
 		spawn_timer.stop()
 		return_timer.stop()
@@ -59,7 +59,7 @@ func _reset_escalation() -> void:
 
 
 func _on_spawn_timer_timeout() -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	if current_state == State.INACTIVE or current_state == State.WAITING:
 		if _get_nearest_player() == null:
@@ -70,7 +70,7 @@ func _on_spawn_timer_timeout() -> void:
 
 
 func _on_return_timer_timeout() -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	if current_state == State.WAITING:
 		_spawn_shark()
@@ -167,7 +167,7 @@ func _create_shark_mesh() -> MeshInstance3D:
 
 
 func _physics_process(delta: float) -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	match current_state:
 		State.APPROACHING:
@@ -302,7 +302,8 @@ func _trigger_attack() -> void:
 	var target_player := _get_nearest_player()
 	if target_player != null:
 		var target_client_id := _get_player_client_id(target_player)
-		_broadcast_fish_fled_rpc.rpc(target_client_id)
+		if multiplayer.has_multiplayer_peer():
+			_broadcast_fish_fled_rpc.rpc(target_client_id)
 		var health := target_player.get_node_or_null("HealthComponent") as HealthComponent
 		if health:
 			health.take_damage(shark_bite_damage)
@@ -325,7 +326,7 @@ func _broadcast_fish_fled_rpc(target_client_id: int) -> void:
 
 
 func _sync_state_to_clients() -> void:
-	if not multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
 		return
 	var has_shark := is_instance_valid(shark_node)
 	var shark_pos := shark_node.position if has_shark else spawn_position
@@ -344,7 +345,7 @@ func _apply_synced_state(state_value: int, shark_pos: Vector3, synced_spawn_posi
 
 
 func reset_for_restart() -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	_reset_escalation()
 	if is_instance_valid(shark_node):

@@ -7,14 +7,14 @@ var shared_quota: int = 0
 
 @rpc("any_peer", "call_remote", "reliable")
 func report_catch(amount: int) -> void:
-	if not multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
 		return
 	shared_quota += amount
 	_sync_quota.rpc(shared_quota)
 
 
 func apply_penalty(amount: int) -> void:
-	if not multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
 		return
 	shared_quota = max(0, shared_quota - amount)
 	_sync_quota.rpc(shared_quota)

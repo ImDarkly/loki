@@ -1,6 +1,6 @@
 extends GutTest
 
-var player
+var player: Player = null
 
 
 func before_each() -> void:

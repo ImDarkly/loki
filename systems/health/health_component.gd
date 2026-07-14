@@ -13,11 +13,12 @@ func _ready() -> void:
 
 
 func take_damage(amount: int) -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	_apply_damage(amount)
 	var owner_id := _get_owner_id()
-	_broadcast_take_damage.rpc(owner_id, amount)
+	if multiplayer.has_multiplayer_peer():
+		_broadcast_take_damage.rpc(owner_id, amount)
 
 
 func _apply_damage(amount: int) -> void:
@@ -49,6 +50,8 @@ func is_alive() -> bool:
 
 
 func _get_owner_id() -> int:
+	if not multiplayer.has_multiplayer_peer():
+		return 0
 	var parent := get_parent()
 	if parent == null:
 		return multiplayer.get_unique_id()
