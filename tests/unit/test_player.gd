@@ -4,6 +4,7 @@ var player
 
 
 func before_each() -> void:
+	load("res://systems/interactable/interactable_component.gd")
 	var player_node := CharacterBody3D.new()
 
 	var head := Node3D.new()
