@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dssphm27dhpip"]
 
 [ext_resource type="Script" uid="uid://208xm5t1nmmc" path="res://world/world_setup.gd" id="3_y6pqm"]
-[ext_resource type="Script" uid="uid://dssphm27dhpip" path="res://systems/interaction/interactable_component.gd" id="interactable_comp_script"]
+[ext_resource type="Script" uid="uid://c7rv7ca3i10sc" path="res://systems/interaction/interactable_component.gd" id="interactable_comp_script"]
 [ext_resource type="PackedScene" path="res://systems/danger/danger_manager.tscn" id="4_0we7i"]
 [ext_resource type="Script" uid="uid://bgyet62minjw8" path="res://world/spawn_manager.gd" id="4_cu0i6"]
 [ext_resource type="PackedScene" path="res://systems/zones/zone_manager.tscn" id="4_zm01"]
