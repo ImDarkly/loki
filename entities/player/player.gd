@@ -119,10 +119,13 @@ func _setup_interact_prompt() -> void:
 	label.text = "Deposit Fish [Right Click]"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	label.offset_left = -150
+	label.offset_top = -25
+	label.offset_right = 150
+	label.offset_bottom = 25
 	var font_size := 24
 	label.add_theme_font_size_override("font_size", font_size)
-	label.position = Vector2(0, -50)
-	label.size = Vector2(200, 40)
 	label.visible = false
 	_interact_prompt.add_child(label)
 	add_child(_interact_prompt)
