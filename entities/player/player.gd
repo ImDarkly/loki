@@ -288,18 +288,26 @@ func _update_interact_raycast() -> void:
 	var result := space_state.intersect_ray(params)
 
 	var prev_hit := _ray_hit_box
-	_ray_hit_box = result and not result.is_empty()
+	var hit_node = result.get("collider") if result else null
+	var interactable = hit_node.get_node_or_null("InteractableComponent") if hit_node and hit_node.has_method("get_node_or_null") else null
+	_ray_hit_box = interactable != null and interactable.is_enabled
+
 	if _ray_hit_box != prev_hit:
-		_update_prompt_visibility()
+		_update_prompt_visibility(interactable)
 
 
-func _update_prompt_visibility() -> void:
+func _update_prompt_visibility(interactable = null) -> void:
 	if not is_instance_valid(_interact_prompt):
 		return
 	var label := _interact_prompt.get_node_or_null("PromptLabel") as Label
 	if not label:
 		return
-	label.visible = _ray_hit_box and is_carrying
+	
+	if _ray_hit_box and interactable:
+		label.text = interactable.prompt_text
+		label.visible = true
+	else:
+		label.visible = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -334,8 +342,25 @@ func _unhandled_input(event: InputEvent) -> void:
 			target.z = global_position.z + offset.y
 		fishing_mechanic.cast(target, flight_time)
 
-	if event.is_action_pressed("interact") and _ray_hit_box and is_carrying:
-		deposit_carried_fish()
+	if event.is_action_pressed("interact") and _ray_hit_box:
+		var space_state := get_world_3d().direct_space_state
+		var origin := camera.global_position
+		var dir := -camera.global_transform.basis.z
+		var params := PhysicsRayQueryParameters3D.new()
+		params.from = origin
+		params.to = origin + dir * interact_range
+		params.collision_mask = INTERACTABLE_LAYER
+		var result := space_state.intersect_ray(params)
+		
+		if result and result.collider:
+			var interactable = result.collider.get_node_or_null("InteractableComponent")
+			if interactable:
+				if interactable.has_signal("interacted"):
+					interactable.interacted.emit(self)
+				
+				# Maintain existing storage logic, but make it interactable-aware
+				if is_carrying:
+					deposit_carried_fish()
 
 
 func _physics_process(delta: float) -> void:

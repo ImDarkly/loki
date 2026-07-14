@@ -124,7 +124,7 @@ func test_deposit_carried_fish_clears_state() -> void:
 
 
 func test_deposit_noop_when_not_carrying() -> void:
-	var was_carrying := player.is_carrying
+	var was_carrying: bool = player.is_carrying
 	player.deposit_carried_fish()
 	assert_eq(player.is_carrying, was_carrying, "is_carrying should not change when not carrying")
 

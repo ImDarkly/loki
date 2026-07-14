@@ -357,6 +357,13 @@ func _on_reel_timer_timeout() -> void:
 		return
 	if current_state != State.REELING:
 		return
+	if not _is_fishing_active():
+		_report_zone_leave()
+		_snap_bobber_to_rod()
+		$FishManager.cleanup()
+		current_state = State.IDLE
+		_exit_reeling()
+		return
 	var was_success: bool = _is_bar_in_zone()
 	if was_success:
 		current_state = State.SUCCESS

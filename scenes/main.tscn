@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://dssphm27dhpip"]
 
 [ext_resource type="Script" uid="uid://208xm5t1nmmc" path="res://world/world_setup.gd" id="3_y6pqm"]
+[ext_resource type="Script" uid="uid://dssphm27dhpip" path="res://systems/interaction/interactable_component.gd" id="interactable_comp_script"]
 [ext_resource type="PackedScene" path="res://systems/danger/danger_manager.tscn" id="4_0we7i"]
 [ext_resource type="Script" uid="uid://bgyet62minjw8" path="res://world/spawn_manager.gd" id="4_cu0i6"]
 [ext_resource type="PackedScene" path="res://systems/zones/zone_manager.tscn" id="4_zm01"]
@@ -39,6 +40,10 @@ spawn_path = NodePath("..")
 [node name="StorageBox" type="StaticBody3D" parent="." unique_id=390215907]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, -0.2, -1.5)
 collision_layer = 32
+
+[node name="InteractableComponent" type="Node" parent="StorageBox"]
+script = ExtResource("interactable_comp_script")
+prompt_text = "Deposit Fish [Right Click]"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StorageBox" unique_id=1649446584]
 shape = SubResource("box_shape")
