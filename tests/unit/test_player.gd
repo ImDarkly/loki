@@ -101,3 +101,56 @@ func test_voice_chat_process_off_by_default_on_remote() -> void:
 	player._disable_player()
 	var vcm = player.get_node("VoiceChatManager")
 	assert_false(vcm.is_processing(), "VoiceChatManager process should be off for remote player")
+
+
+func test_start_carrying_sets_state_and_hides_rod() -> void:
+	assert_false(player.is_carrying, "is_carrying should be false initially")
+	assert_null(player._held_fish, "held_fish should be null initially")
+
+	player.start_carrying()
+
+	assert_true(player.is_carrying, "is_carrying should be true after start_carrying")
+	assert_not_null(player._held_fish, "held_fish should exist after start_carrying")
+	assert_false(player._rod_pivot.visible, "rod should be hidden while carrying")
+
+
+func test_deposit_carried_fish_clears_state() -> void:
+	player.start_carrying()
+	player.deposit_carried_fish()
+
+	assert_false(player.is_carrying, "is_carrying should be false after deposit")
+	assert_null(player._held_fish, "held_fish should be null after deposit")
+	assert_true(player._rod_pivot.visible, "rod should be visible after deposit")
+
+
+func test_deposit_noop_when_not_carrying() -> void:
+	var was_carrying := player.is_carrying
+	player.deposit_carried_fish()
+	assert_eq(player.is_carrying, was_carrying, "is_carrying should not change when not carrying")
+
+
+func test_drop_carried_fish_clears_no_credit() -> void:
+	player.start_carrying()
+	player.drop_carried_fish()
+
+	assert_false(player.is_carrying, "is_carrying should be false after drop")
+	assert_null(player._held_fish, "held_fish should be null after drop")
+	assert_true(player._rod_pivot.visible, "rod should be visible after drop")
+
+
+func test_cast_blocked_while_carrying() -> void:
+	await get_tree().process_frame
+
+	player.is_carrying = true
+	assert_false(not player.is_carrying and player.fishing_mechanic.can_cast(), "cast should be blocked while carrying")
+
+	player.is_carrying = false
+
+
+func test_reset_for_restart_clears_carry() -> void:
+	player.start_carrying()
+	player.reset_for_restart()
+
+	assert_false(player.is_carrying, "is_carrying should be false after reset_for_restart")
+	assert_null(player._held_fish, "held_fish should be null after reset_for_restart")
+	assert_true(player._rod_pivot.visible, "rod should be visible after reset_for_restart")

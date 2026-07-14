@@ -364,7 +364,6 @@ func _on_reel_timer_timeout() -> void:
 		personal_catch_changed.emit(personal_catch_count)
 		reel_success.emit(personal_catch_count)
 		_report_zone_leave()
-		_report_catch_to_host(1)
 		_exit_reeling()
 		$FishManager.cleanup()
 		catch_feedback_manager.play_catch_success()

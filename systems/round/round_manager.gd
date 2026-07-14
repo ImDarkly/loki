@@ -86,6 +86,7 @@ func _apply_restart() -> void:
 				var fm := child.get_node_or_null("FishingMechanic")
 				if fm:
 					fm.reset_for_restart()
+				child.reset_for_restart()
 				child._on_restart()
 
 
