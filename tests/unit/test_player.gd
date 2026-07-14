@@ -142,7 +142,7 @@ func test_cast_blocked_while_carrying() -> void:
 	await get_tree().process_frame
 
 	player.is_carrying = true
-	assert_false(player.fishing_mechanic.can_cast() and not player.is_carrying, "cast should be blocked while carrying")
+	assert_false(not player.is_carrying and player.fishing_mechanic.can_cast(), "cast should be blocked while carrying")
 
 	player.is_carrying = false
 
