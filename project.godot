@@ -35,6 +35,7 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 3d_physics/layer_3="water"
 3d_physics/layer_4="fishing"
 3d_physics/layer_5="fish"
+3d_physics/layer_6="interactable"
 
 [physics]
 

@@ -42,6 +42,7 @@ class_name Player extends CharacterBody3D
 @onready var spectate_camera: Node3D = $SpectateCamera
 @onready var spectate_cam_camera: Camera3D = $SpectateCamera/Camera3D
 @onready var _players_container: Node = get_node_or_null("/root/main/Players")
+@onready var _health_component: HealthComponent = $HealthComponent
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _jump_velocity: float
@@ -70,6 +71,16 @@ var _last_cast_target: Vector3 = Vector3.ZERO
 var _last_flight_duration: float = 0.0
 var _last_flight_start: Vector3 = Vector3.ZERO
 var _sync_tick: int = 0
+var _rod_pivot: Node3D = null
+
+var is_carrying: bool = false
+var _held_fish: Node3D = null
+var _ray_hit_box: bool = false
+var _interact_prompt: CanvasLayer = null
+var _quota_manager_ref: Node3D = null
+@export var interact_range: float = 3.0
+
+const INTERACTABLE_LAYER: int = 1 << 5
 
 
 func _ready() -> void:
@@ -88,7 +99,33 @@ func _ready() -> void:
 
 	_apply_player_visibility()
 
-	$HealthComponent.died.connect(_enter_spectate)
+	_health_component.died.connect(_enter_spectate)
+	_health_component.health_changed.connect(_on_health_changed)
+	fishing_mechanic.reel_success.connect(_on_reel_success)
+
+	_setup_interact_prompt()
+
+	var qm := get_node_or_null("/root/main/QuotaManager")
+	if qm:
+		_quota_manager_ref = qm
+
+
+func _setup_interact_prompt() -> void:
+	_interact_prompt = CanvasLayer.new()
+	_interact_prompt.name = "InteractPrompt"
+	_interact_prompt.layer = 130
+	var label := Label.new()
+	label.name = "PromptLabel"
+	label.text = "Deposit Fish [Right Click]"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var font_size := 24
+	label.add_theme_font_size_override("font_size", font_size)
+	label.position = Vector2(0, -50)
+	label.size = Vector2(200, 40)
+	label.visible = false
+	_interact_prompt.add_child(label)
+	add_child(_interact_prompt)
 
 
 func _setup_collision_shape() -> void:
@@ -121,6 +158,7 @@ func _setup_meshes() -> void:
 	_hand_base_right = hand_right.position
 
 	_setup_fishing_rod()
+	_rod_pivot = $Head/HandRight/FishingRod
 	fishing_mechanic.set_rod_tip($Head/HandRight/FishingRod/RodTip)
 
 
@@ -178,6 +216,11 @@ func _setup_input_actions() -> void:
 
 	_remove_key_from_action("reel", KEY_SPACE)
 
+	_ensure_action("interact")
+	_remove_key_from_action("interact", KEY_SPACE)
+	var interact_mouse := InputEventMouseButton.new()
+	interact_mouse.button_index = MOUSE_BUTTON_RIGHT
+	InputMap.action_add_event("interact", interact_mouse)
 
 
 func _ensure_action(action: String, keycode: Key = KEY_NONE) -> void:
@@ -225,6 +268,36 @@ func _process(delta: float) -> void:
 	camera.position = _cam_home + shake_pos + Vector3(0, _bounce_pos, 0)
 	camera.rotation.z = shake_rot
 
+	if get_multiplayer_authority() == multiplayer.get_unique_id():
+		_update_interact_raycast()
+
+
+func _update_interact_raycast() -> void:
+	var space_state := get_world_3d().direct_space_state
+	if space_state == null:
+		return
+	var origin := camera.global_position
+	var dir := -camera.global_transform.basis.z
+	var params := PhysicsRayQueryParameters3D.new()
+	params.from = origin
+	params.to = origin + dir * interact_range
+	params.collision_mask = INTERACTABLE_LAYER
+	var result := space_state.intersect_ray(params)
+
+	var prev_hit := _ray_hit_box
+	_ray_hit_box = result and not result.is_empty()
+	if _ray_hit_box != prev_hit:
+		_update_prompt_visibility()
+
+
+func _update_prompt_visibility() -> void:
+	if not is_instance_valid(_interact_prompt):
+		return
+	var label := _interact_prompt.get_node_or_null("PromptLabel") as Label
+	if not label:
+		return
+	label.visible = _ray_hit_box and is_carrying
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if player_state == PlayerState.SPECTATE:
@@ -243,7 +316,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotate_x(-event.relative.y * mouse_sensitivity)
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 
-	if event.is_action_pressed("cast_line") and fishing_mechanic.can_cast():
+	if event.is_action_pressed("cast_line") and not is_carrying and fishing_mechanic.can_cast():
 		var rod_tip: Vector3 = fishing_mechanic.get_rod_tip_position()
 		var dir := -camera.global_transform.basis.z
 		var v := dir * launch_speed
@@ -257,6 +330,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			target.x = global_position.x + offset.x
 			target.z = global_position.z + offset.y
 		fishing_mechanic.cast(target, flight_time)
+
+	if event.is_action_pressed("interact") and _ray_hit_box and is_carrying:
+		deposit_carried_fish()
 
 
 func _physics_process(delta: float) -> void:
@@ -401,7 +477,7 @@ func _find_spectate_target() -> Node3D:
 
 
 func _get_alive_players() -> Array[Node3D]:
-	var alive: Array = []
+	var alive: Array[Node3D] = []
 	if _players_container == null:
 		return alive
 	for child in _players_container.get_children():
@@ -426,6 +502,7 @@ func _cycle_spectate_target() -> void:
 
 
 func _on_restart() -> void:
+	reset_for_restart()
 	var hp := $HealthComponent as HealthComponent
 	if hp:
 		hp.reset_to_max()
@@ -438,6 +515,8 @@ func _on_restart() -> void:
 	camera.current = true
 	spectate_cam_camera.current = false
 	set_process_unhandled_input(true)
+	if is_instance_valid(_interact_prompt):
+		_interact_prompt.visible = true
 
 
 func _setup_authority_from_name() -> void:
@@ -488,6 +567,8 @@ func _enable_player() -> void:
 		_voice_chat.set_process(true)
 		if not _voice_chat.yelling_state_changed.is_connected(_on_yelling_state_changed):
 			_voice_chat.yelling_state_changed.connect(_on_yelling_state_changed)
+	if is_instance_valid(_interact_prompt):
+		_interact_prompt.visible = true
 
 
 func _disable_player() -> void:
@@ -504,6 +585,52 @@ func _disable_player() -> void:
 		if _voice_chat.yelling_state_changed.is_connected(_on_yelling_state_changed):
 			_voice_chat.yelling_state_changed.disconnect(_on_yelling_state_changed)
 	fishing_mechanic.is_local_render = false
+	if is_instance_valid(_interact_prompt):
+		_interact_prompt.visible = false
+
+
+func _on_reel_success(_personal_count: int) -> void:
+	start_carrying()
+
+
+func _on_health_changed(old: int, new: int) -> void:
+	if is_carrying and new < old:
+		drop_carried_fish()
+
+
+func start_carrying() -> void:
+	is_carrying = true
+	_show_held_fish_remote()
+	sync_carrying.rpc(true)
+	_update_prompt_visibility()
+
+
+func deposit_carried_fish() -> void:
+	if not is_carrying:
+		return
+	if is_instance_valid(_quota_manager_ref) and multiplayer.is_server():
+		_quota_manager_ref.report_catch(1)
+	elif is_instance_valid(_quota_manager_ref):
+		_quota_manager_ref.report_catch.rpc(1)
+	_clear_carry()
+
+
+func drop_carried_fish() -> void:
+	if not is_carrying:
+		return
+	_clear_carry()
+
+
+func _clear_carry() -> void:
+	is_carrying = false
+	_hide_held_fish_remote()
+	sync_carrying.rpc(false)
+	_update_prompt_visibility()
+
+
+func reset_for_restart() -> void:
+	if is_carrying:
+		_clear_carry()
 
 
 func _on_yelling_state_changed(is_yelling: bool) -> void:
@@ -513,6 +640,39 @@ func _on_yelling_state_changed(is_yelling: bool) -> void:
 @rpc("any_peer", "unreliable", "call_remote")
 func sync_yelling(new_is_yelling: bool) -> void:
 	is_yelling = new_is_yelling
+
+
+@rpc("any_peer", "unreliable", "call_remote")
+func sync_carrying(val: bool) -> void:
+	is_carrying = val
+	if val:
+		_show_held_fish_remote()
+	else:
+		_hide_held_fish_remote()
+	_update_prompt_visibility()
+
+
+func _show_held_fish_remote() -> void:
+	if is_instance_valid(_held_fish):
+		return
+	_rod_pivot.visible = false
+	_held_fish = MeshInstance3D.new()
+	var fish_mesh := BoxMesh.new()
+	fish_mesh.size = Vector3(0.3, 0.1, 0.5)
+	_held_fish.mesh = fish_mesh
+	var fish_mat := ORMMaterial3D.new()
+	fish_mat.albedo_color = Color(1.0, 0.5, 0.0)
+	fish_mat.shading_mode = ORMMaterial3D.SHADING_MODE_UNSHADED
+	_held_fish.material_override = fish_mat
+	_held_fish.position = Vector3(0, -0.1, -0.5)
+	head.add_child(_held_fish)
+
+
+func _hide_held_fish_remote() -> void:
+	if is_instance_valid(_held_fish):
+		_held_fish.queue_free()
+		_held_fish = null
+	_rod_pivot.visible = true
 
 
 @rpc("authority", "unreliable", "call_remote")

@@ -8,6 +8,15 @@
 [ext_resource type="PackedScene" path="res://systems/round/round_manager.tscn" id="6_0f4gj"]
 [ext_resource type="PackedScene" path="res://ui/end_screen.tscn" id="7_7tkbk"]
 
+[sub_resource type="BoxShape3D" id="box_shape"]
+size = Vector3(0.8, 0.6, 0.8)
+
+[sub_resource type="ORMMaterial3D" id="box_mat"]
+albedo_color = Color(0.5, 0.3, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="box_mesh"]
+size = Vector3(0.8, 0.6, 0.8)
+
 [node name="main" type="Node3D" unique_id=1783119357]
 script = ExtResource("3_y6pqm")
 
@@ -18,17 +27,22 @@ script = ExtResource("4_cu0i6")
 spawn_path = NodePath("..")
 
 [node name="DangerManager" parent="." unique_id=621029984 instance=ExtResource("4_0we7i")]
-initial_spawn_delay = 5.0
-respawn_interval_min = 5.0
-respawn_interval_max = 5.0
 
 [node name="ZoneManager" parent="." unique_id=621029985 instance=ExtResource("4_zm01")]
-reshuffle_interval_min = 5.0
-reshuffle_interval_max = 10.0
 
 [node name="QuotaManager" parent="." unique_id=2032018860 instance=ExtResource("5_2ihsm")]
 
 [node name="RoundManager" parent="." unique_id=273981928 instance=ExtResource("6_0f4gj")]
-round_duration = 30.0
 
 [node name="EndScreen" parent="." unique_id=174325840 instance=ExtResource("7_7tkbk")]
+
+[node name="StorageBox" type="StaticBody3D" parent="." unique_id=390215907]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, -0.2, -1.5)
+collision_layer = 32
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StorageBox" unique_id=1649446584]
+shape = SubResource("box_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="StorageBox" unique_id=1975243973]
+material_override = SubResource("box_mat")
+mesh = SubResource("box_mesh")
