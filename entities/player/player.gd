@@ -1,7 +1,5 @@
 class_name Player extends CharacterBody3D
 
-const _InteractableComponentScript = preload("res://systems/interactable/interactable_component.gd")
-
 @export var move_speed: float = 5.0
 @export var jump_height: float = 2.0
 @export var mouse_sensitivity: float = 0.002
@@ -77,9 +75,10 @@ var _rod_pivot: Node3D = null
 
 var is_carrying: bool = false
 var _held_fish: Node3D = null
-var _target_interactable: InteractableComponent = null
+var _ray_hit_box: bool = false
 var _interact_prompt: CanvasLayer = null
 var _quota_manager_ref: Node3D = null
+var _is_shop_open: bool = false
 @export var interact_range: float = 3.0
 
 const INTERACTABLE_LAYER: int = 1 << 5
@@ -104,6 +103,8 @@ func _ready() -> void:
 	_health_component.died.connect(_enter_spectate)
 	_health_component.health_changed.connect(_on_health_changed)
 	fishing_mechanic.reel_success.connect(_on_reel_success)
+	
+	get_node("/root/game_manager").shop_toggled.connect(_on_shop_toggled)
 
 	_setup_interact_prompt()
 
@@ -289,36 +290,23 @@ func _update_interact_raycast() -> void:
 	params.collision_mask = INTERACTABLE_LAYER
 	var result := space_state.intersect_ray(params)
 
-	var found: InteractableComponent = null
-	if result and not result.is_empty():
-		var collider := result.collider as Node
-		found = _find_interactable_component(collider)
+	var hit_node = result.get("collider") if result else null
+	var interactable = hit_node.get_node_or_null("InteractableComponent") if hit_node and hit_node.has_method("get_node_or_null") else null
+	_ray_hit_box = interactable != null and interactable.is_enabled
 
-	if found != _target_interactable:
-		_target_interactable = found
-		_update_prompt_visibility()
+	_update_prompt_visibility(interactable)
 
 
-func _find_interactable_component(from: Node) -> InteractableComponent:
-	if from == null:
-		return null
-	var node := from
-	while node:
-		for child in node.get_children():
-			if child is InteractableComponent:
-				return child
-		node = node.get_parent()
-	return null
-
-
-func _update_prompt_visibility() -> void:
+func _update_prompt_visibility(interactable = null) -> void:
 	if not is_instance_valid(_interact_prompt):
 		return
 	var label := _interact_prompt.get_node_or_null("PromptLabel") as Label
 	if not label:
 		return
-	if _target_interactable != null and _target_interactable.can_interact(self):
-		label.text = "[Right-click] " + _target_interactable.prompt_text
+	
+	if _ray_hit_box and interactable and not _is_shop_open:
+		label.text = interactable.prompt_text
+		label.add_theme_color_override("font_color", interactable.prompt_color)
 		label.visible = true
 	else:
 		label.visible = false
@@ -356,8 +344,22 @@ func _unhandled_input(event: InputEvent) -> void:
 			target.z = global_position.z + offset.y
 		fishing_mechanic.cast(target, flight_time)
 
-	if event.is_action_pressed("interact") and _target_interactable != null and _target_interactable.can_interact(self):
-		_target_interactable.interacted.emit(self)
+	if event.is_action_pressed("interact") and _ray_hit_box:
+		var space_state := get_world_3d().direct_space_state
+		var origin := camera.global_position
+		var dir := -camera.global_transform.basis.z
+		var params := PhysicsRayQueryParameters3D.new()
+		params.from = origin
+		params.to = origin + dir * interact_range
+		params.collision_mask = INTERACTABLE_LAYER
+		var result := space_state.intersect_ray(params)
+		
+		if result and result.collider:
+			var interactable = result.collider.get_node_or_null("InteractableComponent")
+			if interactable and interactable.is_enabled:
+				interactable.interacted.emit(self)
+				if is_carrying and result.collider.is_in_group("storage_box"):
+					deposit_carried_fish()
 
 
 func _physics_process(delta: float) -> void:
@@ -616,6 +618,10 @@ func _disable_player() -> void:
 
 func _on_reel_success(_personal_count: int) -> void:
 	start_carrying()
+
+func _on_shop_toggled(is_open: bool) -> void:
+	_is_shop_open = is_open
+	_update_prompt_visibility()
 
 
 func _on_health_changed(old: int, new: int) -> void:
