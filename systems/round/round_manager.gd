@@ -16,7 +16,7 @@ func _ready() -> void:
 	timer.one_shot = true
 	timer.timeout.connect(_on_timer_timeout)
 
-	if multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		timer.start(round_duration)
 		round_active = true
 		fishing_active = true
@@ -24,7 +24,7 @@ func _ready() -> void:
 
 
 func _on_timer_timeout() -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	if not round_active:
 		return
@@ -42,13 +42,13 @@ func _end_round(success: bool) -> void:
 
 
 func _sync_state_to_clients() -> void:
-	if not multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
 		return
 	_apply_synced_state.rpc(round_active, round_success, fishing_active)
 
 
 func restart_round() -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	round_active = true
 	round_success = false
@@ -64,7 +64,8 @@ func restart_round() -> void:
 	if zm:
 		zm.reset_for_restart()
 
-	_apply_restart.rpc()
+	if multiplayer.has_multiplayer_peer():
+		_apply_restart.rpc()
 
 
 @rpc("authority", "call_local", "reliable")

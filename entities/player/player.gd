@@ -274,7 +274,7 @@ func _process(delta: float) -> void:
 	camera.position = _cam_home + shake_pos + Vector3(0, _bounce_pos, 0)
 	camera.rotation.z = shake_rot
 
-	if get_multiplayer_authority() == multiplayer.get_unique_id():
+	if not multiplayer.has_multiplayer_peer() or get_multiplayer_authority() == multiplayer.get_unique_id():
 		_update_interact_raycast()
 
 
@@ -358,8 +358,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			var interactable = result.collider.get_node_or_null("InteractableComponent")
 			if interactable and interactable.is_enabled:
 				interactable.interacted.emit(self)
-				
-				# Maintain existing storage logic, but make it interactable-aware
 				if is_carrying and result.collider.is_in_group("storage_box"):
 					deposit_carried_fish()
 
@@ -634,14 +632,15 @@ func _on_health_changed(old: int, new: int) -> void:
 func start_carrying() -> void:
 	is_carrying = true
 	_show_held_fish_remote()
-	sync_carrying.rpc(true)
+	if multiplayer.has_multiplayer_peer():
+		sync_carrying.rpc(true)
 	_update_prompt_visibility()
 
 
 func deposit_carried_fish() -> void:
 	if not is_carrying:
 		return
-	if is_instance_valid(_quota_manager_ref) and multiplayer.is_server():
+	if is_instance_valid(_quota_manager_ref) and (not multiplayer.has_multiplayer_peer() or multiplayer.is_server()):
 		_quota_manager_ref.report_catch(1)
 	elif is_instance_valid(_quota_manager_ref):
 		_quota_manager_ref.report_catch.rpc(1)
@@ -657,7 +656,8 @@ func drop_carried_fish() -> void:
 func _clear_carry() -> void:
 	is_carrying = false
 	_hide_held_fish_remote()
-	sync_carrying.rpc(false)
+	if multiplayer.has_multiplayer_peer():
+		sync_carrying.rpc(false)
 	_update_prompt_visibility()
 
 
@@ -667,7 +667,8 @@ func reset_for_restart() -> void:
 
 
 func _on_yelling_state_changed(is_yelling: bool) -> void:
-	sync_yelling.rpc(is_yelling)
+	if multiplayer.has_multiplayer_peer():
+		sync_yelling.rpc(is_yelling)
 
 
 @rpc("any_peer", "unreliable", "call_remote")

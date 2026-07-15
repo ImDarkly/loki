@@ -113,7 +113,7 @@ func _on_personal_catch_changed(count: int) -> void:
 func _report_catch_to_host(amount: int) -> void:
 	if not is_instance_valid(_quota_manager_ref):
 		return
-	if multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		_quota_manager_ref.report_catch(amount)
 	else:
 		_quota_manager_ref.report_catch.rpc(amount)
@@ -646,7 +646,7 @@ func _report_zone_enter(zone_index: int) -> void:
 	_try_find_zone_manager()
 	if not is_instance_valid(_zone_manager_ref):
 		return
-	if multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		_zone_manager_ref.enter_zone(zone_index)
 	else:
 		_zone_manager_ref.enter_zone.rpc(zone_index)
@@ -659,7 +659,7 @@ func _report_zone_leave() -> void:
 	if not is_instance_valid(_zone_manager_ref):
 		_active_zone_index = -1
 		return
-	if multiplayer.is_server():
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		_zone_manager_ref.leave_zone(_active_zone_index)
 	else:
 		_zone_manager_ref.leave_zone.rpc(_active_zone_index)

@@ -61,3 +61,5 @@ shape = SubResource("box_shape")
 [node name="Mesh" type="MeshInstance3D" parent="StorageBox" unique_id=1975243973]
 material_override = SubResource("box_mat")
 mesh = SubResource("box_mesh")
+
+
