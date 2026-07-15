@@ -290,13 +290,11 @@ func _update_interact_raycast() -> void:
 	params.collision_mask = INTERACTABLE_LAYER
 	var result := space_state.intersect_ray(params)
 
-	var prev_hit := _ray_hit_box
 	var hit_node = result.get("collider") if result else null
 	var interactable = hit_node.get_node_or_null("InteractableComponent") if hit_node and hit_node.has_method("get_node_or_null") else null
 	_ray_hit_box = interactable != null and interactable.is_enabled
 
-	if _ray_hit_box != prev_hit:
-		_update_prompt_visibility(interactable)
+	_update_prompt_visibility(interactable)
 
 
 func _update_prompt_visibility(interactable = null) -> void:
@@ -358,12 +356,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		
 		if result and result.collider:
 			var interactable = result.collider.get_node_or_null("InteractableComponent")
-			if interactable:
-				if interactable.has_signal("interacted"):
-					interactable.interacted.emit(self)
+			if interactable and interactable.is_enabled:
+				interactable.interacted.emit(self)
 				
 				# Maintain existing storage logic, but make it interactable-aware
-				if is_carrying:
+				if is_carrying and result.collider.is_in_group("storage_box"):
 					deposit_carried_fish()
 
 

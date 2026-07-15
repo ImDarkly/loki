@@ -10,7 +10,7 @@ func _sync_coins(value: int) -> void:
     coins_updated.emit(value)
 
 func add_coins(amount: int) -> void:
-    if not multiplayer.is_server():
+    if amount <= 0 or not multiplayer.is_server():
         return
     coins += amount
     _sync_coins.rpc(coins)
@@ -19,7 +19,7 @@ func get_coins() -> int:
     return coins
 
 func spend_coins(amount: int) -> bool:
-    if not multiplayer.is_server():
+    if amount <= 0 or not multiplayer.is_server():
         return false
     if coins >= amount:
         coins -= amount

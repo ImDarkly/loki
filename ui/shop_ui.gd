@@ -28,6 +28,7 @@ func _ready():
 
 func _unhandled_input(event):
 	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
 		close_shop()
 
 func close_shop():
@@ -42,9 +43,8 @@ func close_shop():
 		queue_free()
 	)
 
-
 func _update_ui(_val = 0):
 	var fish = quota_manager.shared_quota
-	var coins = coin_manager.get_coins()
+	var coins = coin_manager.coins
 	fish_label.text = "Stored Fish: " + str(fish)
 	coin_label.text = "Coins: " + str(coins)
