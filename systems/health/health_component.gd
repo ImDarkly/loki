@@ -6,9 +6,11 @@ signal died
 @export var max_health: int = 5
 
 var current_health: int = max_health
+var _base_max_health: int
 
 
 func _ready() -> void:
+	_base_max_health = max_health
 	current_health = max_health
 
 
@@ -43,6 +45,22 @@ func reset_to_max() -> void:
 	var old := current_health
 	current_health = max_health
 	health_changed.emit(old, current_health)
+
+
+func apply_max_health_bonus(bonus: int) -> void:
+	max_health = _base_max_health + bonus
+	var old_current := current_health
+	current_health = min(current_health, max_health)
+	if old_current != current_health:
+		health_changed.emit(old_current, current_health)
+
+
+func reset_to_base_max_health() -> void:
+	max_health = _base_max_health
+	var old_current := current_health
+	current_health = min(current_health, max_health)
+	if old_current != current_health:
+		health_changed.emit(old_current, current_health)
 
 
 func is_alive() -> bool:

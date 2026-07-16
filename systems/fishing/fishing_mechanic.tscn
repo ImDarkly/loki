@@ -1,8 +1,8 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://systems/fishing/fishing_mechanic.gd" id="1_7vgpu"]
-[ext_resource type="PackedScene" uid="uid://b1hd6oestfl7f" path="res://systems/fishing/fish_manager.tscn" id="2_likap"]
-[ext_resource type="PackedScene" uid="uid://c7rv7ca3i10sc" path="res://systems/fishing/catch_feedback_manager.tscn" id="3_xxwae"]
+[ext_resource type="PackedScene" path="res://systems/fishing/fish_manager.tscn" id="2_likap"]
+[ext_resource type="PackedScene" path="res://systems/fishing/catch_feedback_manager.tscn" id="3_xxwae"]
 
 [node name="FishingMechanic" type="Node3D"]
 script = ExtResource("1_7vgpu")

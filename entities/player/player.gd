@@ -112,6 +112,14 @@ func _ready() -> void:
 	if qm:
 		_quota_manager_ref = qm
 
+	call_deferred("_apply_upgrade_effects_on_ready")
+
+
+func _apply_upgrade_effects_on_ready() -> void:
+	var cm := get_node_or_null("/root/main/CoinManager") as CoinManager
+	if cm:
+		cm.apply_upgrade_effects_to_player(self)
+
 
 func _setup_interact_prompt() -> void:
 	_interact_prompt = CanvasLayer.new()
