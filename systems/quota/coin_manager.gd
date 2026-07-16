@@ -24,7 +24,7 @@ func _sync_upgrades(max_health_owned: bool, rod_pull_speed_owned: bool) -> void:
 	upgrades_updated.emit()
 
 
-@rpc("any_peer", "call_remote", "reliable")
+@rpc("any_peer", "call_local", "reliable")
 func request_sell_all() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
@@ -40,7 +40,7 @@ func request_sell_all() -> void:
 	_sync_coins.rpc(coins)
 
 
-@rpc("any_peer", "call_remote", "reliable")
+@rpc("any_peer", "call_local", "reliable")
 func request_buy_upgrade(upgrade_name: String) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
