@@ -36,6 +36,7 @@ var _current_flight_duration: float
 @onready var catch_feedback_manager: Node3D = $CatchFeedbackManager
 
 var current_state: State = State.IDLE
+var _base_rise_speed: float
 var visual_line_node: MeshInstance3D = null
 var line_material: ORMMaterial3D = null
 var bobber_node: MeshInstance3D = null
@@ -171,6 +172,8 @@ func _ready() -> void:
 	InputMap.action_add_event("cast_line", cast_mouse)
 
 	reel_meter.visible = false
+
+	_base_rise_speed = player_rise_speed
 
 	line_material = ORMMaterial3D.new()
 	line_material.albedo_color = Color(1.0, 1.0, 1.0)
@@ -575,6 +578,14 @@ func reset_for_restart() -> void:
 	personal_catch_count = 0
 	_active_zone_index = -1
 	personal_catch_changed.emit(personal_catch_count)
+
+
+func apply_rise_speed_multiplier(mult: float) -> void:
+	player_rise_speed = _base_rise_speed * mult
+
+
+func reset_rise_speed() -> void:
+	player_rise_speed = _base_rise_speed
 
 
 func _snap_bobber_to_rod() -> void:

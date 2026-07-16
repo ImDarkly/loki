@@ -1,5 +1,7 @@
 extends Node3D
 
+const _shop_ui_script = preload("res://ui/shop_ui.gd")
+
 # Reserved for Night phase — not emitted during Fishing phase
 signal round_ended(success: bool)
 
@@ -79,6 +81,11 @@ func _apply_restart() -> void:
 	var es := get_node_or_null("/root/main/EndScreen")
 	if es:
 		es.visible = false
+
+	for child in get_tree().root.get_children():
+		if child.get_script() == _shop_ui_script:
+			get_node("/root/game_manager").shop_toggled.emit(false)
+			child.queue_free()
 
 	var players_node := get_node_or_null("/root/main/Players")
 	if players_node:

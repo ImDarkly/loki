@@ -6,10 +6,39 @@ signal upgrades_updated()
 @export var coins_per_fish: int = 1
 @export var max_health_upgrade_cost: int = 10
 @export var rod_pull_speed_upgrade_cost: int = 10
+@export var max_health_bonus: int = 2
+@export var rod_pull_speed_multiplier: float = 1.5
 
 var coins: int = 0
 var max_health_upgrade_owned: bool = false
 var rod_pull_speed_upgrade_owned: bool = false
+
+
+func _ready() -> void:
+	upgrades_updated.connect(_on_upgrades_updated)
+
+
+func _on_upgrades_updated() -> void:
+	apply_upgrade_effects_to_all()
+
+
+func apply_upgrade_effects_to_player(player: Player) -> void:
+	var hp := player.get_node_or_null("HealthComponent") as HealthComponent
+	var fm := player.get_node_or_null("FishingMechanic")
+	if max_health_upgrade_owned and hp:
+		hp.apply_max_health_bonus(max_health_bonus)
+	if rod_pull_speed_upgrade_owned and fm and fm.has_method("apply_rise_speed_multiplier"):
+		fm.apply_rise_speed_multiplier(rod_pull_speed_multiplier)
+
+
+func apply_upgrade_effects_to_all() -> void:
+	var players_node := get_node_or_null("/root/main/Players")
+	if not players_node:
+		return
+	for child in players_node.get_children():
+		if child is Player:
+			apply_upgrade_effects_to_player(child as Player)
+
 
 @rpc("authority", "call_local", "reliable")
 func _sync_coins(value: int) -> void:
