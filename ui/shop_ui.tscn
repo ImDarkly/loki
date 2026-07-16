@@ -9,10 +9,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -100.0
-offset_right = 150.0
-offset_bottom = 100.0
+offset_left = -175.0
+offset_top = -150.0
+offset_right = 175.0
+offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
@@ -26,7 +26,7 @@ theme_override_constants/margin_bottom = 20
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="CloseButton" type="Button" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -40,3 +40,37 @@ text = "Stored Fish: 0"
 [node name="CoinLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Coins: 0"
+
+[node name="SellAllButton" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Sell All"
+
+[node name="UpgradeHeader" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Upgrades"
+
+[node name="MaxHealthRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MaxHealthLabel" type="Label" parent="MarginContainer/VBoxContainer/MaxHealthRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "+Max Health"
+
+[node name="MaxHealthBuyButton" type="Button" parent="MarginContainer/VBoxContainer/MaxHealthRow"]
+layout_mode = 2
+text = "Buy"
+
+[node name="RodSpeedRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RodSpeedLabel" type="Label" parent="MarginContainer/VBoxContainer/RodSpeedRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "+Rod Pull Speed"
+
+[node name="RodSpeedBuyButton" type="Button" parent="MarginContainer/VBoxContainer/RodSpeedRow"]
+layout_mode = 2
+text = "Buy"
