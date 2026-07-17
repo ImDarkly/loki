@@ -66,6 +66,10 @@ func restart_round() -> void:
 	if zm:
 		zm.reset_for_restart()
 
+	var rm := get_node_or_null("/root/main/RockManager")
+	if rm:
+		rm.reset_for_restart()
+
 	if multiplayer.has_multiplayer_peer():
 		_apply_restart.rpc()
 

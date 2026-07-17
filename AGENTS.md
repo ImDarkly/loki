@@ -114,6 +114,9 @@ Before implementing any task:
 
 If anything is unclear, ask me before proceeding.
 
+### GitHub issue relationships
+Whenever creating multiple issues with dependencies between them, use the `addBlockedBy` GraphQL mutation via `gh api graphql` to link them immediately after creation. The mutation takes `issueId` (the blocked issue) and `blockingIssueId` (the blocker). Get issue node IDs via a `repository(owner:, name:) { issue(number:) { id } }` query first.
+
 ## PowerShell encoding trap
 
 When writing markdown with backticks (`` ` ``) to files in PowerShell:
