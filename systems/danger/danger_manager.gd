@@ -5,16 +5,11 @@ enum State { INACTIVE, APPROACHING, ATTACKING, RETREATING, WAITING }
 signal fish_fled
 signal quota_penalty(amount: int)
 
-@export var initial_spawn_delay: float = 60.0
-@export var respawn_interval_min: float = 180.0
-@export var respawn_interval_max: float = 300.0
+@export var respawn_interval_min: float = 45.0
+@export var respawn_interval_max: float = 90.0
 @export var initial_swim_speed: float = 3.0
 @export var attack_range: float = 2.0
 @export var initial_return_delay: float = 4.0
-@export var speed_multiplier: float = 1.3
-@export var delay_multiplier: float = 0.7
-@export var min_swim_speed: float = 8.0
-@export var min_return_delay: float = 0.5
 @export var min_spawn_distance_from_player: float = 12.0
 @export var shark_bite_damage: int = 2
 
@@ -23,8 +18,6 @@ const WATER_CENTER: Vector3 = Vector3(0, 0, -7)
 
 var current_state: State = State.INACTIVE
 var player_ref: Node3D = null
-var swim_speed: float
-var return_delay: float
 var shark_node: MeshInstance3D = null
 var spawn_position: Vector3
 @onready var spawn_timer: Timer = $SpawnTimer
@@ -32,8 +25,6 @@ var spawn_position: Vector3
 
 
 func _ready() -> void:
-	_reset_escalation()
-
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		set_physics_process(false)
 		spawn_timer.stop()
@@ -46,16 +37,11 @@ func _ready() -> void:
 	return_timer.one_shot = true
 	return_timer.timeout.connect(_on_return_timer_timeout)
 
-	spawn_timer.start(initial_spawn_delay)
+	spawn_timer.start(randf_range(30.0, 60.0))
 
 
 func set_player_ref(player: Node3D) -> void:
 	player_ref = player
-
-
-func _reset_escalation() -> void:
-	swim_speed = initial_swim_speed
-	return_delay = initial_return_delay
 
 
 func _on_spawn_timer_timeout() -> void:
@@ -182,7 +168,6 @@ func _process_approaching(delta: float) -> void:
 		return
 
 	if _has_yelling_player():
-		_apply_escalation()
 		current_state = State.RETREATING
 		_sync_state_to_clients()
 		return
@@ -196,7 +181,7 @@ func _process_approaching(delta: float) -> void:
 		return
 
 	var direction := (target - current).normalized()
-	var step: float = minf(swim_speed * delta, dist)
+	var step: float = minf(initial_swim_speed * delta, dist)
 	shark_node.position += direction * step
 
 	if direction.length_squared() > 0.001:
@@ -211,7 +196,7 @@ func _process_retreating(delta: float) -> void:
 	var target := Vector3(spawn_position.x, 0, spawn_position.z)
 	var current := Vector3(shark_node.position.x, 0, shark_node.position.z)
 	var direction := (target - current).normalized()
-	var new_pos := shark_node.position + direction * swim_speed * delta
+	var new_pos := shark_node.position + direction * initial_swim_speed * delta
 	shark_node.position = new_pos
 
 	if direction.length_squared() > 0.001:
@@ -223,7 +208,7 @@ func _process_retreating(delta: float) -> void:
 	if abs(new_pos.x - cx) > half or abs(new_pos.z - cz) > half:
 		shark_node.visible = false
 		current_state = State.WAITING
-		return_timer.start(return_delay)
+		return_timer.start(initial_return_delay)
 	_sync_state_to_clients()
 
 
@@ -292,11 +277,6 @@ func _player_is_yelling(player: Object) -> bool:
 	return yelling == true
 
 
-func _apply_escalation() -> void:
-	swim_speed = min(swim_speed * speed_multiplier, min_swim_speed)
-	return_delay = max(return_delay * delay_multiplier, min_return_delay)
-
-
 func _trigger_attack() -> void:
 	current_state = State.ATTACKING
 	var target_player := _get_nearest_player()
@@ -310,7 +290,6 @@ func _trigger_attack() -> void:
 		if health:
 			health.take_damage(shark_bite_damage)
 	fish_fled.emit()
-	_reset_escalation()
 	if is_instance_valid(shark_node):
 		shark_node.visible = false
 	var interval := randf_range(respawn_interval_min, respawn_interval_max)
@@ -349,11 +328,10 @@ func _apply_synced_state(state_value: int, shark_pos: Vector3, synced_spawn_posi
 func reset_for_restart() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
-	_reset_escalation()
 	if is_instance_valid(shark_node):
 		shark_node.visible = false
 	current_state = State.INACTIVE
-	spawn_timer.start(initial_spawn_delay)
+	spawn_timer.start(randf_range(30.0, 60.0))
 	_sync_state_to_clients()
 
 
