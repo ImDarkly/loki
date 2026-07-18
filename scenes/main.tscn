@@ -4,10 +4,10 @@
 [ext_resource type="PackedScene" path="res://systems/danger/danger_manager.tscn" id="4_0we7i"]
 [ext_resource type="Script" uid="uid://bgyet62minjw8" path="res://world/spawn_manager.gd" id="4_cu0i6"]
 [ext_resource type="PackedScene" path="res://systems/zones/zone_manager.tscn" id="4_zm01"]
-[ext_resource type="PackedScene" path="res://systems/rocks/rock_manager.tscn" id="8_rock"]
 [ext_resource type="PackedScene" path="res://systems/quota/quota_manager.tscn" id="5_2ihsm"]
 [ext_resource type="PackedScene" path="res://systems/round/round_manager.tscn" id="6_0f4gj"]
 [ext_resource type="PackedScene" path="res://ui/end_screen.tscn" id="7_7tkbk"]
+[ext_resource type="PackedScene" path="res://systems/rocks/rock_manager.tscn" id="8_rock"]
 [ext_resource type="PackedScene" path="res://systems/quota/coin_manager.tscn" id="coin_man_scene"]
 [ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="interactable_comp_script"]
 [ext_resource type="PackedScene" path="res://entities/shop_hut.tscn" id="shop_hut_scene"]
@@ -34,11 +34,12 @@ spawn_path = NodePath("..")
 
 [node name="ZoneManager" parent="." unique_id=621029985 instance=ExtResource("4_zm01")]
 
-[node name="RockManager" parent="." instance=ExtResource("8_rock")]
+[node name="RockManager" parent="." unique_id=683660322 instance=ExtResource("8_rock")]
 
 [node name="QuotaManager" parent="." unique_id=2032018860 instance=ExtResource("5_2ihsm")]
 
 [node name="RoundManager" parent="." unique_id=273981928 instance=ExtResource("6_0f4gj")]
+round_duration = 30.0
 
 [node name="EndScreen" parent="." unique_id=174325840 instance=ExtResource("7_7tkbk")]
 

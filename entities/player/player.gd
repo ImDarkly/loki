@@ -74,12 +74,17 @@ var _sync_tick: int = 0
 var _rod_pivot: Node3D = null
 
 var is_carrying: bool = false
+var holding_rock: bool = false
 var _held_fish: Node3D = null
+var _held_rock_mesh: Node3D = null
 var _ray_hit_box: bool = false
+var _ray_rock: bool = false
 var _interact_prompt: CanvasLayer = null
 var _quota_manager_ref: Node3D = null
+var _rock_manager_ref: Node = null
 var _is_shop_open: bool = false
 @export var interact_range: float = 3.0
+@export var rock_pickup_range: float = 3.0
 
 const INTERACTABLE_LAYER: int = 1 << 5
 
@@ -112,6 +117,10 @@ func _ready() -> void:
 	if qm:
 		_quota_manager_ref = qm
 
+	var rm := get_node_or_null("/root/main/RockManager")
+	if rm:
+		_rock_manager_ref = rm
+
 	call_deferred("_apply_upgrade_effects_on_ready")
 
 
@@ -139,6 +148,21 @@ func _setup_interact_prompt() -> void:
 	label.add_theme_font_size_override("font_size", font_size)
 	label.visible = false
 	_interact_prompt.add_child(label)
+
+	var rock_label := Label.new()
+	rock_label.name = "RockPromptLabel"
+	rock_label.text = "Pick up rock [Left Click]"
+	rock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	rock_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	rock_label.offset_left = -150
+	rock_label.offset_top = -60
+	rock_label.offset_right = 150
+	rock_label.offset_bottom = -10
+	rock_label.add_theme_font_size_override("font_size", font_size)
+	rock_label.visible = false
+	_interact_prompt.add_child(rock_label)
+
 	add_child(_interact_prompt)
 
 
@@ -284,6 +308,7 @@ func _process(delta: float) -> void:
 
 	if not multiplayer.has_multiplayer_peer() or get_multiplayer_authority() == multiplayer.get_unique_id():
 		_update_interact_raycast()
+		_update_rock_raycast()
 
 
 func _update_interact_raycast() -> void:
@@ -312,12 +337,116 @@ func _update_prompt_visibility(interactable = null) -> void:
 	if not label:
 		return
 	
-	if _ray_hit_box and interactable and not _is_shop_open:
+	if _ray_hit_box and interactable and not _is_shop_open and is_carrying:
 		label.text = interactable.prompt_text
 		label.add_theme_color_override("font_color", interactable.prompt_color)
 		label.visible = true
 	else:
 		label.visible = false
+
+
+func _update_rock_raycast() -> void:
+	if is_carrying or holding_rock:
+		if _ray_rock:
+			_ray_rock = false
+			_update_rock_prompt_visibility()
+		return
+	if not _rock_manager_ref:
+		return
+	var space_state := get_world_3d().direct_space_state
+	if space_state == null:
+		return
+	var origin := camera.global_position
+	var dir := -camera.global_transform.basis.z
+	var params := PhysicsRayQueryParameters3D.new()
+	params.from = origin
+	params.to = origin + dir * rock_pickup_range
+	params.collision_mask = 4
+	var result := space_state.intersect_ray(params)
+	var hit_rock := false
+	if result:
+		var rock_index: int = _rock_manager_ref.get_nearest_available_point(result.position, 2.0)
+		hit_rock = rock_index != -1
+	if hit_rock != _ray_rock:
+		_ray_rock = hit_rock
+		_update_rock_prompt_visibility()
+
+
+func _update_rock_prompt_visibility() -> void:
+	if not is_instance_valid(_interact_prompt):
+		return
+	var label := _interact_prompt.get_node_or_null("RockPromptLabel") as Label
+	if not label:
+		return
+	label.visible = _ray_rock and not _is_shop_open
+
+
+func _try_pickup_rock() -> bool:
+	if is_carrying:
+		return false
+	if not _rock_manager_ref:
+		return false
+	var space_state := get_world_3d().direct_space_state
+	if not space_state:
+		return false
+	var origin := camera.global_position
+	var dir := -camera.global_transform.basis.z
+	var params := PhysicsRayQueryParameters3D.new()
+	params.from = origin
+	params.to = origin + dir * rock_pickup_range
+	params.collision_mask = 4
+	var result := space_state.intersect_ray(params)
+	if not result:
+		return false
+	var rock_index: int = _rock_manager_ref.get_nearest_available_point(result.position, 2.0)
+	if rock_index == -1:
+		return false
+	_rock_manager_ref.request_pickup(rock_index)
+	holding_rock = true
+	_show_held_rock_remote()
+	if multiplayer.has_multiplayer_peer():
+		sync_holding_rock.rpc(true)
+	_update_rock_prompt_visibility()
+	return true
+
+
+func _throw_rock() -> void:
+	var rock := RigidBody3D.new()
+	rock.name = "ThrownRock"
+	rock.gravity_scale = 1.0
+
+	var mi := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.25, 0.15, 0.25)
+	mi.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.5, 0.5, 0.5)
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mi.material_override = mat
+	rock.add_child(mi)
+
+	var cs := CollisionShape3D.new()
+	cs.shape = BoxShape3D.new()
+	cs.shape.size = Vector3(0.25, 0.15, 0.25)
+	rock.add_child(cs)
+
+	var rock_pos := camera.global_position + (-camera.global_transform.basis.z * 0.5)
+	rock.position = rock_pos
+	var throw_dir := -camera.global_transform.basis.z
+	rock.linear_velocity = throw_dir * launch_speed + Vector3(0, 3, 0)
+	rock.angular_velocity = Vector3(randf_range(-5, 5), randf_range(-5, 5), randf_range(-5, 5))
+	get_tree().root.add_child(rock)
+
+	var cleanup := Timer.new()
+	cleanup.one_shot = true
+	cleanup.timeout.connect(rock.queue_free)
+	rock.add_child(cleanup)
+	cleanup.start(5.0)
+
+	holding_rock = false
+	_hide_held_rock_remote()
+	if multiplayer.has_multiplayer_peer():
+		sync_holding_rock.rpc(false)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -337,20 +466,25 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotate_x(-event.relative.y * mouse_sensitivity)
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 
-	if event.is_action_pressed("cast_line") and not is_carrying and fishing_mechanic.can_cast():
-		var rod_tip: Vector3 = fishing_mechanic.get_rod_tip_position()
-		var dir := -camera.global_transform.basis.z
-		var v := dir * launch_speed
-		var discriminant: float = v.y * v.y + 2.0 * _gravity * rod_tip.y
-		var flight_time := (v.y + sqrt(max(discriminant, 0.0))) / _gravity
-		flight_time = max(flight_time, 0.1)
-		var target := Vector3(rod_tip.x + v.x * flight_time, 0.0, rod_tip.z + v.z * flight_time)
-		var offset := Vector2(target.x - global_position.x, target.z - global_position.z)
-		if offset.length() > max_cast_range:
-			offset = offset.normalized() * max_cast_range
-			target.x = global_position.x + offset.x
-			target.z = global_position.z + offset.y
-		fishing_mechanic.cast(target, flight_time)
+	if event.is_action_pressed("cast_line"):
+		if holding_rock:
+			_throw_rock()
+		elif not is_carrying and _try_pickup_rock():
+			pass
+		elif not is_carrying and fishing_mechanic.can_cast():
+			var rod_tip: Vector3 = fishing_mechanic.get_rod_tip_position()
+			var dir := -camera.global_transform.basis.z
+			var v := dir * launch_speed
+			var discriminant: float = v.y * v.y + 2.0 * _gravity * rod_tip.y
+			var flight_time := (v.y + sqrt(max(discriminant, 0.0))) / _gravity
+			flight_time = max(flight_time, 0.1)
+			var target := Vector3(rod_tip.x + v.x * flight_time, 0.0, rod_tip.z + v.z * flight_time)
+			var offset := Vector2(target.x - global_position.x, target.z - global_position.z)
+			if offset.length() > max_cast_range:
+				offset = offset.normalized() * max_cast_range
+				target.x = global_position.x + offset.x
+				target.z = global_position.z + offset.y
+			fishing_mechanic.cast(target, flight_time)
 
 	if event.is_action_pressed("interact") and _ray_hit_box:
 		var space_state := get_world_3d().direct_space_state
@@ -630,6 +764,7 @@ func _on_reel_success(_personal_count: int) -> void:
 func _on_shop_toggled(is_open: bool) -> void:
 	_is_shop_open = is_open
 	_update_prompt_visibility()
+	_update_rock_prompt_visibility()
 
 
 func _on_health_changed(old: int, new: int) -> void:
@@ -672,6 +807,9 @@ func _clear_carry() -> void:
 func reset_for_restart() -> void:
 	if is_carrying:
 		_clear_carry()
+	if holding_rock:
+		holding_rock = false
+		_hide_held_rock_remote()
 
 
 func _on_yelling_state_changed(is_yelling: bool) -> void:
@@ -684,6 +822,16 @@ func sync_yelling(new_is_yelling: bool) -> void:
 	is_yelling = new_is_yelling
 
 
+@rpc("authority", "reliable", "call_remote")
+func sync_holding_rock(val: bool) -> void:
+	holding_rock = val
+	if val:
+		_show_held_rock_remote()
+	else:
+		_hide_held_rock_remote()
+	_update_rock_prompt_visibility()
+
+
 @rpc("any_peer", "unreliable", "call_remote")
 func sync_carrying(val: bool) -> void:
 	is_carrying = val
@@ -692,6 +840,7 @@ func sync_carrying(val: bool) -> void:
 	else:
 		_hide_held_fish_remote()
 	_update_prompt_visibility()
+	_update_rock_prompt_visibility()
 
 
 func _show_held_fish_remote() -> void:
@@ -714,6 +863,29 @@ func _hide_held_fish_remote() -> void:
 	if is_instance_valid(_held_fish):
 		_held_fish.queue_free()
 		_held_fish = null
+	_rod_pivot.visible = true
+
+
+func _show_held_rock_remote() -> void:
+	if is_instance_valid(_held_rock_mesh):
+		return
+	_rod_pivot.visible = false
+	_held_rock_mesh = MeshInstance3D.new()
+	var rock_mesh := BoxMesh.new()
+	rock_mesh.size = Vector3(0.25, 0.15, 0.25)
+	_held_rock_mesh.mesh = rock_mesh
+	var rock_mat := StandardMaterial3D.new()
+	rock_mat.albedo_color = Color(0.5, 0.5, 0.5)
+	rock_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_held_rock_mesh.material_override = rock_mat
+	_held_rock_mesh.position = Vector3(0, -0.1, -0.5)
+	head.add_child(_held_rock_mesh)
+
+
+func _hide_held_rock_remote() -> void:
+	if is_instance_valid(_held_rock_mesh):
+		_held_rock_mesh.queue_free()
+		_held_rock_mesh = null
 	_rod_pivot.visible = true
 
 
