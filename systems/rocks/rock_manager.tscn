@@ -1,0 +1,10 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://systems/rocks/rock_manager.gd" id="1_vc6g6"]
+
+[node name="RockManager" type="Node3D"]
+script = ExtResource("1_vc6g6")
+
+[node name="RespawnTimer" type="Timer" parent="."]
+wait_time = 1.0
+one_shot = false
+autostart = false
