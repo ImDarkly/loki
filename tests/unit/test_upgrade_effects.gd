@@ -100,22 +100,26 @@ func test_max_health_no_compound_on_reapply() -> void:
 		"max_health should not compound on reapply")
 
 
-func test_rise_speed_increase_applied() -> void:
+func test_bite_speed_increase_applied() -> void:
 	var player = await _create_test_player()
 	_coin_manager.rod_pull_speed_upgrade_owned = true
 	_coin_manager.apply_upgrade_effects_to_player(player)
 
 	var fm = player.get_node("FishingMechanic")
-	assert_eq(fm.player_rise_speed, 80.0 * _coin_manager.rod_pull_speed_multiplier,
-		"player_rise_speed should increase by multiplier")
+	assert_eq(fm.min_bite_delay, 3.0 / _coin_manager.rod_pull_speed_multiplier,
+		"min_bite_delay should be divided by multiplier")
+	assert_eq(fm.max_bite_delay, 8.0 / _coin_manager.rod_pull_speed_multiplier,
+		"max_bite_delay should be divided by multiplier")
 
 
-func test_rise_speed_no_compound_on_reapply() -> void:
+func test_bite_speed_no_compound_on_reapply() -> void:
 	var player = await _create_test_player()
 	_coin_manager.rod_pull_speed_upgrade_owned = true
 	_coin_manager.apply_upgrade_effects_to_player(player)
 	_coin_manager.apply_upgrade_effects_to_player(player)
 
 	var fm = player.get_node("FishingMechanic")
-	assert_eq(fm.player_rise_speed, 80.0 * _coin_manager.rod_pull_speed_multiplier,
-		"player_rise_speed should not compound on reapply")
+	assert_eq(fm.min_bite_delay, 3.0 / _coin_manager.rod_pull_speed_multiplier,
+		"min_bite_delay should not compound on reapply")
+	assert_eq(fm.max_bite_delay, 8.0 / _coin_manager.rod_pull_speed_multiplier,
+		"max_bite_delay should not compound on reapply")

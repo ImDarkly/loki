@@ -18,45 +18,16 @@ func before_each() -> void:
 	])
 
 
-func test_reel_success_when_bar_in_zone() -> void:
-	mechanic._enter_reeling()
-	mechanic.reel_timer.stop()
-	mechanic.reel_meter.size = Vector2(40, 300)
-	mechanic.player_bar_position = 40.0
-	mechanic.green_zone_position = 30.0
-	mechanic.personal_catch_count = 0
-	mechanic._on_reel_timer_timeout()
-	assert_eq(mechanic.personal_catch_count, 1)
-	assert_eq(mechanic.current_state, 5, "Should be SUCCESS (5)")
-
-
-func test_success_feedback_transitions_to_idle() -> void:
-	mechanic._enter_reeling()
-	mechanic.reel_timer.stop()
-	mechanic.reel_meter.size = Vector2(40, 300)
-	mechanic.player_bar_position = 40.0
-	mechanic.green_zone_position = 30.0
-	mechanic.personal_catch_count = 0
-	mechanic._on_reel_timer_timeout()
-	assert_eq(mechanic.current_state, 5, "Should be SUCCESS (5) after reel timeout")
-	mechanic._on_catch_feedback_completed()
-	assert_eq(mechanic.current_state, 0, "Should be IDLE (0) after feedback completes")
-
-
-func test_fish_fled_during_reeling_transitions_to_idle() -> void:
-	mechanic._enter_reeling()
-	mechanic.reel_timer.stop()
-	mechanic.reel_meter.size = Vector2(40, 300)
-	mechanic.player_bar_position = 50.0
-	mechanic.green_zone_position = 50.0
+func test_fish_fled_during_bite_transitions_to_idle() -> void:
+	mechanic.current_state = 3
+	mechanic._active_zone_index = 0
 	mechanic.personal_catch_count = 3
 
 	watch_signals(mechanic)
 	mechanic.on_fish_fled()
 
-	assert_eq(mechanic.current_state, 0, "Should be IDLE (0) after fish_fled")
+	assert_eq(mechanic.current_state, 0, "Should be IDLE (0) after fish_fled during BITE")
 	assert_eq(mechanic.personal_catch_count, 3, "Personal catch should remain unchanged after fish_fled")
-	assert_false(mechanic.reel_meter.visible, "Reel meter should be hidden after cleanup")
 	assert_signal_emitted(mechanic, "reel_failure")
 
 
@@ -69,18 +40,6 @@ func test_fish_fled_during_idle_does_nothing() -> void:
 
 	assert_eq(mechanic.current_state, 0, "Should remain IDLE (0)")
 	assert_signal_not_emitted(mechanic, "reel_failure")
-
-
-func test_reel_failure_when_bar_outside_zone() -> void:
-	mechanic._enter_reeling()
-	mechanic.reel_timer.stop()
-	mechanic.reel_meter.size = Vector2(40, 300)
-	mechanic.player_bar_position = 90.0
-	mechanic.green_zone_position = 30.0
-	mechanic.personal_catch_count = 0
-	mechanic._on_reel_timer_timeout()
-	assert_eq(mechanic.personal_catch_count, 0)
-	assert_eq(mechanic.current_state, 0, "Should be IDLE (0) after reel failure")
 
 
 func test_cast_ignored_when_fishing_inactive() -> void:
@@ -98,20 +57,6 @@ func test_bite_timer_fires_when_fishing_inactive() -> void:
 	assert_eq(mechanic.current_state, 3, "Should transition to BITE (3) regardless of fishing_active")
 
 
-func test_reel_timer_resolves_when_fishing_inactive() -> void:
-	mechanic._enter_reeling()
-	mechanic.reel_timer.stop()
-	mechanic.reel_meter.size = Vector2(40, 300)
-	mechanic.player_bar_position = 90.0
-	mechanic.green_zone_position = 30.0
-	mechanic._cached_fishing_active = false
-	watch_signals(mechanic)
-	mechanic._on_reel_timer_timeout()
-	assert_eq(mechanic.current_state, 0, "Should transition to IDLE (0) regardless of fishing_active")
-	assert_signal_not_emitted(mechanic, "reel_success")
-	assert_signal_not_emitted(mechanic, "reel_failure")
-
-
 func test_bite_timer_uses_dead_zone_feedback_outside_zones() -> void:
 	mechanic.current_state = 2
 	mechanic.cast_target_position = Vector3(100, 0, 100)
@@ -120,6 +65,44 @@ func test_bite_timer_uses_dead_zone_feedback_outside_zones() -> void:
 	assert_eq(mechanic.current_state, 0, "Should return to IDLE (0) when outside every zone")
 	assert_signal_not_emitted(mechanic, "bite_occurred")
 	assert_eq(mechanic.catch_feedback_manager.feedback_label.text, "Nothing's biting...")
+
+
+func test_bite_click_transitions_to_success_increments_count() -> void:
+	mechanic.current_state = 3
+	mechanic.personal_catch_count = 0
+	mechanic._active_zone_index = 0
+	mechanic._bite_time = 0.0
+
+	watch_signals(mechanic)
+
+	Input.action_press("reel")
+	mechanic._process(0.0)
+	Input.action_release("reel")
+
+	assert_eq(mechanic.current_state, 4, "BITE click should transition to SUCCESS (4)")
+	assert_eq(mechanic.personal_catch_count, 1, "personal_catch_count should increment")
+	assert_signal_emitted(mechanic, "reel_success")
+	assert_signal_emitted(mechanic, "personal_catch_changed")
+
+
+func test_bite_miss_window_2_5_seconds_causes_escape() -> void:
+	mechanic.current_state = 3
+	mechanic._active_zone_index = 0
+	mechanic._bite_time = 0.0
+	mechanic.personal_catch_count = 0
+
+	watch_signals(mechanic)
+
+	Input.action_release("reel")
+
+	while mechanic._bite_time < 3.0:
+		mechanic._process(0.5)
+		if mechanic.current_state != 3:
+			break
+
+	assert_eq(mechanic.current_state, 0, "Should return to IDLE (0) after 2.5s miss window")
+	assert_eq(mechanic.personal_catch_count, 0, "personal_catch_count should remain unchanged")
+	assert_signal_emitted(mechanic, "reel_failure")
 
 
 func test_arc_velocity_lands_at_target() -> void:
