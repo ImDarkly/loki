@@ -1,6 +1,13 @@
 extends Node3D
 
 
+var _sky_material: ProceduralSkyMaterial
+var _directional_light: DirectionalLight3D
+var _ground_mat: ORMMaterial3D
+var _water_mat: ORMMaterial3D
+var _last_fishing_active: bool = false
+
+
 func _ready() -> void:
 	setup_environment()
 	setup_lighting()
@@ -12,16 +19,16 @@ func _ready() -> void:
 
 
 func setup_environment() -> void:
-	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(0.25, 0.5, 0.8)
-	sky_mat.sky_horizon_color = Color(0.65, 0.7, 0.75)
-	sky_mat.sky_curve = 0.15
-	sky_mat.ground_horizon_color = Color(0.55, 0.5, 0.4)
-	sky_mat.ground_bottom_color = Color(0.3, 0.25, 0.2)
-	sky_mat.ground_curve = 0.02
+	_sky_material = ProceduralSkyMaterial.new()
+	_sky_material.sky_top_color = Color(0.30, 0.61, 0.90)
+	_sky_material.sky_horizon_color = Color(0.56, 0.83, 1.0)
+	_sky_material.sky_curve = 0.15
+	_sky_material.ground_horizon_color = Color(0.67, 0.58, 0.48)
+	_sky_material.ground_bottom_color = Color(0.48, 0.19, 0.27)
+	_sky_material.ground_curve = 0.02
 
 	var sky := Sky.new()
-	sky.sky_material = sky_mat
+	sky.sky_material = _sky_material
 
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
@@ -35,27 +42,28 @@ func setup_environment() -> void:
 
 
 func setup_lighting() -> void:
-	var light := DirectionalLight3D.new()
-	light.light_energy = 1.0
-	light.shadow_enabled = true
-	light.shadow_normal_bias = 0.1
-	light.directional_shadow_max_distance = 60.0
-	light.position = Vector3(0, 10, 0)
-	light.rotation = Vector3(-0.4, 0.5, 0)
-	add_child(light)
+	_directional_light = DirectionalLight3D.new()
+	_directional_light.light_energy = 1.0
+	_directional_light.light_color = Color.WHITE
+	_directional_light.shadow_enabled = true
+	_directional_light.shadow_normal_bias = 0.1
+	_directional_light.directional_shadow_max_distance = 60.0
+	_directional_light.position = Vector3(0, 10, 0)
+	_directional_light.rotation = Vector3(-0.4, 0.5, 0)
+	add_child(_directional_light)
 
 
 func setup_ground() -> void:
 	var mesh := PlaneMesh.new()
 	mesh.size = Vector2(80, 80)
 
-	var mat := ORMMaterial3D.new()
-	mat.albedo_color = Color(0.7, 0.62, 0.4)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_ground_mat = ORMMaterial3D.new()
+	_ground_mat.albedo_color = Color(0.90, 0.56, 0.31)
+	_ground_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
 	var ground := MeshInstance3D.new()
 	ground.mesh = mesh
-	ground.material_override = mat
+	ground.material_override = _ground_mat
 	ground.position = Vector3(0, -0.1, -7)
 	add_child(ground)
 
@@ -79,14 +87,14 @@ func setup_water() -> void:
 	var mesh := PlaneMesh.new()
 	mesh.size = Vector2(50, 50)
 
-	var mat := ORMMaterial3D.new()
-	mat.albedo_color = Color(0.0, 0.35, 0.6, 0.6)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_water_mat = ORMMaterial3D.new()
+	_water_mat.albedo_color = Color(0.04, 0.54, 0.56)
+	_water_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_water_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 
 	var water := MeshInstance3D.new()
 	water.mesh = mesh
-	water.material_override = mat
+	water.material_override = _water_mat
 	water.position = Vector3(0, 0, -7)
 	add_child(water)
 
@@ -110,3 +118,33 @@ func _process(_delta: float) -> void:
 	var label := get_node_or_null("FPSLayer/FPSLabel")
 	if label:
 		label.text = "FPS: %d" % Engine.get_frames_per_second()
+
+	var rm := get_node_or_null("/root/main/RoundManager")
+	if rm and rm.fishing_active != _last_fishing_active:
+		_last_fishing_active = rm.fishing_active
+		if rm.fishing_active:
+			_apply_night()
+		else:
+			_apply_day()
+
+
+func _apply_night() -> void:
+	_sky_material.sky_top_color = Color(0.18, 0.13, 0.18)
+	_sky_material.sky_horizon_color = Color(0.27, 0.16, 0.25)
+	_sky_material.ground_horizon_color = Color(0.22, 0.31, 0.29)
+	_sky_material.ground_bottom_color = Color(0.18, 0.13, 0.18)
+	_directional_light.light_energy = 0.15
+	_directional_light.light_color = Color(0.20, 0.20, 0.33)
+	_ground_mat.albedo_color = Color(0.24, 0.21, 0.27)
+	_water_mat.albedo_color = Color(0.04, 0.37, 0.40)
+
+
+func _apply_day() -> void:
+	_sky_material.sky_top_color = Color(0.30, 0.61, 0.90)
+	_sky_material.sky_horizon_color = Color(0.56, 0.83, 1.0)
+	_sky_material.ground_horizon_color = Color(0.67, 0.58, 0.48)
+	_sky_material.ground_bottom_color = Color(0.48, 0.19, 0.27)
+	_directional_light.light_energy = 1.0
+	_directional_light.light_color = Color.WHITE
+	_ground_mat.albedo_color = Color(0.90, 0.56, 0.31)
+	_water_mat.albedo_color = Color(0.04, 0.54, 0.56)
