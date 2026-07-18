@@ -12,6 +12,8 @@ extends PanelContainer
 @onready var coin_manager = get_node_or_null("/root/main/CoinManager")
 
 func _ready() -> void:
+	close_button.pressed.connect(close_shop)
+
 	if not quota_manager or not coin_manager:
 		push_warning("ShopUI: QuotaManager or CoinManager not found")
 		return
@@ -30,7 +32,6 @@ func _ready() -> void:
 	if coin_manager.has_signal("upgrades_updated"):
 		coin_manager.upgrades_updated.connect(_update_ui)
 
-	close_button.pressed.connect(close_shop)
 	sell_all_button.pressed.connect(_on_sell_all_pressed)
 	max_health_buy_button.pressed.connect(_on_buy_upgrade_pressed.bind("max_health"))
 	rod_speed_buy_button.pressed.connect(_on_buy_upgrade_pressed.bind("rod_pull_speed"))

@@ -764,6 +764,7 @@ func _on_reel_success(_personal_count: int) -> void:
 func _on_shop_toggled(is_open: bool) -> void:
 	_is_shop_open = is_open
 	_update_prompt_visibility()
+	_update_rock_prompt_visibility()
 
 
 func _on_health_changed(old: int, new: int) -> void:
@@ -821,7 +822,7 @@ func sync_yelling(new_is_yelling: bool) -> void:
 	is_yelling = new_is_yelling
 
 
-@rpc("any_peer", "unreliable", "call_remote")
+@rpc("authority", "reliable", "call_remote")
 func sync_holding_rock(val: bool) -> void:
 	holding_rock = val
 	if val:
