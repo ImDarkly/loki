@@ -161,7 +161,7 @@ func _update_rock_visuals() -> void:
 
 func _create_rock_node() -> StaticBody3D:
 	var body := StaticBody3D.new()
-	body.collision_layer = 0
+	body.collision_layer = 4
 	body.collision_mask = 4
 
 	var collision := CollisionShape3D.new()
