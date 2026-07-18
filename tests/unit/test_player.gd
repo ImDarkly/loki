@@ -154,3 +154,45 @@ func test_reset_for_restart_clears_carry() -> void:
 	assert_false(player.is_carrying, "is_carrying should be false after reset_for_restart")
 	assert_null(player._held_fish, "held_fish should be null after reset_for_restart")
 	assert_true(player._rod_pivot.visible, "rod should be visible after reset_for_restart")
+
+
+func test_holding_rock_starts_false() -> void:
+	assert_false(player.holding_rock, "holding_rock should be false initially")
+
+
+func test_holding_rock_hides_rod() -> void:
+	player.holding_rock = true
+	player._rod_pivot.visible = false
+
+	assert_true(player.holding_rock, "holding_rock should be true")
+	assert_false(player._rod_pivot.visible, "rod should be hidden while holding rock")
+
+
+func test_throw_rock_shows_rod() -> void:
+	player.holding_rock = true
+	player._rod_pivot.visible = false
+
+	player._throw_rock()
+
+	assert_false(player.holding_rock, "holding_rock should be false after throw")
+	assert_true(player._rod_pivot.visible, "rod should be visible after throw")
+
+
+func test_cast_blocked_while_holding_rock() -> void:
+	player.is_carrying = false
+	player.holding_rock = true
+
+	var cast_condition: bool = not player.is_carrying and not player.holding_rock and player.fishing_mechanic.can_cast()
+	assert_false(cast_condition, "cast should be blocked while holding rock")
+
+	player.holding_rock = false
+
+
+func test_reset_for_restart_clears_holding_rock() -> void:
+	player.holding_rock = true
+	player._rod_pivot.visible = false
+
+	player.reset_for_restart()
+
+	assert_false(player.holding_rock, "holding_rock should be false after reset_for_restart")
+	assert_true(player._rod_pivot.visible, "rod should be visible after reset_for_restart")

@@ -8,10 +8,13 @@ extends PanelContainer
 @onready var rod_speed_buy_button = $MarginContainer/VBoxContainer/RodSpeedRow/RodSpeedBuyButton
 @onready var max_health_label = $MarginContainer/VBoxContainer/MaxHealthRow/MaxHealthLabel
 @onready var rod_speed_label = $MarginContainer/VBoxContainer/RodSpeedRow/RodSpeedLabel
-@onready var quota_manager = get_node("/root/main/QuotaManager")
-@onready var coin_manager = get_node("/root/main/CoinManager")
+@onready var quota_manager = get_node_or_null("/root/main/QuotaManager")
+@onready var coin_manager = get_node_or_null("/root/main/CoinManager")
 
 func _ready() -> void:
+	if not quota_manager or not coin_manager:
+		push_warning("ShopUI: QuotaManager or CoinManager not found")
+		return
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.2).set_trans(Tween.TRANS_CUBIC)
 
@@ -51,14 +54,20 @@ func close_shop() -> void:
 
 
 func _on_sell_all_pressed() -> void:
+	if not coin_manager:
+		return
 	coin_manager.request_sell_all.rpc()
 
 
 func _on_buy_upgrade_pressed(upgrade_name: String) -> void:
+	if not coin_manager:
+		return
 	coin_manager.request_buy_upgrade.rpc(upgrade_name)
 
 
 func _update_ui(_val: int = 0) -> void:
+	if not quota_manager or not coin_manager:
+		return
 	var fish: int = quota_manager.shared_quota
 	var coins: int = coin_manager.coins
 	fish_label.text = "Stored Fish: " + str(fish)
