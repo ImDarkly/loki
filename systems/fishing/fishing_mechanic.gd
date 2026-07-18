@@ -1,6 +1,6 @@
 extends Node3D
 
-enum State { IDLE, CASTING, WAITING, BITE, REELING, SUCCESS }
+enum State { IDLE, CASTING, WAITING, BITE, SUCCESS }
 
 signal bite_occurred(fish_position: Vector3)
 signal reel_success(quota: int)
@@ -10,14 +10,6 @@ signal personal_catch_changed(count: int)
 @export var min_bite_delay: float = 3.0
 @export var max_bite_delay: float = 8.0
 
-@export var player_rise_speed: float = 80.0
-@export var player_fall_speed: float = 60.0
-@export var green_zone_width: float = 25.0
-@export var zone_move_interval: float = 0.1
-@export var zone_move_amount: float = 15.0
-
-@export var min_reel_duration: float = 10.0
-@export var max_reel_duration: float = 20.0
 @export var gravity_strength: float = 9.8
 
 var _current_flight_duration: float
@@ -25,18 +17,13 @@ var _current_flight_duration: float
 @onready var bite_timer: Timer = $BiteTimer
 @onready var bite_audio: AudioStreamPlayer = $BiteAudio
 @onready var casting_timer: Timer = $CastingTimer
-@onready var green_zone_timer: Timer = $GreenZoneTimer
-@onready var reel_timer: Timer = $ReelTimer
-@onready var reel_meter: Control = $CanvasLayer/ReelMeter
-@onready var meter_bg: ColorRect = $CanvasLayer/ReelMeter/MeterBg
-@onready var green_zone_rect: ColorRect = $CanvasLayer/ReelMeter/GreenZone
-@onready var player_bar_rect: ColorRect = $CanvasLayer/ReelMeter/PlayerBar
 @onready var quota_label: Label = $CanvasLayer/QuotaLabel
 @onready var personal_label: Label = $CanvasLayer/PersonalLabel
 @onready var catch_feedback_manager: Node3D = $CatchFeedbackManager
 
 var current_state: State = State.IDLE
-var _base_rise_speed: float
+var _base_min_bite_delay: float
+var _base_max_bite_delay: float
 var visual_line_node: MeshInstance3D = null
 var line_material: ORMMaterial3D = null
 var bobber_node: MeshInstance3D = null
@@ -45,13 +32,7 @@ var _flight_start_position: Vector3
 var _flight_start_time: int
 var _launch_velocity: Vector3
 
-var player_bar_position: float = 50.0
-var green_zone_position: float = 50.0
-var green_zone_target: float = 50.0
-var green_zone_lerp_speed: float = 4.0
-
 var personal_catch_count: int = 0
-var reel_duration: float = 0.0
 
 var _quota_manager_ref: Node3D = null
 var _zone_manager_ref: Node3D = null
@@ -66,15 +47,10 @@ var _prev_remote_state: int = -1
 
 var _line_twitch: float = 0.0
 var _bite_time: float = 0.0
-var _reel_elapsed: float = 0.0
 var _rod_tip_ref: Node3D = null
 var _cached_fishing_active: bool = true
 
 const LINE_SEGMENTS: int = 4
-
-
-func is_reeling() -> bool:
-	return current_state == State.REELING
 
 
 func can_cast() -> bool:
@@ -93,13 +69,12 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 		return
 	if not is_local_render:
 		return
-	if current_state not in [State.BITE, State.REELING]:
+	if current_state not in [State.BITE]:
 		return
 	_report_zone_leave()
 	_snap_bobber_to_rod()
 	$FishManager.cleanup()
 	current_state = State.IDLE
-	_exit_reeling()
 	reel_failure.emit()
 
 
@@ -147,13 +122,6 @@ func _ready() -> void:
 	casting_timer.one_shot = true
 	casting_timer.timeout.connect(_on_casting_timer_timeout)
 
-	green_zone_timer.wait_time = zone_move_interval
-	green_zone_timer.one_shot = false
-	green_zone_timer.timeout.connect(_on_green_zone_timer_timeout)
-
-	reel_timer.one_shot = true
-	reel_timer.timeout.connect(_on_reel_timer_timeout)
-
 	quota_label.text = "Quota: 0"
 	personal_label.text = "Your catches: 0"
 	personal_catch_changed.connect(_on_personal_catch_changed)
@@ -171,15 +139,13 @@ func _ready() -> void:
 	cast_mouse.button_index = MOUSE_BUTTON_LEFT
 	InputMap.action_add_event("cast_line", cast_mouse)
 
-	reel_meter.visible = false
-
-	_base_rise_speed = player_rise_speed
+	_base_min_bite_delay = min_bite_delay
+	_base_max_bite_delay = max_bite_delay
 
 	line_material = ORMMaterial3D.new()
 	line_material.albedo_color = Color(1.0, 1.0, 1.0)
 	line_material.shading_mode = ORMMaterial3D.SHADING_MODE_UNSHADED
 	line_material.cull_mode = ORMMaterial3D.CULL_DISABLED
-
 
 
 func set_rod_tip(tip: Node3D) -> void:
@@ -204,10 +170,6 @@ static func _compute_launch_velocity(
 
 
 func _get_bobber_position() -> Vector3:
-	if current_state == State.REELING:
-		var fish: Node3D = $FishManager.get_fish()
-		if is_instance_valid(fish):
-			return fish.position
 	if current_state == State.CASTING:
 		var elapsed := (Time.get_ticks_msec() - _flight_start_time) / 1000.0
 		elapsed = min(elapsed, _current_flight_duration)
@@ -245,7 +207,6 @@ func _handle_remote_transition(to_state: int) -> void:
 		State.IDLE, State.SUCCESS:
 			_snap_bobber_to_rod()
 			$FishManager.cleanup()
-			_exit_reeling()
 
 
 func _process(delta: float) -> void:
@@ -270,7 +231,13 @@ func _process(delta: float) -> void:
 						return
 
 				if is_local_render and Input.is_action_just_pressed("reel"):
-					_enter_reeling()
+					current_state = State.SUCCESS
+					personal_catch_count += 1
+					personal_catch_changed.emit(personal_catch_count)
+					reel_success.emit(personal_catch_count)
+					_report_zone_leave()
+					$FishManager.cleanup()
+					catch_feedback_manager.play_catch_success()
 
 			if is_local_render and current_state == State.WAITING and Input.is_action_just_pressed("reel"):
 				bite_timer.stop()
@@ -278,118 +245,15 @@ func _process(delta: float) -> void:
 				_snap_bobber_to_rod()
 				current_state = State.IDLE
 
-		State.REELING:
-			_update_bobber()
-			_rebuild_line()
-
-			_reel_elapsed += delta
-
-			if is_local_render:
-				var holding: bool = Input.is_action_pressed("reel")
-
-				if holding:
-					player_bar_position += player_rise_speed * delta
-				else:
-					player_bar_position -= player_fall_speed * delta
-
-				player_bar_position = clamp(player_bar_position, 0.0, 100.0)
-
-				green_zone_position = lerp(green_zone_position, green_zone_target, green_zone_lerp_speed * delta)
-				_update_reel_meter()
-
 		State.IDLE:
 			if is_instance_valid(bobber_node):
 				bobber_node.position = _get_rod_tip_position() + Vector3(0, -0.1, 0)
 				_rebuild_line()
 
 
-func _update_reel_meter() -> void:
-	if not is_instance_valid(reel_meter):
-		return
-	var meter_height: float = reel_meter.size.y
-
-	var zone_height: float = meter_height * (green_zone_width / 100.0)
-	var zone_y: float = meter_height * (green_zone_position / 100.0)
-	green_zone_rect.position = Vector2(0, zone_y)
-	green_zone_rect.size = Vector2(reel_meter.size.x, zone_height)
-
-	var bar_height: float = 16.0
-	var bar_y: float = (meter_height - bar_height) * (player_bar_position / 100.0)
-	player_bar_rect.position = Vector2(0, bar_y)
-	player_bar_rect.size = Vector2(reel_meter.size.x, bar_height)
-
-
-func _on_green_zone_timer_timeout() -> void:
-	if current_state != State.REELING:
-		return
-	green_zone_target += randf_range(-zone_move_amount, zone_move_amount)
-	green_zone_target = clamp(green_zone_target, 0.0, 100.0 - green_zone_width)
-
-
-func _enter_reeling() -> void:
-	current_state = State.REELING
-	player_bar_position = 50.0
-	green_zone_position = 50.0
-	green_zone_target = 50.0
-	_reel_elapsed = 0.0
-	green_zone_timer.start()
-	reel_duration = randf_range(min_reel_duration, max_reel_duration)
-	reel_timer.start(reel_duration)
-	reel_meter.visible = true
-
-
-func _exit_reeling() -> void:
-	green_zone_timer.stop()
-	reel_timer.stop()
-	reel_meter.visible = false
-
-
-func _is_bar_in_zone() -> bool:
-	var meter_height: float = reel_meter.size.y
-	if meter_height <= 0:
-		return false
-	var bar_y: float = (meter_height - 16.0) * (player_bar_position / 100.0)
-	var bar_center: float = bar_y + 8.0
-	var zone_y: float = meter_height * (green_zone_position / 100.0)
-	var zone_bottom: float = zone_y + meter_height * (green_zone_width / 100.0)
-	return bar_center >= zone_y and bar_center <= zone_bottom
-
-
-func _on_reel_timer_timeout() -> void:
-	if not is_local_render:
-		return
-	if current_state != State.REELING:
-		return
-	if not _is_fishing_active():
-		_report_zone_leave()
-		_snap_bobber_to_rod()
-		$FishManager.cleanup()
-		current_state = State.IDLE
-		_exit_reeling()
-		return
-	var was_success: bool = _is_bar_in_zone()
-	if was_success:
-		current_state = State.SUCCESS
-		personal_catch_count += 1
-		personal_catch_changed.emit(personal_catch_count)
-		reel_success.emit(personal_catch_count)
-		_report_zone_leave()
-		_exit_reeling()
-		$FishManager.cleanup()
-		catch_feedback_manager.play_catch_success()
-	else:
-		_report_zone_leave()
-		_snap_bobber_to_rod()
-		$FishManager.cleanup()
-		current_state = State.IDLE
-		reel_failure.emit()
-		_exit_reeling()
-	print("Reel ended. State: %s, Personal catches: %d" % ["SUCCESS" if was_success else "ESCAPE", personal_catch_count])
-
-
 func cast(target_position: Vector3, flight_time: float) -> void:
-	if current_state in [State.BITE, State.REELING, State.SUCCESS]:
-		_exit_reeling()
+	if current_state in [State.BITE, State.SUCCESS]:
+		pass
 
 	_report_zone_leave()
 	_active_zone_index = -1
@@ -444,7 +308,7 @@ func _on_bite_timer_timeout() -> void:
 	_play_bite_feedback()
 	$FishManager.spawn(cast_target_position)
 	bite_occurred.emit(cast_target_position)
-	print("Bite! Press left mouse to start reeling")
+	print("Bite! Press left mouse to catch")
 
 
 func _get_zone_index_for_cast_target() -> int:
@@ -515,21 +379,6 @@ func _create_bobber(position: Vector3) -> void:
 
 
 func _update_bobber() -> void:
-	if current_state == State.REELING:
-		var fish: Node3D = $FishManager.get_fish()
-		if is_instance_valid(fish):
-			var t := _reel_elapsed / reel_duration if reel_duration > 0 else 1.0
-			var rod_pos := _get_rod_tip_position()
-			var pos := rod_pos.lerp(cast_target_position, 1.0 - t)
-			pos.y = cast_target_position.y
-			var xz_dist := Vector2(pos.x - rod_pos.x, pos.z - rod_pos.z).length()
-			if xz_dist < 1.0:
-				pos.y = lerp(cast_target_position.y, rod_pos.y, 1.0 - xz_dist / 1.0)
-			fish.position = pos
-		if is_instance_valid(bobber_node):
-			bobber_node.visible = false
-		return
-
 	if not is_instance_valid(bobber_node):
 		return
 
@@ -572,7 +421,6 @@ func _cleanup_all() -> void:
 func reset_for_restart() -> void:
 	_report_zone_leave()
 	_cleanup_all()
-	_exit_reeling()
 	bite_timer.stop()
 	current_state = State.IDLE
 	personal_catch_count = 0
@@ -580,12 +428,14 @@ func reset_for_restart() -> void:
 	personal_catch_changed.emit(personal_catch_count)
 
 
-func apply_rise_speed_multiplier(mult: float) -> void:
-	player_rise_speed = _base_rise_speed * mult
+func apply_bite_speed_multiplier(mult: float) -> void:
+	min_bite_delay = _base_min_bite_delay / mult
+	max_bite_delay = _base_max_bite_delay / mult
 
 
-func reset_rise_speed() -> void:
-	player_rise_speed = _base_rise_speed
+func reset_bite_speed() -> void:
+	min_bite_delay = _base_min_bite_delay
+	max_bite_delay = _base_max_bite_delay
 
 
 func _snap_bobber_to_rod() -> void:

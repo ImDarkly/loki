@@ -16,12 +16,6 @@ volume_db = -3.0
 wait_time = 0.3
 one_shot = true
 
-[node name="GreenZoneTimer" type="Timer" parent="."]
-wait_time = 0.1
-
-[node name="ReelTimer" type="Timer" parent="."]
-one_shot = true
-
 [node name="FishManager" parent="." instance=ExtResource("2_likap")]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
@@ -52,29 +46,5 @@ theme_overrides = {
 "font_sizes/font_size": 28
 }
 text = "Your catches: 0"
-
-[node name="ReelMeter" type="Control" parent="CanvasLayer"]
-anchors_preset = 0
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = -60.0
-offset_right = -20.0
-offset_top = -150.0
-offset_bottom = 150.0
-mouse_filter = 2
-
-[node name="MeterBg" type="ColorRect" parent="CanvasLayer/ReelMeter"]
-color = Color(0.15, 0.15, 0.15, 0.85)
-size = Vector2(40, 300)
-
-[node name="GreenZone" type="ColorRect" parent="CanvasLayer/ReelMeter"]
-color = Color(0.0, 0.8, 0.2, 0.55)
-size = Vector2(40, 75)
-
-[node name="PlayerBar" type="ColorRect" parent="CanvasLayer/ReelMeter"]
-color = Color(1.0, 1.0, 1.0, 0.9)
-size = Vector2(40, 16)
 
 [node name="CatchFeedbackManager" parent="." instance=ExtResource("3_xxwae")]

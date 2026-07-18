@@ -27,8 +27,8 @@ func apply_upgrade_effects_to_player(player: Player) -> void:
 	var fm := player.get_node_or_null("FishingMechanic")
 	if max_health_upgrade_owned and hp:
 		hp.apply_max_health_bonus(max_health_bonus)
-	if rod_pull_speed_upgrade_owned and fm and fm.has_method("apply_rise_speed_multiplier"):
-		fm.apply_rise_speed_multiplier(rod_pull_speed_multiplier)
+	if rod_pull_speed_upgrade_owned and fm and fm.has_method("apply_bite_speed_multiplier"):
+		fm.apply_bite_speed_multiplier(rod_pull_speed_multiplier)
 
 
 func apply_upgrade_effects_to_all() -> void:
