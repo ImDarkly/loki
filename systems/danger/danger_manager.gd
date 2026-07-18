@@ -9,7 +9,7 @@ signal quota_penalty(amount: int)
 @export var respawn_interval_max: float = 90.0
 @export var initial_swim_speed: float = 3.0
 @export var attack_range: float = 2.0
-@export var initial_return_delay: float = 4.0
+@export var repel_radius: float = 2.0
 @export var min_spawn_distance_from_player: float = 12.0
 @export var shark_bite_damage: int = 2
 
@@ -167,11 +167,6 @@ func _process_approaching(delta: float) -> void:
 	if target_player == null or not is_instance_valid(shark_node):
 		return
 
-	if _has_yelling_player():
-		current_state = State.RETREATING
-		_sync_state_to_clients()
-		return
-
 	var target := Vector3(target_player.global_position.x, 0, target_player.global_position.z)
 	var current := Vector3(shark_node.position.x, 0, shark_node.position.z)
 	var dist := current.distance_to(target)
@@ -208,7 +203,29 @@ func _process_retreating(delta: float) -> void:
 	if abs(new_pos.x - cx) > half or abs(new_pos.z - cz) > half:
 		shark_node.visible = false
 		current_state = State.WAITING
-		return_timer.start(initial_return_delay)
+		return_timer.start(randf_range(45.0, 90.0))
+	_sync_state_to_clients()
+
+
+func repel(hit_origin: Vector3, hit_direction: Vector3) -> void:
+	if current_state != State.APPROACHING or not is_instance_valid(shark_node):
+		return
+
+	var shark_pos := shark_node.global_position
+	var v := shark_pos - hit_origin
+	var dir_norm := hit_direction.normalized()
+	var t := v.dot(dir_norm)
+
+	if t < 0:
+		return
+
+	var closest_point := hit_origin + t * dir_norm
+	if shark_pos.distance_to(closest_point) <= repel_radius:
+		_trigger_retreat()
+
+
+func _trigger_retreat() -> void:
+	current_state = State.RETREATING
 	_sync_state_to_clients()
 
 
@@ -258,23 +275,6 @@ func _get_player_nodes() -> Array[Node3D]:
 	return players
 
 
-func _has_yelling_player() -> bool:
-	for player in _get_player_nodes():
-		if _player_is_yelling(player):
-			return true
-	if not is_instance_valid(player_ref):
-		return false
-	var hp := player_ref.get_node_or_null("HealthComponent") as HealthComponent
-	if hp == null or not hp.is_alive():
-		return false
-	return _player_is_yelling(player_ref)
-
-
-func _player_is_yelling(player: Object) -> bool:
-	if player == null:
-		return false
-	var yelling = player.get("is_yelling")
-	return yelling == true
 
 
 func _trigger_attack() -> void:
@@ -292,9 +292,8 @@ func _trigger_attack() -> void:
 	fish_fled.emit()
 	if is_instance_valid(shark_node):
 		shark_node.visible = false
-	var interval := randf_range(respawn_interval_min, respawn_interval_max)
 	current_state = State.WAITING
-	spawn_timer.start(interval)
+	return_timer.start(randf_range(45.0, 90.0))
 	_sync_state_to_clients()
 
 
