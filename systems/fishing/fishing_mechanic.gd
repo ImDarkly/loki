@@ -86,15 +86,6 @@ func _on_personal_catch_changed(count: int) -> void:
 	personal_label.text = "Your catches: %d" % count
 
 
-func _report_catch_to_host(amount: int) -> void:
-	if not is_instance_valid(_quota_manager_ref):
-		return
-	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
-		_quota_manager_ref.report_catch(amount)
-	else:
-		_quota_manager_ref.report_catch.rpc(amount)
-
-
 func _try_find_quota_manager() -> void:
 	if _quota_manager_ref:
 		return
