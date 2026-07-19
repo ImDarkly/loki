@@ -207,8 +207,11 @@ func _process_retreating(delta: float) -> void:
 	_sync_state_to_clients()
 
 
+@rpc("any_peer", "unreliable", "call_remote")
 func repel(hit_origin: Vector3, hit_direction: Vector3) -> void:
 	if current_state != State.APPROACHING or not is_instance_valid(shark_node):
+		return
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 
 	var shark_pos := shark_node.global_position
