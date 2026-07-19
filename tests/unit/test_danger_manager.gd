@@ -44,14 +44,24 @@ func test_spawn_timer_transitions_from_waiting_to_approaching() -> void:
 	assert_eq(manager.current_state, 1, "Should be APPROACHING (1)")
 
 
-func test_yell_during_approach_transitions_to_retreating() -> void:
-	manager.current_state = 0
-	manager._on_spawn_timer_timeout()
+func test_repel_transitions_to_retreating_when_in_range() -> void:
+	manager.current_state = 1 # APPROACHING
+	manager._spawn_shark() # Make sure shark_node is created
+	manager.shark_node.position = Vector3(5, 0, 0)
+	
+	manager.repel(Vector3(0, 0, 0), Vector3(1, 0, 0)) # Ray along +x
+	
+	assert_eq(manager.current_state, 3, "Should be RETREATING (3) after repel")
 
-	manager.player_ref.is_yelling = true
-	manager._physics_process(0.016)
-
-	assert_eq(manager.current_state, 3, "Should be RETREATING (3)")
+func test_repel_no_op_when_out_of_range() -> void:
+	manager.current_state = 1 # APPROACHING
+	manager._spawn_shark() # Make sure shark_node is created
+	manager.shark_node.position = Vector3(10, 0, 0)
+	
+	# Ray along x-axis at y=5, z=0. Shark at (10,0,0). Distance is 5.
+	manager.repel(Vector3(0, 5, 0), Vector3(1, 0, 0))
+	
+	assert_eq(manager.current_state, 1, "Should stay APPROACHING (1) after out-of-range repel")
 
 
 func test_attack_distance_triggers_signals() -> void:
@@ -72,7 +82,7 @@ func test_attack_distance_triggers_signals() -> void:
 	assert_signal_not_emitted(manager, "quota_penalty")
 	assert_eq(health.current_health, 3, "Health should be reduced by shark_bite_damage (2)")
 	assert_eq(manager.current_state, 4, "Should be WAITING (4) after attack")
-	assert_between(manager.spawn_timer.time_left, 45.0, 90.0, "Respawn interval should be 45-90 seconds")
+	assert_between(manager.return_timer.time_left, 45.0, 90.0, "Return interval should be 45-90 seconds")
 
 
 func test_retreating_exits_boundary_transitions_to_waiting() -> void:

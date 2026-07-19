@@ -82,6 +82,7 @@ var _ray_rock: bool = false
 var _interact_prompt: CanvasLayer = null
 var _quota_manager_ref: Node3D = null
 var _rock_manager_ref: Node = null
+var _danger_manager_ref: Node = null
 var _is_shop_open: bool = false
 @export var interact_range: float = 3.0
 @export var rock_pickup_range: float = 3.0
@@ -120,6 +121,10 @@ func _ready() -> void:
 	var rm := get_node_or_null("/root/main/RockManager")
 	if rm:
 		_rock_manager_ref = rm
+	
+	var dm := get_node_or_null("/root/main/DangerManager")
+	if dm:
+		_danger_manager_ref = dm
 
 	call_deferred("_apply_upgrade_effects_on_ready")
 
@@ -436,6 +441,12 @@ func _throw_rock() -> void:
 	rock.linear_velocity = throw_dir * launch_speed + Vector3(0, 3, 0)
 	rock.angular_velocity = Vector3(randf_range(-5, 5), randf_range(-5, 5), randf_range(-5, 5))
 	get_tree().root.add_child(rock)
+	
+	if _danger_manager_ref:
+		if multiplayer.has_multiplayer_peer():
+			_danger_manager_ref.repel.rpc(rock_pos, throw_dir)
+		else:
+			_danger_manager_ref.repel(rock_pos, throw_dir)
 
 	var cleanup := Timer.new()
 	cleanup.one_shot = true
