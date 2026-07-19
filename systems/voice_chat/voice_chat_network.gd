@@ -1,7 +1,7 @@
 extends Node
 
 @onready var _mic: Node = $TwoVoipMic
-@onready var _speaker: Node = $AudioStreamPlayer/TwoVoipSpeaker
+@onready var _speaker: Node = $AudioStreamPlayer3D/TwoVoipSpeaker
 
 var _mic_initialized: bool = false
 
@@ -9,7 +9,7 @@ var _mic_initialized: bool = false
 func _enter_tree() -> void:
 	var opus_stream := AudioStreamOpus.new()
 	opus_stream.resource_local_to_scene = true
-	$AudioStreamPlayer.stream = opus_stream
+	$AudioStreamPlayer3D.stream = opus_stream
 
 
 func _ready() -> void:
@@ -39,7 +39,7 @@ func _enable_mic() -> void:
 	var mat := ShaderMaterial.new()
 
 	_mic.initvoipmic(mic_btn, device_sel, ptt_btn, vox_btn, denoise_btn, mat)
-	_mic.setopusvalues(48000, 20, 2, 12000, 5, true)
+	_mic.setopusvalues(48000, 20, 2, 32000, 5, true)
 	_mic.set_voxthreshhold(0.01)
 
 	mic_btn.button_pressed = true

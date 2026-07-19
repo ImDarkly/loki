@@ -1,15 +1,19 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://dcp00xh3cyix8"]
 
-[ext_resource type="Script" path="res://systems/voice_chat/voice_chat_network.gd" id="1_xqn68"]
-[ext_resource type="PackedScene" path="res://addons/twovoip/voiphelper/two_voip_mic.tscn" id="2_s87i6"]
-[ext_resource type="PackedScene" path="res://addons/twovoip/voiphelper/two_voip_speaker.tscn" id="3_a6ya8"]
+[ext_resource type="Script" uid="uid://dlc6hiwu2it1t" path="res://systems/voice_chat/voice_chat_network.gd" id="1_xqn68"]
+[ext_resource type="PackedScene" uid="uid://dvpkwo6h7y0sj" path="res://addons/twovoip/voiphelper/two_voip_mic.tscn" id="2_s87i6"]
+[ext_resource type="PackedScene" uid="uid://c613yggmsl08x" path="res://addons/twovoip/voiphelper/two_voip_speaker.tscn" id="3_a6ya8"]
 
-[node name="VoiceChatNetwork" type="Node"]
+[node name="VoiceChatNetwork" type="Node" unique_id=422451256]
 script = ExtResource("1_xqn68")
 
-[node name="TwoVoipMic" parent="." instance=ExtResource("2_s87i6")]
+[node name="TwoVoipMic" parent="." unique_id=62596016 instance=ExtResource("2_s87i6")]
 process_mode = 4
 
-[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="." unique_id=632018430]
+attenuation_model = 0
+volume_db = 24.0
+unit_size = 8.0
+max_distance = 25.0
 
-[node name="TwoVoipSpeaker" parent="AudioStreamPlayer" instance=ExtResource("3_a6ya8")]
+[node name="TwoVoipSpeaker" parent="AudioStreamPlayer3D" unique_id=1600634668 instance=ExtResource("3_a6ya8")]
