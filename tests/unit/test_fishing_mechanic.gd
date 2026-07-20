@@ -67,11 +67,11 @@ func test_bite_timer_uses_dead_zone_feedback_outside_zones() -> void:
 	assert_eq(mechanic.catch_feedback_manager.feedback_label.text, "Nothing's biting...")
 
 
-func test_bite_click_transitions_to_success_increments_count() -> void:
+func test_bite_click_hooks_fish_starts_fight() -> void:
 	mechanic.current_state = 3
-	mechanic.personal_catch_count = 0
 	mechanic._active_zone_index = 0
 	mechanic._bite_time = 0.0
+	mechanic._is_fighting = false
 
 	watch_signals(mechanic)
 
@@ -79,30 +79,77 @@ func test_bite_click_transitions_to_success_increments_count() -> void:
 	mechanic._process(0.0)
 	Input.action_release("reel")
 
-	assert_eq(mechanic.current_state, 4, "BITE click should transition to SUCCESS (4)")
-	assert_eq(mechanic.personal_catch_count, 1, "personal_catch_count should increment")
-	assert_signal_emitted(mechanic, "reel_success")
-	assert_signal_emitted(mechanic, "personal_catch_changed")
+	assert_true(mechanic._is_fighting, "BITE reel click should set _is_fighting = true")
+	assert_eq(mechanic.current_state, 3, "Should remain in BITE (3) after hook")
+	assert_between(mechanic._fight_target, 2.0, 8.0, "fight_target should be in [2.0, 8.0] range")
+	assert_eq(mechanic._fight_progress, 0.0, "fight_progress should start at 0.0")
 
 
-func test_bite_miss_window_2_5_seconds_causes_escape() -> void:
+func test_bite_miss_window_1_second_causes_escape() -> void:
 	mechanic.current_state = 3
 	mechanic._active_zone_index = 0
 	mechanic._bite_time = 0.0
 	mechanic.personal_catch_count = 0
+	mechanic._is_fighting = false
 
 	watch_signals(mechanic)
 
 	Input.action_release("reel")
 
-	while mechanic._bite_time < 3.0:
+	while mechanic._bite_time < 1.5:
 		mechanic._process(0.5)
 		if mechanic.current_state != 3:
 			break
 
-	assert_eq(mechanic.current_state, 0, "Should return to IDLE (0) after 2.5s miss window")
+	assert_eq(mechanic.current_state, 0, "Should return to IDLE (0) after 1.0s miss window")
 	assert_eq(mechanic.personal_catch_count, 0, "personal_catch_count should remain unchanged")
 	assert_signal_emitted(mechanic, "reel_failure")
+
+
+func test_fight_auto_catches_when_time_elapsed() -> void:
+	mechanic.current_state = 3
+	mechanic._is_fighting = true
+	mechanic.personal_catch_count = 0
+	mechanic._fight_target = 2.0
+	mechanic._fight_progress = 1.9
+
+	watch_signals(mechanic)
+
+	mechanic.advance_fight(0.2)
+
+	assert_eq(mechanic.current_state, 4, "Should transition to SUCCESS (4)")
+	assert_eq(mechanic.personal_catch_count, 1, "personal_catch_count should increment")
+	assert_signal_emitted(mechanic, "reel_success")
+	assert_signal_emitted(mechanic, "personal_catch_changed")
+	assert_false(mechanic._is_fighting, "_is_fighting should be false after catch")
+
+
+func test_fight_does_not_auto_catch_before_target() -> void:
+	mechanic.current_state = 3
+	mechanic._is_fighting = true
+	mechanic.personal_catch_count = 0
+	mechanic._fight_target = 5.0
+	mechanic._fight_progress = 0.0
+
+	watch_signals(mechanic)
+	mechanic.advance_fight(2.0)
+
+	assert_eq(mechanic.current_state, 3, "Should remain in BITE before target")
+	assert_signal_not_emitted(mechanic, "reel_success")
+
+
+func test_advance_fight_noop_when_not_fighting() -> void:
+	mechanic.current_state = 3
+	mechanic._is_fighting = false
+	mechanic.personal_catch_count = 5
+	mechanic._fight_target = 2.0
+	mechanic._fight_progress = 0.0
+
+	watch_signals(mechanic)
+	mechanic.advance_fight(2.0)
+
+	assert_eq(mechanic.current_state, 3, "Should remain in BITE")
+	assert_signal_not_emitted(mechanic, "reel_success")
 
 
 func test_arc_velocity_lands_at_target() -> void:

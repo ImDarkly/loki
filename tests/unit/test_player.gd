@@ -195,3 +195,68 @@ func test_reset_for_restart_clears_holding_rock() -> void:
 	player.reset_for_restart()
 	assert_false(player.holding_rock, "holding_rock should be false after reset_for_restart")
 	assert_true(player._rod_pivot.visible, "rod should be visible after reset_for_restart")
+
+
+func test_wasd_works_during_fight() -> void:
+	player.global_position = Vector3.ZERO
+	player.fishing_mechanic._is_fighting = true
+	player.fishing_mechanic.cast_target_position = Vector3.ZERO
+	player.fishing_mechanic._fight_initial_distance = 0.0
+
+	player.velocity = Vector3.ZERO
+
+	Input.action_press("move_right")
+	player._physics_process(0.016)
+	Input.action_release("move_right")
+
+	assert_gt(abs(player.velocity.x), 0.0, "WASD should affect velocity during fight")
+
+
+func test_player_moves_toward_fish_during_fight() -> void:
+	player.global_position = Vector3.ZERO
+	player.fishing_mechanic._is_fighting = true
+	player.fishing_mechanic.cast_target_position = Vector3(10, 0, 0)
+	player.fishing_mechanic._fight_initial_distance = 10.0
+
+	player.velocity = Vector3.ZERO
+	player._physics_process(0.016)
+
+	var expected_dir: Vector3 = player.fishing_mechanic.cast_target_position.normalized()
+	if player.velocity.length() > 0.0:
+		var actual_dir: Vector3 = player.velocity.normalized()
+		var dot: float = actual_dir.dot(expected_dir)
+		assert_gt(dot, 0.7, "Player velocity should generally point toward fish position")
+	else:
+		assert_gt(player.velocity.length(), 0.0, "Velocity should not be zero during fight")
+
+
+func test_scroll_spikes_pull_higher_than_normal() -> void:
+	player.global_position = Vector3.ZERO
+	player.fishing_mechanic._is_fighting = true
+	player.fishing_mechanic.cast_target_position = Vector3(10, 0, 0)
+	player.fishing_mechanic._fight_initial_distance = 10.0
+
+	player.velocity = Vector3.ZERO
+	player._pull_spike_timer = 0.0
+
+	Input.action_press("reel_fight")
+	player._physics_process(0.016)
+	Input.action_release("reel_fight")
+
+	var normal_pull_vel: float = 0.5
+	assert_gt(abs(player.velocity.x), normal_pull_vel + 0.5, "Scroll spike should produce velocity above 0.5-strength baseline")
+
+
+func test_pull_spike_decays_after_linger() -> void:
+	player.global_position = Vector3.ZERO
+	player.fishing_mechanic._is_fighting = true
+	player.fishing_mechanic.cast_target_position = Vector3(10, 0, 0)
+	player.fishing_mechanic._fight_initial_distance = 10.0
+
+	player.velocity = Vector3.ZERO
+	player._pull_spike_timer = 0.3
+
+	player._physics_process(0.4)
+
+	var expected_normal_vel: float = 0.5
+	assert_true(abs(player.velocity.x) <= expected_normal_vel + 0.01, "After spike decays, velocity should return to 0.5-strength level")
