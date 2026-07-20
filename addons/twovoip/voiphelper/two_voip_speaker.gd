@@ -92,7 +92,7 @@ func tv_incomingaudiopacket(packet):
 
 	elif lenchunkprefix == 0:
 		print("SPEAKER: push frame (direct) count=%d" % opusframecount)
-		audiostreamopus.push_opus_packet(packet, lenchunkprefix, 0)
+		audiostreamplaybackopus.push_opus_packet(packet, lenchunkprefix, 0)
 		opusframecount += 1
 		if playbackpausedonmark:
 			unpausewhenbufferready()

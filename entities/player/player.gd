@@ -832,7 +832,7 @@ func sync_holding_rock(val: bool) -> void:
 	_update_rock_prompt_visibility()
 
 
-@rpc("any_peer", "unreliable", "call_remote")
+@rpc("any_peer", "reliable", "call_remote")
 func sync_carrying(val: bool) -> void:
 	is_carrying = val
 	if val:
