@@ -36,6 +36,7 @@ var personal_catch_count: int = 0
 
 var _quota_manager_ref: Node3D = null
 var _zone_manager_ref: Node3D = null
+var _round_manager_ref: Node = null
 var _active_zone_index: int = -1
 
 var is_local_render: bool = true:
@@ -47,10 +48,20 @@ var _prev_remote_state: int = -1
 
 var _line_twitch: float = 0.0
 var _bite_time: float = 0.0
+var _is_fighting: bool = false
+var _fight_initial_distance: float = 0.0
+@export var fighting_pull_strength: float = 0.5
+@export var fighting_spike_pull: float = 1.5
+var _fight_progress: float = 0.0
+var _fight_target: float = 0.0
 var _rod_tip_ref: Node3D = null
 var _cached_fishing_active: bool = true
 
 const LINE_SEGMENTS: int = 4
+
+
+func is_fighting() -> bool:
+	return _is_fighting
 
 
 func can_cast() -> bool:
@@ -58,9 +69,8 @@ func can_cast() -> bool:
 
 
 func _is_fishing_active() -> bool:
-	var rm := get_node_or_null("/root/main/RoundManager")
-	if rm != null:
-		_cached_fishing_active = rm.fishing_active
+	if _round_manager_ref:
+		_cached_fishing_active = _round_manager_ref.fishing_active
 	return _cached_fishing_active
 
 
@@ -71,11 +81,31 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 		return
 	if current_state not in [State.BITE]:
 		return
+	_is_fighting = false
 	_report_zone_leave()
 	_snap_bobber_to_rod()
 	$FishManager.cleanup()
 	current_state = State.IDLE
 	reel_failure.emit()
+
+
+func advance_fight(delta: float) -> void:
+	if not _is_fighting:
+		return
+	_fight_progress += delta
+	if _fight_progress >= _fight_target:
+		_complete_fight_catch()
+
+
+func _complete_fight_catch() -> void:
+	_is_fighting = false
+	current_state = State.SUCCESS
+	personal_catch_count += 1
+	personal_catch_changed.emit(personal_catch_count)
+	reel_success.emit(personal_catch_count)
+	_report_zone_leave()
+	$FishManager.cleanup()
+	catch_feedback_manager.play_catch_success()
 
 
 func _on_quota_updated(value: int) -> void:
@@ -103,9 +133,18 @@ func _try_find_zone_manager() -> void:
 		_zone_manager_ref = zm
 
 
+func _try_find_round_manager() -> void:
+	if _round_manager_ref:
+		return
+	var rm := get_node_or_null("/root/main/RoundManager")
+	if rm:
+		_round_manager_ref = rm
+
+
 func _ready() -> void:
 	_try_find_quota_manager()
 	_try_find_zone_manager()
+	_try_find_round_manager()
 	bite_timer.one_shot = true
 	bite_timer.timeout.connect(_on_bite_timer_timeout)
 	bite_audio.stream = _generate_rumble_stream()
@@ -123,6 +162,12 @@ func _ready() -> void:
 		var reel_mouse := InputEventMouseButton.new()
 		reel_mouse.button_index = MOUSE_BUTTON_LEFT
 		InputMap.action_add_event("reel", reel_mouse)
+
+	if not InputMap.has_action("reel_fight"):
+		InputMap.add_action("reel_fight")
+	var reel_scroll := InputEventMouseButton.new()
+	reel_scroll.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	InputMap.action_add_event("reel_fight", reel_scroll)
 
 	if not InputMap.has_action("cast_line"):
 		InputMap.add_action("cast_line")
@@ -212,8 +257,8 @@ func _process(delta: float) -> void:
 
 			if current_state == State.BITE:
 				_bite_time += delta
-				if is_local_render:
-					if _bite_time >= 2.5:
+				if is_local_render and not _is_fighting:
+					if _bite_time >= 1.0:
 						_report_zone_leave()
 						_snap_bobber_to_rod()
 						current_state = State.IDLE
@@ -221,14 +266,13 @@ func _process(delta: float) -> void:
 						reel_failure.emit()
 						return
 
-				if is_local_render and Input.is_action_just_pressed("reel"):
-					current_state = State.SUCCESS
-					personal_catch_count += 1
-					personal_catch_changed.emit(personal_catch_count)
-					reel_success.emit(personal_catch_count)
-					_report_zone_leave()
-					$FishManager.cleanup()
-					catch_feedback_manager.play_catch_success()
+					if Input.is_action_just_pressed("reel"):
+						_is_fighting = true
+						var player := get_parent() as Node3D
+						if player:
+							_fight_initial_distance = player.global_position.distance_to(cast_target_position)
+						_fight_target = randf_range(2.0, 8.0)
+						_fight_progress = 0.0
 
 			if is_local_render and current_state == State.WAITING and Input.is_action_just_pressed("reel"):
 				bite_timer.stop()
@@ -294,6 +338,7 @@ func _on_bite_timer_timeout() -> void:
 
 	current_state = State.BITE
 	_bite_time = 0.0
+	_is_fighting = false
 	if is_instance_valid(bobber_node):
 		bobber_node.visible = true
 	_play_bite_feedback()
@@ -414,6 +459,7 @@ func reset_for_restart() -> void:
 	_cleanup_all()
 	bite_timer.stop()
 	current_state = State.IDLE
+	_is_fighting = false
 	personal_catch_count = 0
 	_active_zone_index = -1
 	personal_catch_changed.emit(personal_catch_count)

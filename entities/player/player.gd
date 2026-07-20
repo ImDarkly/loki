@@ -71,6 +71,7 @@ var _last_cast_target: Vector3 = Vector3.ZERO
 var _last_flight_duration: float = 0.0
 var _last_flight_start: Vector3 = Vector3.ZERO
 var _sync_tick: int = 0
+var _pull_spike_timer: float = 0.0
 var _rod_pivot: Node3D = null
 
 var is_carrying: bool = false
@@ -537,6 +538,10 @@ func _physics_process(delta: float) -> void:
 			rpc("_sync_cast_target", ct)
 		return
 
+	if fishing_mechanic.is_fighting():
+		_process_fight(delta)
+		return
+
 	if not is_on_floor():
 		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
 		velocity.y -= _gravity * mult * delta
@@ -617,6 +622,48 @@ func _physics_process(delta: float) -> void:
 	if fsp != _last_flight_start:
 		_last_flight_start = fsp
 		rpc("_sync_flight_start", fsp)
+
+
+func _process_fight(delta: float) -> void:
+	if not is_on_floor():
+		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
+		velocity.y -= _gravity * mult * delta
+
+	var fish_pos: Vector3 = fishing_mechanic.cast_target_position
+	var to_fish: Vector3 = fish_pos - global_position
+	var dist: float = to_fish.length()
+	var dir: Vector3 = to_fish.normalized() if dist > 0.001 else Vector3.FORWARD
+
+	var initial_dist: float = max(fishing_mechanic._fight_initial_distance, 0.01)
+	var pull_mult: float = clamp(dist / initial_dist, 0.1, 1.0)
+	_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
+	if Input.is_action_just_pressed("reel_fight"):
+		_pull_spike_timer = 0.3
+	var is_spiked: bool = _pull_spike_timer > 0
+	var current_pull: float = fishing_mechanic.fighting_spike_pull if is_spiked else fishing_mechanic.fighting_pull_strength
+	var pull_force: Vector3 = dir * current_pull * pull_mult
+
+	fishing_mechanic.advance_fight(delta)
+
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var wasd_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var wasd_scale: float = 0.2 if is_spiked else 1.0
+	var wasd_force := wasd_dir * move_speed * wasd_scale
+
+	velocity.x = pull_force.x + wasd_force.x
+	velocity.z = pull_force.z + wasd_force.z
+
+	move_and_slide()
+
+	_sync_tick += 1
+	if _sync_tick >= 2:
+		_sync_tick = 0
+		rpc("_sync_transform", global_position, rotation, head.rotation)
+
+	var fs: int = fishing_mechanic.current_state
+	if fs != _last_fish_state:
+		_last_fish_state = fs
+		rpc("_sync_fishing_state", fs)
 
 
 func _enter_spectate() -> void:
