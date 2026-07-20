@@ -1,4 +1,4 @@
-extends Node
+extends Node3D
 
 @onready var _mic: Node = $TwoVoipMic
 @onready var _speaker: Node = $AudioStreamPlayer3D/TwoVoipSpeaker
@@ -13,6 +13,8 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	$AudioStreamPlayer3D.play()
+	$AudioStreamPlayer3D.finished.connect($AudioStreamPlayer3D.play)
 	_mic.transmitaudiopacket.connect(_on_mic_audio_packet)
 	_mic.transmitaudiojsonpacket.connect(_on_mic_json_packet)
 	if is_multiplayer_authority():
