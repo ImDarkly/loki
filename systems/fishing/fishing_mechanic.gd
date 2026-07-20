@@ -165,15 +165,15 @@ func _ready() -> void:
 
 	if not InputMap.has_action("reel_fight"):
 		InputMap.add_action("reel_fight")
-	var reel_scroll := InputEventMouseButton.new()
-	reel_scroll.button_index = MOUSE_BUTTON_WHEEL_DOWN
-	InputMap.action_add_event("reel_fight", reel_scroll)
+		var reel_scroll := InputEventMouseButton.new()
+		reel_scroll.button_index = MOUSE_BUTTON_WHEEL_DOWN
+		InputMap.action_add_event("reel_fight", reel_scroll)
 
 	if not InputMap.has_action("cast_line"):
 		InputMap.add_action("cast_line")
-	var cast_mouse := InputEventMouseButton.new()
-	cast_mouse.button_index = MOUSE_BUTTON_LEFT
-	InputMap.action_add_event("cast_line", cast_mouse)
+		var cast_mouse := InputEventMouseButton.new()
+		cast_mouse.button_index = MOUSE_BUTTON_LEFT
+		InputMap.action_add_event("cast_line", cast_mouse)
 
 	_base_min_bite_delay = min_bite_delay
 	_base_max_bite_delay = max_bite_delay
