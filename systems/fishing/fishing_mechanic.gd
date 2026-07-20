@@ -5,6 +5,8 @@ enum State { IDLE, CASTING, WAITING, BITE, SUCCESS }
 signal bite_occurred(fish_position: Vector3)
 signal reel_success(quota: int)
 signal reel_failure()
+signal escape_launch(direction: Vector3, strength: float)
+signal escape_telegraph_changed(intensity: float)
 signal personal_catch_changed(count: int)
 
 @export var min_bite_delay: float = 3.0
@@ -52,10 +54,15 @@ var _is_fighting: bool = false
 var _fight_initial_distance: float = 0.0
 @export var fighting_pull_strength: float = 0.5
 @export var fighting_spike_pull: float = 1.5
+@export var escape_time_threshold: float = 1.8
+@export var escape_launch_strength: float = 10.0
 var _fight_progress: float = 0.0
 var _fight_target: float = 0.0
 var _rod_tip_ref: Node3D = null
 var _cached_fishing_active: bool = true
+var _escape_timer: float = 0.0
+var _telegraph_intensity: float = 0.0
+var _escape_telegraph_audio: AudioStreamPlayer = null
 
 const LINE_SEGMENTS: int = 4
 
@@ -82,6 +89,9 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 	if current_state not in [State.BITE]:
 		return
 	_is_fighting = false
+	_escape_timer = 0.0
+	_telegraph_intensity = 0.0
+	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
 	$FishManager.cleanup()
@@ -93,12 +103,70 @@ func advance_fight(delta: float) -> void:
 	if not _is_fighting:
 		return
 	_fight_progress += delta
+
+	_escape_timer += delta
+	_update_telegraph()
+	if _escape_timer >= escape_time_threshold:
+		_trigger_escape_launch()
+		return
+
 	if _fight_progress >= _fight_target:
 		_complete_fight_catch()
 
 
+func notify_scroll() -> void:
+	_escape_timer = 0.0
+
+
+func _update_telegraph() -> void:
+	var new_intensity: float = clamp(_escape_timer / escape_time_threshold, 0.0, 1.0)
+	if not is_equal_approx(new_intensity, _telegraph_intensity):
+		_telegraph_intensity = new_intensity
+		escape_telegraph_changed.emit(_telegraph_intensity)
+		if _escape_telegraph_audio:
+			_escape_telegraph_audio.pitch_scale = 0.5 + _telegraph_intensity * 1.5
+
+
+func _trigger_escape_launch() -> void:
+	var player: Node3D = get_parent() as Node3D
+	var direction: Vector3 = Vector3.FORWARD
+	if player:
+		var to_fish: Vector3 = cast_target_position - player.global_position
+		if to_fish.length() > 0.001:
+			direction = to_fish.normalized()
+	direction.y = 0.3
+	direction = direction.normalized()
+
+	_is_fighting = false
+	_escape_timer = 0.0
+	_telegraph_intensity = 0.0
+	_stop_telegraph()
+	_report_zone_leave()
+	_snap_bobber_to_rod()
+	$FishManager.cleanup()
+	current_state = State.IDLE
+	reel_failure.emit()
+	escape_launch.emit(direction, escape_launch_strength)
+
+
+func _start_telegraph() -> void:
+	_escape_timer = 0.0
+	_telegraph_intensity = 0.0
+	_escape_telegraph_audio.play()
+
+
+func _stop_telegraph() -> void:
+	_telegraph_intensity = 0.0
+	if _escape_telegraph_audio:
+		_escape_telegraph_audio.stop()
+	escape_telegraph_changed.emit(0.0)
+
+
 func _complete_fight_catch() -> void:
 	_is_fighting = false
+	_escape_timer = 0.0
+	_telegraph_intensity = 0.0
+	_stop_telegraph()
 	current_state = State.SUCCESS
 	personal_catch_count += 1
 	personal_catch_changed.emit(personal_catch_count)
@@ -182,6 +250,13 @@ func _ready() -> void:
 	line_material.albedo_color = Color(1.0, 1.0, 1.0)
 	line_material.shading_mode = ORMMaterial3D.SHADING_MODE_UNSHADED
 	line_material.cull_mode = ORMMaterial3D.CULL_DISABLED
+
+	var eta: AudioStreamPlayer = AudioStreamPlayer.new()
+	eta.name = "EscapeTelegraphAudio"
+	eta.bus = "SFX"
+	add_child(eta)
+	_escape_telegraph_audio = eta
+	_escape_telegraph_audio.stream = _generate_telegraph_stream()
 
 
 func set_rod_tip(tip: Node3D) -> void:
@@ -268,6 +343,7 @@ func _process(delta: float) -> void:
 
 					if Input.is_action_just_pressed("reel"):
 						_is_fighting = true
+						_start_telegraph()
 						var player := get_parent() as Node3D
 						if player:
 							_fight_initial_distance = player.global_position.distance_to(cast_target_position)
@@ -460,6 +536,9 @@ func reset_for_restart() -> void:
 	bite_timer.stop()
 	current_state = State.IDLE
 	_is_fighting = false
+	_escape_timer = 0.0
+	_telegraph_intensity = 0.0
+	_stop_telegraph()
 	personal_catch_count = 0
 	_active_zone_index = -1
 	personal_catch_changed.emit(personal_catch_count)
@@ -512,6 +591,38 @@ func _generate_rumble_stream() -> AudioStreamWAV:
 		var snap: float = randf_range(-1.0, 1.0) * snap_env * 0.3
 
 		var sample: float = (low + snap) * envelope
+		sample = clamp(sample, -1.0, 1.0)
+
+		var s: int = clampi(int(sample * 16384), -32768, 32767)
+		var offset: int = i * 2
+		data[offset] = s & 0xFF
+		data[offset + 1] = (s >> 8) & 0xFF
+
+	wav.data = data
+	return wav
+
+
+func _generate_telegraph_stream() -> AudioStreamWAV:
+	var duration: float = 1.0
+	var sample_rate: int = 44100
+	var sample_count: int = int(duration * sample_rate)
+
+	var wav: AudioStreamWAV = AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = false
+
+	var data := PackedByteArray()
+	data.resize(sample_count * 2)
+
+	for i in range(sample_count):
+		var t: float = float(i) / float(sample_rate)
+
+		var tone1: float = sin(t * TAU * 100.0) * 0.25
+		var tone2: float = sin(t * TAU * 150.0) * 0.15
+		var tone3: float = sin(t * TAU * 200.0) * 0.08
+
+		var sample: float = tone1 + tone2 + tone3
 		sample = clamp(sample, -1.0, 1.0)
 
 		var s: int = clampi(int(sample * 16384), -32768, 32767)

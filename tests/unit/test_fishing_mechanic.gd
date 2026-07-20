@@ -130,6 +130,8 @@ func test_fight_does_not_auto_catch_before_target() -> void:
 	mechanic.personal_catch_count = 0
 	mechanic._fight_target = 5.0
 	mechanic._fight_progress = 0.0
+	mechanic._escape_timer = 0.0
+	mechanic.escape_time_threshold = 99.0
 
 	watch_signals(mechanic)
 	mechanic.advance_fight(2.0)
@@ -150,6 +152,53 @@ func test_advance_fight_noop_when_not_fighting() -> void:
 
 	assert_eq(mechanic.current_state, 3, "Should remain in BITE")
 	assert_signal_not_emitted(mechanic, "reel_success")
+
+
+func test_escape_triggers_after_threshold() -> void:
+	mechanic.current_state = 3
+	mechanic._is_fighting = true
+	mechanic._fight_target = 99.0
+	mechanic.cast_target_position = Vector3(10, 0, 0)
+	mechanic.escape_time_threshold = 0.5
+
+	watch_signals(mechanic)
+	mechanic.advance_fight(0.6)
+
+	assert_eq(mechanic.current_state, 0, "Should be IDLE after escape")
+	assert_signal_emitted(mechanic, "reel_failure")
+	assert_signal_emitted(mechanic, "escape_launch")
+	assert_false(mechanic._is_fighting, "_is_fighting should be false after escape")
+
+
+func test_scroll_resets_escape_timer() -> void:
+	mechanic.current_state = 3
+	mechanic._is_fighting = true
+	mechanic._fight_target = 99.0
+	mechanic.escape_time_threshold = 1.0
+	mechanic.cast_target_position = Vector3(10, 0, 0)
+
+	watch_signals(mechanic)
+
+	for i in 10:
+		mechanic.advance_fight(0.2)
+		mechanic.notify_scroll()
+
+	assert_eq(mechanic.current_state, 3, "Should remain in BITE after prevented escape")
+	assert_signal_not_emitted(mechanic, "reel_failure")
+
+
+func test_telegraph_intensity_ramps_before_trigger() -> void:
+	mechanic.current_state = 3
+	mechanic._is_fighting = true
+	mechanic._fight_target = 99.0
+	mechanic.escape_time_threshold = 2.0
+	mechanic._escape_timer = 0.0
+
+	mechanic.advance_fight(1.0)
+	assert_almost_eq(mechanic._telegraph_intensity, 0.5, 0.01, "Half threshold should give 0.5 intensity")
+
+	mechanic.advance_fight(0.5)
+	assert_almost_eq(mechanic._telegraph_intensity, 0.75, 0.01, "3/4 threshold should give 0.75 intensity")
 
 
 func test_arc_velocity_lands_at_target() -> void:

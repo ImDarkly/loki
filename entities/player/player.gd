@@ -110,6 +110,8 @@ func _ready() -> void:
 	_health_component.died.connect(_enter_spectate)
 	_health_component.health_changed.connect(_on_health_changed)
 	fishing_mechanic.reel_success.connect(_on_reel_success)
+	fishing_mechanic.escape_launch.connect(_on_escape_launch)
+	fishing_mechanic.escape_telegraph_changed.connect(_on_escape_telegraph_changed)
 	
 	get_node("/root/game_manager").shop_toggled.connect(_on_shop_toggled)
 
@@ -560,7 +562,7 @@ func _physics_process(delta: float) -> void:
 	if direction != Vector3.ZERO:
 		velocity.x = direction.x * move_speed
 		velocity.z = direction.z * move_speed
-	else:
+	elif is_on_floor():
 		velocity.x = move_toward(velocity.x, 0.0, move_speed)
 		velocity.z = move_toward(velocity.z, 0.0, move_speed)
 
@@ -639,11 +641,14 @@ func _process_fight(delta: float) -> void:
 	_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
 	if Input.is_action_just_pressed("reel_fight"):
 		_pull_spike_timer = 0.3
+		fishing_mechanic.notify_scroll()
 	var is_spiked: bool = _pull_spike_timer > 0
 	var current_pull: float = fishing_mechanic.fighting_spike_pull if is_spiked else fishing_mechanic.fighting_pull_strength
 	var pull_force: Vector3 = dir * current_pull * pull_mult
 
 	fishing_mechanic.advance_fight(delta)
+	if not fishing_mechanic._is_fighting:
+		return
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var wasd_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
@@ -818,6 +823,16 @@ func _disable_player() -> void:
 
 func _on_reel_success(_personal_count: int) -> void:
 	start_carrying()
+
+func _on_escape_launch(direction: Vector3, strength: float) -> void:
+	velocity = direction * strength
+
+
+func _on_escape_telegraph_changed(intensity: float) -> void:
+	if not _rod_pivot:
+		return
+	_rod_pivot.rotation.x = deg_to_rad(45.0 + intensity * 25.0)
+
 
 func _on_shop_toggled(is_open: bool) -> void:
 	_is_shop_open = is_open
