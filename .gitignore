@@ -7,3 +7,4 @@ addons/
 
 # Third-party SDKs (download separately)
 thirdparty/
+build/*.exe

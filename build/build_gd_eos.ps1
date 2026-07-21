@@ -58,9 +58,8 @@ Pass "MSVC: $vsPath"
 
 $python = "python"
 $scons = "python -m SCons"
-try {
-    & $python -c "import SCons; print(SCons.__version__)" 2>$null
-} catch {
+& $python -c "import SCons; print(SCons.__version__)" 2>$null
+if ($LASTEXITCODE -ne 0) {
     Fail "SCons not found. Install with: pip install SCons"
 }
 Pass "SCons available"
@@ -99,12 +98,12 @@ Pass "godot-cpp initialized"
 $buildArgs = @("platform=windows", "arch=x64", "-Q")
 $sconsCmd = "python -m SCons $($buildArgs -join ' ')"
 Step "Building template_debug"
-$null = & cmd /c "`"$vcvars`" x64 >nul 2>nul && cd /d $GdEosDir && $sconsCmd target=template_debug"
+$null = & cmd /c "`"$vcvars`" x64 >nul 2>nul && cd /d `"$GdEosDir`" && $sconsCmd target=template_debug"
 if ($LASTEXITCODE -ne 0) { Fail "template_debug build failed" }
 Pass "template_debug built"
 
 Step "Building template_release"
-$null = & cmd /c "`"$vcvars`" x64 >nul 2>nul && cd /d $GdEosDir && $sconsCmd target=template_release"
+$null = & cmd /c "`"$vcvars`" x64 >nul 2>nul && cd /d `"$GdEosDir`" && $sconsCmd target=template_release"
 if ($LASTEXITCODE -ne 0) { Fail "template_release build failed" }
 Pass "template_release built"
 

@@ -55,7 +55,7 @@ No official Godot EOS SDK exists. Evaluated options:
 |---|---|---|
 | `3ddelano/epic-online-services-godot` (EOSG) | No (auth/achievements/leaderboards/lobbies focus) | Actively maintained, more popular |
 | `Flying-Rat/GodotEOS` | No (achievements/leaderboards/auth focus) | Maintained |
-| **`Daylily-Zeleen/GD-EOS`** | **Yes** — ships `EOSMultiplayerPeer`, credits EOSG's author for the underlying multiplayer mechanism | MIT, single maintainer, 37 stars, latest release v0.5.0 (Apr 2026). **README self-disclosed: "This repo is lack of testing. The name of APIs may be changed in later version."** |
+| **`Daylily-Zeleen/GD-EOS`** | **Yes** — ships `EOSMultiplayerPeer`, credits EOSG's author for the underlying multiplayer mechanism | MIT, single maintainer, 37 stars, latest release v0.5.1 (May 2026). **README self-disclosed: "This repo is lack of testing. The name of APIs may be changed in later version."** |
 
 **Decision:** GD-EOS, because it's the only option with a working `MultiplayerPeer` implementation. This is accepted as the single highest-risk dependency in the whole plan — a small, self-flagged-as-undertested, single-maintainer library sits underneath the entire networking stack.
 
@@ -160,7 +160,7 @@ GD-EOS initialization requires `product_id`, `sandbox_id`, `deployment_id`, `cli
 
 ## Blocking Prerequisite
 
-**Nothing in this plan is buildable yet.** An Epic Developer Portal product must be registered first: product, sandbox, deployment, and client credentials created, with **Peer2Peer**, **Lobby**, and **Connect** features enabled. This blocks Decision 6's spike and everything downstream of it.
+**Nothing in this plan is buildable yet.** An Epic Developer Portal product must be registered first: product, sandbox, deployment, and client credentials created, with **Peer2Peer**, **Lobby**, and **Connect** features enabled. For the Steam identity path (Decision 5), the **Steam external-credential** must be configured in Epic Dev Portal under EOS Connect. For the Epic-account path, an **Epic Account Services** client must be set up with the Auth feature enabled. These prerequisites block Decision 6's spike and everything downstream of it.
 
 ---
 
