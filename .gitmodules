@@ -1,0 +1,3 @@
+[submodule "build/gd-eos"]
+	path = build/gd-eos
+	url = https://github.com/Daylily-Zeleen/GD-EOS.git
