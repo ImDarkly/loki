@@ -16,11 +16,16 @@ var _deployment_id: String
 var _client_id: String
 var _client_secret: String
 var _encryption_key: String
+var _is_initializing: bool = false
+
+
 func initialize() -> void:
-	if is_initialized:
+	if is_available:
 		eos_ready.emit()
 		return
-
+	if _is_initializing:
+		push_warning("EOSInit: already initializing — ignoring duplicate call")
+		return
 	if not _load_credentials():
 		eos_failed.emit("Missing or incomplete .env — see .env.template")
 		return
@@ -30,13 +35,16 @@ func initialize() -> void:
 	if not _create_platform():
 		eos_failed.emit("EOSPlatform.platform_create failed")
 		return
+	_is_initializing = true
 	await _login_device_id()
 
 
 func _load_credentials() -> bool:
 	var env_path: String = "res://.env"
 	if not FileAccess.file_exists(env_path):
-		push_warning("eos_init: .env not found at ", env_path, " — EOS unavailable")
+		env_path = "user://.env"
+	if not FileAccess.file_exists(env_path):
+		push_warning("eos_init: .env not found at res://.env or user://.env — EOS unavailable")
 		return false
 
 	var cfg: ConfigFile = ConfigFile.new()
@@ -98,6 +106,7 @@ func _login_device_id() -> void:
 	var cdidr: EOS.Result = await EOSConnect.create_device_id(device_id)
 	if cdidr not in [EOS.Success, EOS.DuplicateNotAllowed]:
 		push_error("eos_init: create_device_id failed: ", EOS.result_to_string(cdidr))
+		_is_initializing = false
 		eos_failed.emit("create_device_id failed")
 		return
 
@@ -115,15 +124,18 @@ func _login_device_id() -> void:
 		var create_result: EOSConnect_CreateUserCallbackInfo = await EOSConnect.create_user(login_result.continuance_token)
 		if create_result.result_code != EOS.Success:
 			push_error("eos_init: create_user failed: ", EOS.result_to_string(create_result.result_code))
+			_is_initializing = false
 			eos_failed.emit("create_user failed")
 			return
 		product_user_id = create_result.local_user_id
 	elif login_result.result_code != EOS.Success:
 		push_error("eos_init: connect login failed: ", EOS.result_to_string(login_result.result_code))
+		_is_initializing = false
 		eos_failed.emit("connect login failed")
 		return
 	else:
 		product_user_id = login_result.local_user_id
 
+	_is_initializing = false
 	is_available = true
 	eos_ready.emit()
