@@ -8,3 +8,6 @@ addons/
 # Third-party SDKs (download separately)
 thirdparty/
 build/*.exe
+
+# EOS credentials (downloaded separately, per-machine)
+.env
