@@ -202,6 +202,7 @@ func test_wasd_works_during_fight() -> void:
 	player.fishing_mechanic._is_fighting = true
 	player.fishing_mechanic.cast_target_position = Vector3.ZERO
 	player.fishing_mechanic._fight_initial_distance = 0.0
+	player.fishing_mechanic._fight_target = 99.0
 
 	player.velocity = Vector3.ZERO
 
@@ -217,6 +218,7 @@ func test_player_moves_toward_fish_during_fight() -> void:
 	player.fishing_mechanic._is_fighting = true
 	player.fishing_mechanic.cast_target_position = Vector3(10, 0, 0)
 	player.fishing_mechanic._fight_initial_distance = 10.0
+	player.fishing_mechanic._fight_target = 99.0
 
 	player.velocity = Vector3.ZERO
 	player._physics_process(0.016)
@@ -235,6 +237,7 @@ func test_scroll_spikes_pull_higher_than_normal() -> void:
 	player.fishing_mechanic._is_fighting = true
 	player.fishing_mechanic.cast_target_position = Vector3(10, 0, 0)
 	player.fishing_mechanic._fight_initial_distance = 10.0
+	player.fishing_mechanic._fight_target = 99.0
 
 	player.velocity = Vector3.ZERO
 	player._pull_spike_timer = 0.0
