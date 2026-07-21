@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="Loki"
+config/name="Chum!"
 run/main_scene="res://scenes/lobby.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 
