@@ -4,3 +4,6 @@
 
 # Third-party addons (install via Asset Library)
 addons/
+
+# Third-party SDKs (download separately)
+thirdparty/
