@@ -10,4 +10,5 @@ thirdparty/
 build/*.exe
 
 # Environment variables
+# EOS credentials (downloaded separately, per-machine)
 .env
