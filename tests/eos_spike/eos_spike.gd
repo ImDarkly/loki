@@ -2,22 +2,19 @@ extends Node
 
 const SOCKET_ID := "LokiSpikeSocket"
 
-var _eos_init: EOSInit
 var _peer: EOSMultiplayerPeer
 
 
 func _ready() -> void:
-	_eos_init = EOSInit.new()
-	add_child(_eos_init)
-	_eos_init.eos_ready.connect(_on_eos_ready)
-	_eos_init.eos_failed.connect(_on_eos_failed)
-	_eos_init.initialize()
+	EOSManager.eos_ready.connect(_on_eos_ready)
+	EOSManager.eos_failed.connect(_on_eos_failed)
+	EOSManager.initialize()
 
 
 func _on_eos_ready() -> void:
 	print("[SPIKE] 1/5 PASS: EOS initialized")
 	print("[SPIKE] 2/5 PASS: Device ID login successful")
-	print("[SPIKE]    ProductUserId: ", _eos_init.product_user_id)
+	print("[SPIKE]    ProductUserId: ", EOSManager.product_user_id)
 
 	_peer = EOSMultiplayerPeer.new()
 	var err: Error = _peer.create_mesh(SOCKET_ID)

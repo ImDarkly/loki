@@ -23,6 +23,8 @@ driver/mix_rate=48000
 
 game_manager="*res://autoloads/game_manager.gd"
 NetworkManager="*res://autoloads/network_manager.gd"
+EOSManager="*res://autoloads/eos_manager.gd"
+EOSLobbyManager="*res://autoloads/eos_lobby_manager.gd"
 
 [editor_plugins]
 

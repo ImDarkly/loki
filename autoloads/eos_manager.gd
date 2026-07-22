@@ -1,4 +1,4 @@
-class_name EOSInit
+class_name EOSManager
 extends Node
 
 signal eos_ready()
@@ -18,13 +18,15 @@ var _client_secret: String
 var _encryption_key: String
 var _is_initializing: bool = false
 
+func _ready() -> void:
+	initialize()
 
 func initialize() -> void:
 	if is_available:
 		eos_ready.emit()
 		return
 	if _is_initializing:
-		push_warning("EOSInit: already initializing — ignoring duplicate call")
+		push_warning("EOSManager: already initializing — ignoring duplicate call")
 		return
 	if not _load_credentials():
 		eos_failed.emit("Missing or incomplete .env — see .env.template")
@@ -38,23 +40,22 @@ func initialize() -> void:
 	_is_initializing = true
 	await _login_device_id()
 
-
 func _load_credentials() -> bool:
 	var env_path: String = "res://.env"
 	if not FileAccess.file_exists(env_path):
 		env_path = "user://.env"
 	if not FileAccess.file_exists(env_path):
-		push_warning("eos_init: .env not found at res://.env or user://.env — EOS unavailable")
+		push_warning("EOSManager: .env not found at res://.env or user://.env — EOS unavailable")
 		return false
 
 	var cfg: ConfigFile = ConfigFile.new()
 	if cfg.load(env_path) != OK:
-		push_warning("eos_init: failed to load .env — EOS unavailable")
+		push_warning("EOSManager: failed to load .env — EOS unavailable")
 		return false
 
 	for key in ["PRODUCT_NAME", "PRODUCT_VERSION", "PRODUCT_ID", "SANDBOX_ID", "DEPLOYMENT_ID", "CLIENT_ID", "CLIENT_SECRET", "ENCRYPTION_KEY"]:
 		if not cfg.has_section_key("", key) or cfg.get_value("", key).is_empty():
-			push_warning("eos_init: missing or empty key %s in .env" % key)
+			push_warning("EOSManager: missing or empty key %s in .env" % key)
 			return false
 
 	_product_name = cfg.get_value("", "PRODUCT_NAME")
@@ -67,7 +68,6 @@ func _load_credentials() -> bool:
 	_encryption_key = cfg.get_value("", "ENCRYPTION_KEY")
 	return true
 
-
 func _init_eos() -> bool:
 	var init_options: EOSInitializeOptions = EOSInitializeOptions.new()
 	init_options.product_name = _product_name
@@ -77,11 +77,10 @@ func _init_eos() -> bool:
 		is_initialized = true
 		return true
 	if result_code != EOS.Success:
-		push_error("eos_init: EOS.initialize failed: ", EOS.result_to_string(result_code))
+		push_error("EOSManager: EOS.initialize failed: ", EOS.result_to_string(result_code))
 		return false
 	is_initialized = true
 	return true
-
 
 func _create_platform() -> bool:
 	var create_options := EOSPlatform_Options.new()
@@ -100,12 +99,11 @@ func _create_platform() -> bool:
 	EOSPlatform.platform_create(create_options)
 	return true
 
-
 func _login_device_id() -> void:
 	var device_id: String = OS.get_name() + ":" + OS.get_model_name()
 	var cdidr: EOS.Result = await EOSConnect.create_device_id(device_id)
 	if cdidr not in [EOS.Success, EOS.DuplicateNotAllowed]:
-		push_error("eos_init: create_device_id failed: ", EOS.result_to_string(cdidr))
+		push_error("EOSManager: create_device_id failed: ", EOS.result_to_string(cdidr))
 		_is_initializing = false
 		eos_failed.emit("create_device_id failed")
 		return
@@ -123,13 +121,13 @@ func _login_device_id() -> void:
 	if login_result.result_code == EOS.InvalidUser:
 		var create_result: EOSConnect_CreateUserCallbackInfo = await EOSConnect.create_user(login_result.continuance_token)
 		if create_result.result_code != EOS.Success:
-			push_error("eos_init: create_user failed: ", EOS.result_to_string(create_result.result_code))
+			push_error("EOSManager: create_user failed: ", EOS.result_to_string(create_result.result_code))
 			_is_initializing = false
 			eos_failed.emit("create_user failed")
 			return
 		product_user_id = create_result.local_user_id
 	elif login_result.result_code != EOS.Success:
-		push_error("eos_init: connect login failed: ", EOS.result_to_string(login_result.result_code))
+		push_error("EOSManager: connect login failed: ", EOS.result_to_string(login_result.result_code))
 		_is_initializing = false
 		eos_failed.emit("connect login failed")
 		return

@@ -12,8 +12,22 @@ var public_ip: String = ""
 var local_ip: String = ""
 
 
-func host_game(port: int = DEFAULT_PORT) -> void:
+func host_game(port: int = DEFAULT_PORT, is_eos: bool = false) -> void:
+	if is_eos:
+		# Use local IP for host. NetworkManager already has _find_local_ip()
+		_find_local_ip()
+		var host_ip := local_ip if not local_ip.is_empty() else "127.0.0.1"
+		
+		# room_code is returned by create_lobby; in a real app you'd display this to the host
+		var room_code = await EOSLobbyManager.create_lobby(MAX_CLIENTS, host_ip, port)
+		if room_code.is_empty():
+			push_error("NetworkManager: EOS lobby creation failed")
+			connection_failed_signal.emit()
+			return
+		print("EOS Lobby created with room code: ", room_code)
+	
 	peer = ENetMultiplayerPeer.new()
+	# ... remainder of host_game logic (omitted for brevity, keep existing)
 	var err := peer.create_server(port, MAX_CLIENTS)
 	if err != OK:
 		push_error("NetworkManager: create_server failed — error %d" % err)
@@ -25,9 +39,23 @@ func host_game(port: int = DEFAULT_PORT) -> void:
 	host_started.emit(local_ip)
 
 
-func join_game(address: String, port: int = DEFAULT_PORT) -> void:
+func join_game(address: String, port: int = DEFAULT_PORT, is_eos: bool = false) -> void:
+	var final_address := address
+	var final_port := port
+	
+	if is_eos:
+		# Discovery logic before join
+		var lobby_info = await EOSLobbyManager.search_lobby(address) # address = room code
+		if lobby_info.is_empty():
+			push_error("NetworkManager: EOS lobby search failed")
+			connection_failed_signal.emit()
+			return
+		final_address = lobby_info["HOST_IP"]
+		final_port = int(lobby_info["HOST_PORT"])
+	
 	peer = ENetMultiplayerPeer.new()
-	var err := peer.create_client(address, port)
+	var err := peer.create_client(final_address, final_port)
+	# ... remainder of join_game logic (omitted for brevity, keep existing)
 	if err != OK:
 		push_error("NetworkManager: create_client failed — error %d" % err)
 		connection_failed_signal.emit()
