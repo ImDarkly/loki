@@ -13,7 +13,7 @@
 
 ```powershell
 git clone --recurse-submodules <repo-url>
-cd loki
+cd chum
 ```
 
 If you already cloned without `--recurse-submodules`:
