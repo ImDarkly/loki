@@ -1,4 +1,3 @@
-class_name EOSManager
 extends Node
 
 signal eos_ready()

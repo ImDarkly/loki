@@ -1,4 +1,3 @@
-class_name EOSLobbyManager
 extends Node
 
 const ROOM_CODE_LENGTH := 6
