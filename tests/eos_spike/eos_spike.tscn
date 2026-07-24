@@ -4,3 +4,9 @@
 
 [node name="EOSSpike" type="Node"]
 script = ExtResource("1")
+
+[node name="Root" type="Node" parent="."]
+
+[node name="Spawner" type="MultiplayerSpawner" parent="."]
+spawn_path = NodePath("Root")
+spawn_limit = 1
