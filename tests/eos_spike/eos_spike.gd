@@ -274,7 +274,15 @@ func _on_host_peer_connected(id: int) -> void:
 
 # ========== Host-side test orchestration ==========
 func _run_tests_from_host() -> void:
-	await get_tree().create_timer(0.5).timeout
+	var _peer_wait_elapsed := 0.0
+	while _client_peer_id not in multiplayer.get_peers():
+		await get_tree().create_timer(0.1).timeout
+		_peer_wait_elapsed += 0.1
+		if _peer_wait_elapsed >= 30.0:
+			push_error("[HOST] Client peer %d never appeared in get_peers() — aborting tests" % _client_peer_id)
+			_print_summary()
+			return
+	print("[HOST] Client peer %d confirmed in get_peers() after %.1fs" % [_client_peer_id, _peer_wait_elapsed])
 	await _test_item2()
 	await _test_item3()
 	await _test_item4()
