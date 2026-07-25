@@ -5,9 +5,11 @@ const ROOM_CODE_CHARS := "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 const ROOM_CODE_LENGTH := 6
 
 enum Role { NONE, HOST, CLIENT }
+enum NetworkingMode { SERVER_CLIENT, MESH }
 
 var _role: int = Role.NONE
 var _room_code: String = ""
+var _net_mode: int = NetworkingMode.SERVER_CLIENT
 
 var _peer: EOSMultiplayerPeer
 var _lobby_id: String = ""
@@ -45,6 +47,11 @@ func _parse_args() -> void:
 					_role = Role.CLIENT
 		elif arg.begins_with("--room-code="):
 			_room_code = arg.trim_prefix("--room-code=")
+		elif arg.begins_with("--mode="):
+			var val := arg.trim_prefix("--mode=")
+			match val:
+				"mesh":
+					_net_mode = NetworkingMode.MESH
 
 
 func _generate_room_code() -> String:
@@ -132,18 +139,32 @@ func _run_host() -> void:
 
 	_peer = EOSMultiplayerPeer.new()
 	EOSP2P.set_relay_control(EOSP2P.RC_ForceRelays)
-	var err: Error = _peer.create_server(SOCKET_ID)
-	if err != OK:
-		push_error("[HOST] create_server failed: ", err)
-		get_tree().quit(1)
-		return
 
-	multiplayer.multiplayer_peer = _peer
-	multiplayer.peer_connected.connect(_on_host_peer_connected)
-	print("[HOST] EOSMultiplayerPeer server listening on socket: ", SOCKET_ID)
-	print("[HOST] is_server: ", multiplayer.is_server())
-	print("[HOST] unique_id: ", _peer.get_unique_id())
-	print("[HOST] Waiting for client connection...")
+	if _net_mode == NetworkingMode.MESH:
+		var err: Error = _peer.create_mesh(_lobby_id)
+		if err != OK:
+			push_error("[HOST] create_mesh failed: ", err)
+			get_tree().quit(1)
+			return
+		multiplayer.multiplayer_peer = _peer
+		multiplayer.peer_connected.connect(_on_host_peer_connected)
+		EOSLobby.lobby_member_status_received.connect(_on_lobby_member_status_received)
+		print("[HOST] EOSMultiplayerPeer mesh created on lobby socket: ", _lobby_id)
+		print("[HOST] is_server: ", multiplayer.is_server())
+		print("[HOST] unique_id: ", _peer.get_unique_id())
+		print("[HOST] Waiting for mesh peer to join...")
+	else:
+		var err: Error = _peer.create_server(SOCKET_ID)
+		if err != OK:
+			push_error("[HOST] create_server failed: ", err)
+			get_tree().quit(1)
+			return
+		multiplayer.multiplayer_peer = _peer
+		multiplayer.peer_connected.connect(_on_host_peer_connected)
+		print("[HOST] EOSMultiplayerPeer server listening on socket: ", SOCKET_ID)
+		print("[HOST] is_server: ", multiplayer.is_server())
+		print("[HOST] unique_id: ", _peer.get_unique_id())
+		print("[HOST] Waiting for client connection...")
 
 
 # ========== Client setup ==========
@@ -201,18 +222,31 @@ func _run_client() -> void:
 
 	_peer = EOSMultiplayerPeer.new()
 	EOSP2P.set_relay_control(EOSP2P.RC_ForceRelays)
-	var err: Error = _peer.create_client(SOCKET_ID, host_puid)
-	if err != OK:
-		push_error("[CLIENT] create_client failed: ", err)
-		get_tree().quit(1)
-		return
 
-	multiplayer.multiplayer_peer = _peer
-	print("[CLIENT] EOSMultiplayerPeer client connecting to host...")
-	print("[CLIENT] unique_id: ", _peer.get_unique_id())
-
-	multiplayer.peer_connected.connect(_on_client_peer_connected)
-	_make_connection_timeout(15.0)
+	if _net_mode == NetworkingMode.MESH:
+		var err: Error = _peer.create_mesh(_lobby_id)
+		if err != OK:
+			push_error("[CLIENT] create_mesh failed: ", err)
+			get_tree().quit(1)
+			return
+		multiplayer.multiplayer_peer = _peer
+		multiplayer.peer_connected.connect(_on_client_peer_connected)
+		EOSLobby.lobby_member_status_received.connect(_on_lobby_member_status_received)
+		print("[CLIENT] EOSMultiplayerPeer mesh created on lobby socket: ", _lobby_id)
+		print("[CLIENT] unique_id: ", _peer.get_unique_id())
+		print("[CLIENT] Waiting for mesh peer...")
+		_make_connection_timeout(15.0)
+	else:
+		var err: Error = _peer.create_client(SOCKET_ID, host_puid)
+		if err != OK:
+			push_error("[CLIENT] create_client failed: ", err)
+			get_tree().quit(1)
+			return
+		multiplayer.multiplayer_peer = _peer
+		print("[CLIENT] EOSMultiplayerPeer client connecting to host...")
+		print("[CLIENT] unique_id: ", _peer.get_unique_id())
+		multiplayer.peer_connected.connect(_on_client_peer_connected)
+		_make_connection_timeout(15.0)
 
 
 func _make_connection_timeout(seconds: float) -> void:
@@ -272,6 +306,14 @@ func _on_host_peer_connected(id: int) -> void:
 	_run_tests_from_host()
 
 
+func _on_lobby_member_status_received(data: EOSLobby_LobbyMemberStatusReceivedCallbackInfo) -> void:
+	if data.lobby_id != _lobby_id:
+		return
+	if data.current_status == EOSLobby.LMS_JOINED:
+		print("[MESH] LMS_JOINED for PUID, adding mesh peer")
+		_peer.add_mesh_peer(data.target_user_id)
+
+
 # ========== Host-side test orchestration ==========
 func _run_tests_from_host() -> void:
 	var _peer_wait_elapsed := 0.0
@@ -283,11 +325,16 @@ func _run_tests_from_host() -> void:
 			_print_summary()
 			return
 	print("[HOST] Client peer %d confirmed in get_peers() after %.1fs" % [_client_peer_id, _peer_wait_elapsed])
-	await _test_item2()
-	await _test_item3()
-	await _test_item4()
-	await _test_item5()
-	_print_summary()
+	if _net_mode == NetworkingMode.MESH:
+		print("[HOST] Mesh mode — only testing item 2 (reliable RPC)")
+		await _test_item2()
+		_print_summary()
+	else:
+		await _test_item2()
+		await _test_item3()
+		await _test_item4()
+		await _test_item5()
+		_print_summary()
 
 
 # ========== Item 2: Reliable RPC ==========
