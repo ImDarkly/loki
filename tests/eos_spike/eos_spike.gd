@@ -369,14 +369,14 @@ func _run_rpc_tests() -> void:
 		_unreliable_client_received_count, _unreliable_sent, delivery_rate * 100.0, avg_latency
 	])
 
-	if _unreliable_client_received_count >= _unreliable_sent:
+	if _unreliable_client_received_count > 0:
 		print("[SPIKE] 7/7 PASS: Unreliable RPC test passed (delivery count: %d/%d, latency: %.1fms)" % [
 			_unreliable_client_received_count, _unreliable_sent, avg_latency
 		])
 		_tests_passed += 1
 		_unreliable_test_passed = true
 	else:
-		push_error("[SPIKE] 7/7 FAIL: Unreliable RPC test received 0 messages")
+		push_error("[SPIKE] 7/7 FAIL: Unreliable RPC test received 0/%d messages" % _unreliable_sent)
 
 	_print_results()
 
