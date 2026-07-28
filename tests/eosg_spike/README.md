@@ -9,26 +9,26 @@ Scaffolds and verifies Epic Online Services (EOSG plugin v2.3.0) transport and P
 
 **1. Host (Device A):**
 ```powershell
-& "C:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=host --room-code=test1 --auth-mode=device_id
+& "E:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=host --room-code=test1 --auth-mode=device_id
 ```
 *(Copy the printed `ProductUserId`, e.g. `0002b85f889b4c7b94c99a00b8c04da8`)*
 
 **2. Client (Device B):**
 Pass the host's ProductUserId directly via `--host-puid`:
 ```powershell
-& "C:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=client --room-code=test1 --auth-mode=device_id --host-puid=0002b85f889b4c7b94c99a00b8c04da8
+& "E:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=client --room-code=test1 --auth-mode=device_id --host-puid=0002b85f889b4c7b94c99a00b8c04da8
 ```
 
 ### Mode 2: Dev Auth Tool (Local / Same-Machine or Network IP)
 
 **Host:**
 ```powershell
-& "C:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=host --room-code=test1 --credential-name=host_user --dev-auth-host=localhost:4545
+& "E:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=host --room-code=test1 --credential-name=host_user --dev-auth-host=localhost:4545
 ```
 
 **Client:**
 ```powershell
-& "C:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=client --room-code=test1 --credential-name=client_user --dev-auth-host=192.168.x.x:4545
+& "E:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=client --room-code=test1 --credential-name=client_user --dev-auth-host=192.168.x.x:4545
 ```
 
 ## Acceptance Criteria (5/5)

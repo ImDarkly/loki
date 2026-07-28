@@ -41,12 +41,13 @@ func _init() -> void:
 		elif arg.begins_with("--host-puid="):
 			_host_puid_override = arg.trim_prefix("--host-puid=")
 
+
+func _ready() -> void:
 	if _role != "host" and _role != "client":
 		push_error("Invalid role '%s'. Must be 'host' or 'client'." % _role)
 		get_tree().quit(1)
+		return
 
-
-func _ready() -> void:
 	print("")
 	print("========== EOSG Transport Spike ==========")
 	print("Role: %s  |  Room: %s  |  Credential: %s" % [_role, _room_code, _credential_name])
