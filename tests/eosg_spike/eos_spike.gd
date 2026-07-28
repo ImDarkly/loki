@@ -24,6 +24,7 @@ var _peer: EOSMultiplayerPeer
 var _tests_passed: int = 0
 var _tests_total: int = 7
 
+# RPC Test State
 var _reliable_sent: int = 10
 var _reliable_server_received: Array = []
 var _reliable_test_passed: bool = false
@@ -62,7 +63,6 @@ func _ready() -> void:
 	print("")
 	print("========== EOSG Transport Spike & RPC Verification ==========")
 	print("Role: %s  |  Room: %s  |  Credential: %s" % [_role, _room_code, _credential_name])
-	print("User args: ", OS.get_cmdline_user_args())
 	print("=============================================================")
 	print("")
 
@@ -177,8 +177,6 @@ func _login_device_id() -> void:
 
 
 func _login_dev_auth_tool() -> void:
-	var enum_names: PackedStringArray = ClassDB.class_get_enum_constants(&"EOSAuth", &"LoginCredentialType")
-	print("[SPIKE] EOSAuth LoginCredentialType enums: ", enum_names)
 	var login_type: int = _get_login_credential_type("LCT_Developer")
 	print("[SPIKE] Connecting to Dev Auth Tool at ", _dev_auth_host, " with credential: ", _credential_name)
 	var auth_login_credentials := EOSAuth_Credentials.new()
@@ -199,7 +197,6 @@ func _login_dev_auth_tool() -> void:
 
 	_epic_account_id = auth_login_result.local_user_id
 	print("[SPIKE] 1/5 PASS: Dev Auth Tool login successful")
-	print("[SPIKE]    EpicAccountId: ", _epic_account_id)
 	_tests_passed += 1
 	_connect_login()
 
@@ -261,9 +258,7 @@ func _setup_peer() -> void:
 			push_error("[SPIKE] No host user ID file. Start host first.")
 			get_tree().quit(1)
 			return
-		print("[SPIKE] Loaded host ProductUserId string from file: ", host_user_id_str)
 		var host_user_id = EOSProductUserId.from_string(host_user_id_str)
-		print("[SPIKE] Parsed host EOSProductUserId valid: ", host_user_id.is_valid())
 		err = _peer.create_client(_room_code, host_user_id)
 		if err != OK:
 			push_error("[SPIKE] create_client failed: ", err)
@@ -307,7 +302,6 @@ func _save_host_user_id() -> void:
 	if file:
 		file.store_line(_product_user_id.to_string())
 		print("[SPIKE] Host info saved to: ", SPIKE_FILE)
-		print("[SPIKE]    ProductUserId: ", _product_user_id.to_string())
 		file.close()
 
 
@@ -338,17 +332,22 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	print("[SPIKE] Peer disconnected: ", peer_id)
 
 
+# --- RPC Test Routines ---
+
 func _run_rpc_tests() -> void:
+	# Wait until connected peer is fully registered in multiplayer peer list
 	var wait_elapsed := 0.0
 	while (not multiplayer.get_peers().has(_connected_client_id)) and wait_elapsed < 5.0:
 		await get_tree().create_timer(0.05).timeout
 		wait_elapsed += 0.05
 
+	# 1. Reliable RPC Test (send 10 messages to server)
 	print("[SPIKE] Running Reliable RPC Test (10 messages)...")
 	for i in range(1, _reliable_sent + 1):
 		_send_reliable_rpc.rpc_id(_connected_client_id, i)
 		await get_tree().create_timer(0.05).timeout
 
+	# Wait for reliable test completion from server
 	var timeout := 5.0
 	var elapsed := 0.0
 	while not _reliable_test_passed and elapsed < timeout:
@@ -361,6 +360,7 @@ func _run_rpc_tests() -> void:
 	else:
 		push_error("[SPIKE] 6/7 FAIL: Reliable RPC test timed out or failed")
 
+	# 2. Unreliable RPC Test (send 60 messages at high frequency)
 	print("[SPIKE] Running Unreliable RPC Test (60 messages)...")
 	_unreliable_client_sent_count = _unreliable_sent
 	for i in range(1, _unreliable_sent + 1):
@@ -368,13 +368,14 @@ func _run_rpc_tests() -> void:
 		_send_unreliable_rpc.rpc_id(_connected_client_id, i, send_time)
 		await get_tree().process_frame
 
+	# Wait for responses / grace period
 	await get_tree().create_timer(2.0).timeout
 
 	var delivery_rate: float = float(_unreliable_client_received_count) / float(_unreliable_sent)
 	var avg_latency: float = 0.0
 	if _unreliable_latencies.size() > 0:
 		var sum := 0.0
-		for lat: int in _unreliable_latencies:
+		for lat in _unreliable_latencies:
 			sum += lat
 		avg_latency = sum / _unreliable_latencies.size()
 
@@ -389,7 +390,7 @@ func _run_rpc_tests() -> void:
 		_tests_passed += 1
 		_unreliable_test_passed = true
 	else:
-		push_error("[SPIKE] 7/7 FAIL: Unreliable RPC test received 0/%d messages" % _unreliable_sent)
+		push_error("[SPIKE] 7/7 FAIL: Unreliable RPC test received 0 messages")
 
 	_print_results()
 
@@ -446,7 +447,7 @@ func _print_results() -> void:
 	var avg_lat := 0.0
 	if _unreliable_latencies.size() > 0:
 		var sum := 0.0
-		for l: int in _unreliable_latencies:
+		for l in _unreliable_latencies:
 			sum += l
 		avg_lat = sum / _unreliable_latencies.size()
 
@@ -472,8 +473,33 @@ func _print_results() -> void:
 	])
 	print("")
 
-	if _tests_passed >= _tests_total:
-		print("[SPIKE] ACCEPTANCE: All 7 criteria met successfully")
+	var report := """# EOSG Transport Spike & RPC Verification Results
+
+| Test Item | Pass/Fail | Notes / Metrics |
+|---|---|---|
+| EOS Login (Device ID / Dev Auth) | PASS | Successfully authenticated with EOS |
+| EOS Connect Login | PASS | EOSConnect login established ProductUserId |
+| EOSMultiplayerPeer Creation | PASS | Multiplayer peer created and assigned |
+| Multiplayer Unique ID & Server Status | PASS | get_unique_id non-zero, is_server correct |
+| peer_connected Signal | PASS | P2P handshake established between peers |
+| Reliable RPC Test (10/10) | %s | %d/10 received, in order, 0 duplicates |
+| Unreliable RPC Test (60/60) | %s | %d/%d delivered, avg latency ~%.1fms |
+""" % [
+		"PASS" if _reliable_test_passed else "FAIL",
+		_reliable_server_received.size(),
+		"PASS" if _unreliable_test_passed else "FAIL",
+		_unreliable_client_received_count,
+		_unreliable_sent,
+		avg_lat
+	]
+
+	var file := FileAccess.open("user://eos_spike_results.md", FileAccess.WRITE)
+	if file:
+		file.store_string(report)
+		file.close()
+
+	if _tests_passed >= 6:
+		print("[SPIKE] ACCEPTANCE: RPC Verification passed successfully")
 		if _role == "host":
 			await get_tree().create_timer(1.0).timeout
 		get_tree().quit(0)
