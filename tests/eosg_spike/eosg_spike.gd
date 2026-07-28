@@ -7,6 +7,7 @@ var _room_code: String = "default"
 var _credential_name: String = ""
 var _auth_mode: String = "dev_auth"
 var _dev_auth_host: String = "localhost:4545"
+var _host_puid_override: String = ""
 
 var _product_user_id
 var _epic_account_id
@@ -37,6 +38,8 @@ func _init() -> void:
 			_auth_mode = arg.trim_prefix("--auth-mode=")
 		elif arg.begins_with("--dev-auth-host="):
 			_dev_auth_host = arg.trim_prefix("--dev-auth-host=")
+		elif arg.begins_with("--host-puid="):
+			_host_puid_override = arg.trim_prefix("--host-puid=")
 
 	if _role != "host" and _role != "client":
 		push_error("Invalid role '%s'. Must be 'host' or 'client'." % _role)
@@ -297,6 +300,8 @@ func _save_host_user_id() -> void:
 
 
 func _load_host_user_id():
+	if not _host_puid_override.is_empty():
+		return _host_puid_override
 	if not FileAccess.file_exists(SPIKE_FILE):
 		return ""
 	var file := FileAccess.open(SPIKE_FILE, FileAccess.READ)
