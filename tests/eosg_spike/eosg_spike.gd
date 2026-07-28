@@ -5,6 +5,8 @@ const SPIKE_FILE := "user://eosg_spike_host.txt"
 var _role: String = "host"
 var _room_code: String = "default"
 var _credential_name: String = ""
+var _auth_mode: String = "dev_auth"
+var _dev_auth_host: String = "localhost:4545"
 
 var _product_user_id
 var _epic_account_id
@@ -31,6 +33,10 @@ func _init() -> void:
 			_room_code = arg.trim_prefix("--room-code=")
 		elif arg.begins_with("--credential-name="):
 			_credential_name = arg.trim_prefix("--credential-name=")
+		elif arg.begins_with("--auth-mode="):
+			_auth_mode = arg.trim_prefix("--auth-mode=")
+		elif arg.begins_with("--dev-auth-host="):
+			_dev_auth_host = arg.trim_prefix("--dev-auth-host=")
 
 	if _role != "host" and _role != "client":
 		push_error("Invalid role '%s'. Must be 'host' or 'client'." % _role)
@@ -113,17 +119,56 @@ func _create_platform() -> void:
 		create_options.flags = EOSPlatform.PF_DISABLE_OVERLAY
 	EOSPlatform.platform_create(create_options)
 	print("[SPIKE] EOS platform initialized")
-	_login_dev_auth_tool()
+	if _auth_mode == "device_id":
+		_login_device_id()
+	else:
+		_login_dev_auth_tool()
+
+
+func _login_device_id() -> void:
+	print("[SPIKE] Logging in via Device ID mode...")
+	var cdidr: EOS.Result = await EOSConnect.create_device_id(OS.get_name() + ":" + OS.get_model_name())
+	if not cdidr in [EOS.Success, EOS.DuplicateNotAllowed]:
+		push_error("[SPIKE] Create device id failed: ", EOS.result_to_string(cdidr))
+		get_tree().quit(1)
+		return
+
+	var connect_credentials := EOSConnect_Credentials.new()
+	connect_credentials.type = EOS.ECT_DEVICEID_ACCESS_TOKEN
+
+	var user_login_info := EOSConnect_UserLoginInfo.new()
+	var display_name := "User_" + str(randi() % 1000)
+	user_login_info.display_name = display_name
+
+	var login_result: EOSConnect_LoginCallbackInfo = await EOSConnect.login(connect_credentials, user_login_info)
+	if login_result.result_code == EOS.InvalidUser:
+		var create_result: EOSConnect_CreateUserCallbackInfo = await EOSConnect.create_user(login_result.continuance_token)
+		if create_result.result_code != EOS.Success:
+			push_error("[SPIKE] EOSConnect create_user failed: ", EOS.result_to_string(create_result.result_code))
+			get_tree().quit(1)
+			return
+		_product_user_id = create_result.local_user_id
+	elif login_result.result_code != EOS.Success:
+		push_error("[SPIKE] EOSConnect login failed: ", EOS.result_to_string(login_result.result_code))
+		get_tree().quit(1)
+		return
+	else:
+		_product_user_id = login_result.local_user_id
+
+	print("[SPIKE] 1/5 PASS: Device ID login successful")
+	print("[SPIKE]    ProductUserId: ", _product_user_id.to_string())
+	_tests_passed += 1
+	_setup_peer()
 
 
 func _login_dev_auth_tool() -> void:
 	var enum_names: PackedStringArray = ClassDB.class_get_enum_constants(&"EOSAuth", &"LoginCredentialType")
 	print("[SPIKE] EOSAuth LoginCredentialType enums: ", enum_names)
 	var login_type: int = _get_login_credential_type("LCT_Developer")
-	print("[SPIKE] Connecting to Dev Auth Tool at localhost:4545 with credential: ", _credential_name)
+	print("[SPIKE] Connecting to Dev Auth Tool at ", _dev_auth_host, " with credential: ", _credential_name)
 	var auth_login_credentials := EOSAuth_Credentials.new()
 	auth_login_credentials.type = login_type
-	auth_login_credentials.id = "localhost:4545"
+	auth_login_credentials.id = _dev_auth_host
 	auth_login_credentials.token = _credential_name
 
 	var auth_login_result: EOSAuth_LoginCallbackInfo = await EOSAuth.login(

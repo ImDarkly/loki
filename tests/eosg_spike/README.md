@@ -4,18 +4,33 @@ Scaffolds and verifies Epic Online Services (EOSG plugin v2.3.0) transport and P
 
 ## Usage
 
+### Mode 1: Device ID Login (Recommended for Multi-Device / Separate Machines)
+*Does not require running the Dev Auth Tool server.*
+
 **Host:**
 ```powershell
-& "E:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=host --room-code=test1 --credential-name=host_user
+& "C:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=host --room-code=test1 --auth-mode=device_id
 ```
 
 **Client:**
 ```powershell
-& "E:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=client --room-code=test1 --credential-name=client_user
+& "C:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=client --room-code=test1 --auth-mode=device_id
+```
+
+### Mode 2: Dev Auth Tool (Local / Same-Machine or Network IP)
+
+**Host:**
+```powershell
+& "C:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=host --room-code=test1 --credential-name=host_user --dev-auth-host=localhost:4545
+```
+
+**Client:**
+```powershell
+& "C:\Godot\Godot_v4.6.2-stable_win64.exe" --path . --scene res://tests/eosg_spike/eosg_spike.tscn -- --role=client --room-code=test1 --credential-name=client_user --dev-auth-host=192.168.x.x:4545
 ```
 
 ## Acceptance Criteria (5/5)
-1. Dev Auth Tool login successful (`EOSAuth`).
+1. EOS Login successful (Dev Auth or Device ID).
 2. EOS Connect login successful (`EOSConnect`).
 3. Multiplayer peer created successfully (`EOSMultiplayerPeer`).
 4. `get_unique_id()` non-zero and `is_server()` correctly set per role.
