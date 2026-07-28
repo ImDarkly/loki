@@ -56,6 +56,17 @@ For multi-step tasks, state a brief plan:
 3. [Step] → verify: [check]
 ```
 
+## 5. Ground Every Claim
+
+**Uncertainty and unverified are different problems. Check for both.**
+
+Before naming any file path, class name, addon, or API in a plan or diff:
+- Have you `view`'d, `grep`'d, or `cat`'d it in this session? If not, don't name it — write "UNVERIFIED: need to check X" instead.
+- If citing a GitHub issue, quote the actual body from `gh issue view`, not a paraphrase from the title.
+- `addons/` is gitignored (see .gitignore) — never assume an addon exists or has a given path without listing the directory first.
+
+The test: every file path or class name in a plan should trace to a tool call you actually ran, not to what a similar project would plausibly have.
+
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
 ---
@@ -103,16 +114,20 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Startup Workflow
 
+Trigger: any message that references a GitHub issue, PR, or feature by number, name, or link (e.g. "work on issue #123", "start feature X"). You do not need the issue body pasted in — fetch it yourself.
+
 Before implementing any task:
 
-1. Read the full task
+1. **Fetch the issue** (don't wait for the body to be pasted):
+   `gh issue view <number>` (add `--repo <owner>/<repo>` if working outside the current repo's default remote)
+   Read the full issue, including comments, before proceeding.
 2. Decide which GodotPrompter skills are relevant (check skill list)
 3. Use the `skill` tool to load relevant skills
 4. Switch to `master` branch: `git checkout master`
 5. Fetch remote: `git fetch origin`
-6. Create a new branch from master with a descriptive name: `git checkout -b <branch-name>`
+6. Create a new branch from master with a descriptive name, following the Branch naming convention above: `git checkout -b <branch-name>`
 
-If anything is unclear, ask me before proceeding.
+If anything is unclear — ambiguous requirements, missing acceptance criteria, conflicting instructions — stop and ask before proceeding. Do not guess and continue.
 
 ### GitHub issue relationships
 Whenever creating multiple issues with dependencies between them, use the `addBlockedBy` GraphQL mutation via `gh api graphql` to link them immediately after creation. The mutation takes `issueId` (the blocked issue) and `blockingIssueId` (the blocker). Get issue node IDs via a `repository(owner:, name:) { issue(number:) { id } }` query first.
@@ -124,3 +139,6 @@ When writing markdown with backticks (`` ` ``) to files in PowerShell:
 - **ALWAYS use the `write` tool** to create any file containing backticks, even temp files.
 - If you must use a shell string, use `@'...'@` (single-quoted here-string) which disables all escape processing.
 - For `gh pr create --body`, write the body to a file via `write` tool, then pass `--body-file <path>`.
+
+### Addons
+- `addons/` is gitignored — not guaranteed to exist locally or match what's installed elsewhere. Always `view addons/` before referencing any addon path, plugin name, or class it provides.
