@@ -4,3 +4,10 @@
 
 [node name="EOSGSpike" type="Node"]
 script = ExtResource("1")
+
+[node name="Root" type="Node" parent="."]
+
+[node name="Spawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://tests/eosg_spike/spawnable_marker.tscn")
+spawn_path = NodePath("../Root")
+spawn_limit = 2

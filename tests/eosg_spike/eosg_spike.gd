@@ -9,8 +9,8 @@ var _auth_mode: String = "dev_auth"
 var _dev_auth_host: String = "localhost:4545"
 var _host_puid_override: String = ""
 
-var _product_user_id
-var _epic_account_id
+var _product_user_id: String = ""
+var _epic_account_id: String = ""
 var _product_name: String
 var _product_version: String
 var _product_id: String
@@ -20,9 +20,9 @@ var _client_id: String
 var _client_secret: String
 var _encryption_key: String
 
-var _peer: EOSMultiplayerPeer
+var _peer: EOSGMultiplayerPeer
 var _tests_passed: int = 0
-var _tests_total: int = 7
+var _tests_total: int = 9
 
 var _reliable_sent: int = 10
 var _reliable_server_received: Array = []
@@ -33,7 +33,21 @@ var _unreliable_client_sent_count: int = 0
 var _unreliable_client_received_count: int = 0
 var _unreliable_latencies: Array = []
 var _unreliable_test_passed: bool = false
+var _unreliable_host_received: int = 0
 var _connected_client_id: int = 0
+
+var _spawner_expected_count: int = 0
+var _spawner_host_passed: bool = false
+var _spawner_client_passed: bool = false
+var _spawner_client_found: int = 0
+var _spawner_client_ack_received: bool = false
+var _spawner_test_passed: bool = false
+var _host_spawned_node: Node3D
+
+var _sync_client_passed: bool = false
+var _sync_client_ack_received: bool = false
+var _sync_client_actual: Vector3 = Vector3()
+var _sync_test_passed: bool = false
 
 
 func _init() -> void:
@@ -107,33 +121,21 @@ func _load_credentials() -> void:
 
 
 func _init_eos() -> void:
-	var init_options := EOSInitializeOptions.new()
-	init_options.product_name = _product_name
-	init_options.product_version = _product_version
-	var result_code: EOS.Result = EOS.initialize(init_options)
-	if result_code != EOS.Success and result_code != EOS.AlreadyConfigured:
-		push_error("[SPIKE] EOS.initialize failed: ", EOS.result_to_string(result_code))
+	var credentials := HCredentials.new()
+	credentials.product_name = _product_name
+	credentials.product_version = _product_version
+	credentials.product_id = _product_id
+	credentials.sandbox_id = _sandbox_id
+	credentials.deployment_id = _deployment_id
+	credentials.client_id = _client_id
+	credentials.client_secret = _client_secret
+	credentials.encryption_key = _encryption_key
+	var setup_ok: bool = await HPlatform.setup_eos_async(credentials)
+	if not setup_ok:
+		push_error("[SPIKE] EOSG setup_eos_async failed")
 		get_tree().quit(1)
 		return
-	_create_platform()
-
-
-func _create_platform() -> void:
-	var create_options := EOSPlatform_Options.new()
-	create_options.product_id = _product_id
-	create_options.sandbox_id = _sandbox_id
-	create_options.deployment_id = _deployment_id
-	create_options.client_credentials = EOSPlatform_ClientCredentials.new()
-	create_options.client_credentials.client_id = _client_id
-	create_options.client_credentials.client_secret = _client_secret
-	create_options.rtc_options = EOSPlatform_RTCOptions.new()
-	create_options.encryption_key = _encryption_key
-	if OS.get_name() == "Windows":
-		create_options.flags |= EOSPlatform.PF_DISABLE_OVERLAY
-	else:
-		create_options.flags = EOSPlatform.PF_DISABLE_OVERLAY
-	EOSPlatform.platform_create(create_options)
-	print("[SPIKE] EOS platform initialized")
+	print("[SPIKE] EOS platform initialized (EOSG High-Level)")
 	if _auth_mode == "device_id":
 		_login_device_id()
 	else:
@@ -142,109 +144,42 @@ func _create_platform() -> void:
 
 func _login_device_id() -> void:
 	print("[SPIKE] Logging in via Device ID mode...")
-	var cdidr: EOS.Result = await EOSConnect.create_device_id(OS.get_name() + ":" + OS.get_model_name())
-	if not cdidr in [EOS.Success, EOS.DuplicateNotAllowed]:
-		push_error("[SPIKE] Create device id failed: ", EOS.result_to_string(cdidr))
+	var login_ok: bool = await HAuth.login_anonymous_async("User_" + str(randi() % 1000))
+	if not login_ok:
+		push_error("[SPIKE] EOSG anonymous login failed")
 		get_tree().quit(1)
 		return
-
-	var connect_credentials := EOSConnect_Credentials.new()
-	connect_credentials.type = EOS.ECT_DEVICEID_ACCESS_TOKEN
-
-	var user_login_info := EOSConnect_UserLoginInfo.new()
-	var display_name := "User_" + str(randi() % 1000)
-	user_login_info.display_name = display_name
-
-	var login_result: EOSConnect_LoginCallbackInfo = await EOSConnect.login(connect_credentials, user_login_info)
-	if login_result.result_code == EOS.InvalidUser:
-		var create_result: EOSConnect_CreateUserCallbackInfo = await EOSConnect.create_user(login_result.continuance_token)
-		if create_result.result_code != EOS.Success:
-			push_error("[SPIKE] EOSConnect create_user failed: ", EOS.result_to_string(create_result.result_code))
-			get_tree().quit(1)
-			return
-		_product_user_id = create_result.local_user_id
-	elif login_result.result_code != EOS.Success:
-		push_error("[SPIKE] EOSConnect login failed: ", EOS.result_to_string(login_result.result_code))
-		get_tree().quit(1)
-		return
-	else:
-		_product_user_id = login_result.local_user_id
+	_product_user_id = HAuth.product_user_id
 
 	print("[SPIKE] 1/5 PASS: Device ID login successful")
-	print("[SPIKE]    ProductUserId: ", _product_user_id.to_string())
+	print("[SPIKE]    ProductUserId: ", _product_user_id)
 	_tests_passed += 1
 	_setup_peer()
 
 
 func _login_dev_auth_tool() -> void:
-	var enum_names: PackedStringArray = ClassDB.class_get_enum_constants(&"EOSAuth", &"LoginCredentialType")
-	print("[SPIKE] EOSAuth LoginCredentialType enums: ", enum_names)
-	var login_type: int = _get_login_credential_type("LCT_Developer")
 	print("[SPIKE] Connecting to Dev Auth Tool at ", _dev_auth_host, " with credential: ", _credential_name)
-	var auth_login_credentials := EOSAuth_Credentials.new()
-	auth_login_credentials.type = login_type
-	auth_login_credentials.id = _dev_auth_host
-	auth_login_credentials.token = _credential_name
-
-	var auth_login_result: EOSAuth_LoginCallbackInfo = await EOSAuth.login(
-		auth_login_credentials,
-		EOSAuth.AS_BasicProfile | EOSAuth.AS_FriendsList | EOSAuth.AS_Presence,
-		0
-	)
-
-	if auth_login_result.result_code != EOS.Success:
-		push_error("[SPIKE] Dev Auth Tool login failed: ", EOS.result_to_string(auth_login_result.result_code))
+	var login_ok: bool = await HAuth.login_devtool_async(_dev_auth_host, _credential_name)
+	if not login_ok:
+		push_error("[SPIKE] EOSG Dev Auth Tool login failed")
 		get_tree().quit(1)
 		return
-
-	_epic_account_id = auth_login_result.local_user_id
+	_epic_account_id = HAuth.epic_account_id
+	_product_user_id = HAuth.product_user_id
 	print("[SPIKE] 1/5 PASS: Dev Auth Tool login successful")
 	print("[SPIKE]    EpicAccountId: ", _epic_account_id)
+	print("[SPIKE]    ProductUserId: ", _product_user_id)
 	_tests_passed += 1
-	_connect_login()
-
-
-func _get_login_credential_type(name: String) -> int:
-	return ClassDB.class_get_integer_constant(&"EOSAuth", name)
-
-
-func _connect_login() -> void:
-	var token := EOSAuth.copy_id_token(_epic_account_id)
-	if not is_instance_valid(token):
-		push_error("[SPIKE] Failed to copy ID token: ", EOS.result_to_string(EOS.get_last_result_code()))
-		get_tree().quit(1)
-		return
-
-	var connect_credentials := EOSConnect_Credentials.new()
-	connect_credentials.type = EOS.ECT_EPIC_ID_TOKEN
-	connect_credentials.token = token.json_web_token
-
-	var login_result: EOSConnect_LoginCallbackInfo = await EOSConnect.login(connect_credentials, EOSConnect_UserLoginInfo.new())
-	if login_result.result_code == EOS.InvalidUser:
-		var create_result: EOSConnect_CreateUserCallbackInfo = await EOSConnect.create_user(login_result.continuance_token)
-		if create_result.result_code != EOS.Success:
-			push_error("[SPIKE] EOSConnect create_user failed: ", EOS.result_to_string(create_result.result_code))
-			get_tree().quit(1)
-			return
-		_product_user_id = create_result.local_user_id
-	elif login_result.result_code != EOS.Success:
-		push_error("[SPIKE] EOSConnect login failed: ", EOS.result_to_string(login_result.result_code))
-		get_tree().quit(1)
-		return
-	else:
-		_product_user_id = login_result.local_user_id
-
-	print("[SPIKE] EOSConnect login successful")
 	_setup_peer()
 
 
 func _setup_peer() -> void:
-	_peer = EOSMultiplayerPeer.new()
+	_peer = EOSGMultiplayerPeer.new()
 	_peer.set_auto_accept_connection_requests(true)
 	_peer.peer_connected.connect(_on_peer_connected)
 	_peer.peer_disconnected.connect(_on_peer_disconnected)
 
-	var err: Error
+	var err
 	if _role == "host":
 		err = _peer.create_server(_room_code)
 		if err != OK:
@@ -262,9 +197,7 @@ func _setup_peer() -> void:
 			get_tree().quit(1)
 			return
 		print("[SPIKE] Loaded host ProductUserId string from file: ", host_user_id_str)
-		var host_user_id = EOSProductUserId.from_string(host_user_id_str)
-		print("[SPIKE] Parsed host EOSProductUserId valid: ", host_user_id.is_valid())
-		err = _peer.create_client(_room_code, host_user_id)
+		err = _peer.create_client(_room_code, host_user_id_str)
 		if err != OK:
 			push_error("[SPIKE] create_client failed: ", err)
 			get_tree().quit(1)
@@ -305,9 +238,9 @@ func _verify_acceptance_criteria() -> void:
 func _save_host_user_id() -> void:
 	var file := FileAccess.open(SPIKE_FILE, FileAccess.WRITE)
 	if file:
-		file.store_line(_product_user_id.to_string())
+		file.store_line(_product_user_id)
 		print("[SPIKE] Host info saved to: ", SPIKE_FILE)
-		print("[SPIKE]    ProductUserId: ", _product_user_id.to_string())
+		print("[SPIKE]    ProductUserId: ", _product_user_id)
 		file.close()
 
 
@@ -356,10 +289,10 @@ func _run_rpc_tests() -> void:
 		elapsed += 0.1
 
 	if _reliable_test_passed:
-		print("[SPIKE] 6/7 PASS: Reliable RPC test passed (10/10 received in order, no duplicates)")
+		print("[SPIKE] 6/9 PASS: Reliable RPC test passed (10/10 received in order, no duplicates)")
 		_tests_passed += 1
 	else:
-		push_error("[SPIKE] 6/7 FAIL: Reliable RPC test timed out or failed")
+		push_error("[SPIKE] 6/9 FAIL: Reliable RPC test timed out or failed")
 
 	print("[SPIKE] Running Unreliable RPC Test (60 messages)...")
 	_unreliable_client_sent_count = _unreliable_sent
@@ -383,13 +316,22 @@ func _run_rpc_tests() -> void:
 	])
 
 	if _unreliable_client_received_count > 0:
-		print("[SPIKE] 7/7 PASS: Unreliable RPC test passed (delivery count: %d/%d, latency: %.1fms)" % [
+		print("[SPIKE] 7/9 PASS: Unreliable RPC test passed (delivery count: %d/%d, latency: %.1fms)" % [
 			_unreliable_client_received_count, _unreliable_sent, avg_latency
 		])
 		_tests_passed += 1
 		_unreliable_test_passed = true
 	else:
-		push_error("[SPIKE] 7/7 FAIL: Unreliable RPC test received 0/%d messages" % _unreliable_sent)
+		push_error("[SPIKE] 7/9 FAIL: Unreliable RPC test received 0/%d messages" % _unreliable_sent)
+
+	_request_spawner_sync_tests.rpc_id(_connected_client_id)
+	var sync_elapsed := 0.0
+	while not _sync_client_ack_received and sync_elapsed < 20.0:
+		await get_tree().create_timer(0.1).timeout
+		sync_elapsed += 0.1
+
+	if not _sync_client_ack_received:
+		push_error("[SPIKE] 8/9 or 9/9 FAIL: Spawner/Synchronizer test timed out")
 
 	_print_results()
 
@@ -416,6 +358,8 @@ func _send_reliable_rpc(seq: int) -> void:
 
 		if ordered and unique:
 			print("[SPIKE HOST] Reliable RPC verification SUCCESS: 10/10 received in order, no duplicates.")
+			_reliable_test_passed = true
+			_tests_passed += 1
 			_notify_reliable_complete.rpc_id(sender_id, true)
 		else:
 			push_error("[SPIKE HOST] Reliable RPC verification FAILED: ordered=%s, unique=%s" % [ordered, unique])
@@ -431,6 +375,7 @@ func _notify_reliable_complete(success: bool) -> void:
 func _send_unreliable_rpc(seq: int, client_timestamp: int) -> void:
 	if not multiplayer.is_server():
 		return
+	_unreliable_host_received += 1
 	var sender_id := multiplayer.get_remote_sender_id()
 	_echo_unreliable_rpc.rpc_id(sender_id, seq, client_timestamp)
 
@@ -442,6 +387,154 @@ func _echo_unreliable_rpc(seq: int, client_timestamp: int) -> void:
 	_unreliable_latencies.append(latency)
 
 
+@rpc("any_peer", "reliable", "call_remote")
+func _request_spawner_sync_tests() -> void:
+	if not multiplayer.is_server():
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+
+	if _unreliable_host_received > 0:
+		_unreliable_test_passed = true
+		_tests_passed += 1
+		print("[SPIKE HOST] 7/9 PASS: Unreliable RPC host received %d/%d" % [_unreliable_host_received, _unreliable_sent])
+	else:
+		push_error("[SPIKE HOST] 7/9 FAIL: Unreliable RPC host received 0/%d" % _unreliable_sent)
+
+	print("")
+	print("========== 8/9: MultiplayerSpawner ==========")
+	var spawner := $Spawner as MultiplayerSpawner
+	_spawner_expected_count = multiplayer.get_peers().size()
+	if not spawner:
+		push_error("[SPIKE HOST] 8/9 FAIL: $Spawner node missing")
+		_spawner_host_passed = false
+	else:
+		spawner.add_spawnable_scene("res://tests/eosg_spike/spawnable_marker.tscn")
+		var marker_scene: PackedScene = load("res://tests/eosg_spike/spawnable_marker.tscn")
+		var spawn_root: Node = spawner.get_node(spawner.spawn_path)
+		var spawned_nodes: Array[Node3D] = []
+		for i in range(_spawner_expected_count):
+			var node := marker_scene.instantiate()
+			spawn_root.add_child(node, true)
+			if node is Node3D:
+				spawned_nodes.append(node)
+		if spawned_nodes.size() > 0:
+			_host_spawned_node = spawned_nodes[0]
+		_spawner_host_passed = $Root.get_child_count() == _spawner_expected_count
+		print("[SPIKE HOST] 8/9: spawned %d marker(s), $Root has %d" % [_spawner_expected_count, $Root.get_child_count()])
+
+	_spawner_client_ack_received = false
+	_verify_spawner_count.rpc_id(sender_id, _spawner_expected_count)
+
+	var elapsed := 0.0
+	while not _spawner_client_ack_received and elapsed < 5.0:
+		await get_tree().create_timer(0.1).timeout
+		elapsed += 0.1
+
+	_spawner_test_passed = _spawner_host_passed and _spawner_client_passed
+	if _spawner_test_passed:
+		_tests_passed += 1
+		print("[SPIKE HOST] 8/9 PASS: MultiplayerSpawner spawned one node per peer on host & client")
+	else:
+		push_error("[SPIKE HOST] 8/9 FAIL: spawner host=%s client=%s" % [_spawner_host_passed, _spawner_client_passed])
+
+	print("")
+	print("========== 9/9: MultiplayerSynchronizer ==========")
+	_sync_client_ack_received = false
+	if not is_instance_valid(_host_spawned_node):
+		push_error("[SPIKE HOST] 9/9 FAIL: no spawned node reference")
+		_sync_test_passed = false
+	else:
+		var target_pos := Vector3(42.0, 0.0, 0.0)
+		_host_spawned_node.position = target_pos
+		print("[SPIKE HOST] 9/9: set marker position to ", target_pos)
+		_verify_sync_position.rpc_id(sender_id, target_pos)
+
+		elapsed = 0.0
+		while not _sync_client_ack_received and elapsed < 5.0:
+			await get_tree().create_timer(0.1).timeout
+			elapsed += 0.1
+
+		_sync_test_passed = _sync_client_passed
+		if _sync_test_passed:
+			_tests_passed += 1
+			print("[SPIKE HOST] 9/9 PASS: MultiplayerSynchronizer replicated position to client")
+		else:
+			push_error("[SPIKE HOST] 9/9 FAIL: sync client match=%s" % _sync_client_passed)
+
+	_print_results()
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _verify_spawner_count(expected: int) -> void:
+	var elapsed := 0.0
+	var found := 0
+	while elapsed < 5.0:
+		found = $Root.get_child_count()
+		if found >= expected:
+			break
+		await get_tree().create_timer(0.1).timeout
+		elapsed += 0.1
+	_spawner_client_found = found
+	_spawner_expected_count = expected
+	_spawner_client_passed = found >= expected
+	print("[SPIKE CLIENT] 8/9: $Root has %d marker(s), expected %d" % [found, expected])
+	if _spawner_client_passed:
+		_spawner_test_passed = true
+		_tests_passed += 1
+		print("[SPIKE CLIENT] 8/9 PASS: MultiplayerSpawner replicated markers to client")
+	else:
+		push_error("[SPIKE CLIENT] 8/9 FAIL: expected %d marker(s), found %d" % [expected, found])
+	_spawner_count_ack.rpc_id(multiplayer.get_remote_sender_id(), _spawner_client_passed)
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _spawner_count_ack(passed: bool) -> void:
+	_spawner_client_ack_received = true
+	_spawner_client_passed = passed
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _verify_sync_position(target_pos: Vector3) -> void:
+	var marker := _find_spawned_marker()
+	var match_ok := false
+	var actual := Vector3()
+	var elapsed := 0.0
+	while elapsed < 5.0:
+		marker = _find_spawned_marker()
+		if is_instance_valid(marker):
+			actual = marker.position
+			if actual.distance_to(target_pos) < 0.1:
+				match_ok = true
+				break
+		await get_tree().create_timer(0.1).timeout
+		elapsed += 0.1
+	_sync_client_passed = match_ok
+	_sync_client_actual = actual
+	print("[SPIKE CLIENT] 9/9: expected %s, actual %s, match=%s" % [target_pos, actual, match_ok])
+	if _sync_client_passed:
+		_sync_test_passed = true
+		_tests_passed += 1
+		print("[SPIKE CLIENT] 9/9 PASS: MultiplayerSynchronizer replicated position to client")
+	else:
+		push_error("[SPIKE CLIENT] 9/9 FAIL: position not replicated")
+	_sync_position_ack.rpc_id(multiplayer.get_remote_sender_id(), match_ok, actual)
+	_sync_client_ack_received = true
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _sync_position_ack(matched: bool, actual: Vector3) -> void:
+	_sync_client_ack_received = true
+	_sync_client_passed = matched
+	_sync_client_actual = actual
+
+
+func _find_spawned_marker() -> Node3D:
+	for child in $Root.get_children():
+		if child is Node3D:
+			return child as Node3D
+	return null
+
+
 func _print_results() -> void:
 	var avg_lat := 0.0
 	if _unreliable_latencies.size() > 0:
@@ -449,6 +542,24 @@ func _print_results() -> void:
 		for l: int in _unreliable_latencies:
 			sum += l
 		avg_lat = sum / _unreliable_latencies.size()
+
+	var unreliable_received := _unreliable_client_received_count
+	if _role == "host":
+		unreliable_received = _unreliable_host_received
+
+	var reliable_note := "%d/10 received, in order, 0 duplicates" % _reliable_server_received.size()
+	if _role != "host":
+		reliable_note = "10/10 confirmed by host"
+
+	var spawner_note := "spawned %d marker(s), host=%s client=%s" % [
+		_spawner_expected_count,
+		_spawner_host_passed,
+		_spawner_client_passed,
+	]
+	if _role != "host":
+		spawner_note = "client saw %d of %d marker(s)" % [_spawner_client_found, _spawner_expected_count]
+
+	var sync_note := "expected (42,0,0), client got %s" % _sync_client_actual
 
 	print("")
 	print("========== EOSG Spike & RPC Verification Results ==========")
@@ -462,18 +573,26 @@ func _print_results() -> void:
 	print("| EOSMultiplayerPeer Creation | PASS | Multiplayer peer created and assigned |")
 	print("| Multiplayer Unique ID & Server Status | PASS | get_unique_id non-zero, is_server correct |")
 	print("| peer_connected Signal | PASS | P2P handshake established between peers |")
-	print("| Reliable RPC Test (10/10) | %s | %d/10 received, in order, 0 duplicates |" % ["PASS" if _reliable_test_passed else "FAIL", _reliable_server_received.size()])
+	print("| Reliable RPC Test (10/10) | %s | %s |" % ["PASS" if _reliable_test_passed else "FAIL", reliable_note])
 	print("| Unreliable RPC Test (60/60) | %s | %d/%d delivered (%.1f%%), avg latency ~%.1fms |" % [
 		"PASS" if _unreliable_test_passed else "FAIL",
-		_unreliable_client_received_count,
+		unreliable_received,
 		_unreliable_sent,
-		(float(_unreliable_client_received_count) / float(_unreliable_sent)) * 100.0 if _unreliable_sent > 0 else 0.0,
+		(float(unreliable_received) / float(_unreliable_sent)) * 100.0 if _unreliable_sent > 0 else 0.0,
 		avg_lat
+	])
+	print("| MultiplayerSpawner Test (per peer) | %s | %s |" % [
+		"PASS" if _spawner_test_passed else "FAIL",
+		spawner_note,
+	])
+	print("| MultiplayerSynchronizer Test (Vector3) | %s | %s |" % [
+		"PASS" if _sync_test_passed else "FAIL",
+		sync_note,
 	])
 	print("")
 
 	if _tests_passed >= _tests_total:
-		print("[SPIKE] ACCEPTANCE: All 7 criteria met successfully")
+		print("[SPIKE] ACCEPTANCE: All %d criteria met successfully" % _tests_total)
 		if _role == "host":
 			await get_tree().create_timer(1.0).timeout
 		get_tree().quit(0)

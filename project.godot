@@ -23,6 +23,9 @@ driver/mix_rate=48000
 
 game_manager="*res://autoloads/game_manager.gd"
 NetworkManager="*res://autoloads/network_manager.gd"
+EOSGRuntime="*res://addons/epic-online-services-godot/runtime.gd"
+HPlatform="*res://addons/epic-online-services-godot/heos/hplatform.gd"
+HAuth="*res://addons/epic-online-services-godot/heos/hauth.gd"
 
 [editor_plugins]
 
