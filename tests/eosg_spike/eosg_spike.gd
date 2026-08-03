@@ -408,19 +408,22 @@ func _request_spawner_sync_tests() -> void:
 		push_error("[SPIKE HOST] 8/9 FAIL: $Spawner node missing")
 		_spawner_host_passed = false
 	else:
-		spawner.add_spawnable_scene("res://tests/eosg_spike/spawnable_marker.tscn")
 		var marker_scene: PackedScene = load("res://tests/eosg_spike/spawnable_marker.tscn")
 		var spawn_root: Node = spawner.get_node(spawner.spawn_path)
-		var spawned_nodes: Array[Node3D] = []
-		for i in range(_spawner_expected_count):
-			var node := marker_scene.instantiate()
-			spawn_root.add_child(node, true)
-			if node is Node3D:
-				spawned_nodes.append(node)
-		if spawned_nodes.size() > 0:
-			_host_spawned_node = spawned_nodes[0]
-		_spawner_host_passed = $Root.get_child_count() == _spawner_expected_count
-		print("[SPIKE HOST] 8/9: spawned %d marker(s), $Root has %d" % [_spawner_expected_count, $Root.get_child_count()])
+		if not spawn_root:
+			push_error("[SPIKE HOST] 8/9 FAIL: spawner spawn_path '%s' resolves to null" % spawner.spawn_path)
+			_spawner_host_passed = false
+		else:
+			var spawned_nodes: Array[Node3D] = []
+			for i in range(_spawner_expected_count):
+				var node := marker_scene.instantiate()
+				spawn_root.add_child(node, true)
+				if node is Node3D:
+					spawned_nodes.append(node)
+			if spawned_nodes.size() > 0:
+				_host_spawned_node = spawned_nodes[0]
+			_spawner_host_passed = $Root.get_child_count() == _spawner_expected_count
+			print("[SPIKE HOST] 8/9: spawned %d marker(s), $Root has %d" % [_spawner_expected_count, $Root.get_child_count()])
 
 	_spawner_client_ack_received = false
 	_verify_spawner_count.rpc_id(sender_id, _spawner_expected_count)
@@ -464,7 +467,7 @@ func _request_spawner_sync_tests() -> void:
 	_print_results()
 
 
-@rpc("any_peer", "reliable", "call_remote")
+@rpc("authority", "reliable", "call_remote")
 func _verify_spawner_count(expected: int) -> void:
 	var elapsed := 0.0
 	var found := 0
@@ -493,7 +496,7 @@ func _spawner_count_ack(passed: bool) -> void:
 	_spawner_client_passed = passed
 
 
-@rpc("any_peer", "reliable", "call_remote")
+@rpc("authority", "reliable", "call_remote")
 func _verify_sync_position(target_pos: Vector3) -> void:
 	var marker := _find_spawned_marker()
 	var match_ok := false
