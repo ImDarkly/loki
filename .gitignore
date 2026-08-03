@@ -7,7 +7,7 @@ addons/
 
 # Third-party SDKs (download separately)
 thirdparty/
-build/*.exe
+build/
 
 # Environment variables
 # EOS credentials (downloaded separately, per-machine)
