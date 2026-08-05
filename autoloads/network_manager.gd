@@ -166,11 +166,34 @@ func _join_selected_lobby(code: String, host_lobby: HLobby) -> void:
 		multiplayer.connection_failed.connect(_on_async_connection_failed)
 
 
+func close_lobby() -> bool:
+	if lobby == null or not lobby.is_valid():
+		return true
+	var ok: bool
+	if lobby.is_owner():
+		ok = await lobby.destroy_async()
+	else:
+		ok = await lobby.leave_async()
+	if not ok:
+		push_error("NetworkManager: failed to close EOS lobby %s" % lobby.lobby_id)
+	lobby = null
+	return ok
+
+
 func disconnect_from_game() -> void:
+	if lobby and lobby.is_owner():
+		close_lobby()
 	if peer:
 		peer.close()
 		peer = null
 	multiplayer.multiplayer_peer = null
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		if lobby and lobby.is_owner():
+			await close_lobby()
+		get_tree().quit()
 
 
 func _on_connected_to_server() -> void:

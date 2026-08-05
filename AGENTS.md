@@ -75,7 +75,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Project-specific
 
-- Godot executable: `E:\Godot\Godot_v4.6.2-stable_win64.exe`
+- Godot executable: `C:\Godot\Godot_v4.6.2-stable_win64.exe`
 
 ## Project Conventions
 
@@ -110,7 +110,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - `chore/`, `prefactor/`, `slice-` for maintenance
 
 ### Running tests
-- `E:\Godot\Godot_v4.6.2-stable_win64.exe --headless --path . -s addons/gut/gut_cmdln.gd`
+- `C:\Godot\Godot_v4.6.2-stable_win64.exe --headless --path . -s addons/gut/gut_cmdln.gd`
 
 ## Startup Workflow
 
