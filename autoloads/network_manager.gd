@@ -11,6 +11,66 @@ var peer: ENetMultiplayerPeer
 var public_ip: String = ""
 var local_ip: String = ""
 
+const REQUIRED_ENV_KEYS: Array[String] = [
+	"PRODUCT_NAME", "PRODUCT_VERSION", "PRODUCT_ID", "SANDBOX_ID",
+	"DEPLOYMENT_ID", "CLIENT_ID", "CLIENT_SECRET", "ENCRYPTION_KEY",
+]
+
+
+# Call path is wired in a follow-up lobby slice (PRD eosg-networking-migration
+# Decision 6); login must complete before host_game()/join_game().
+func initialize_and_login_async() -> bool:
+	var creds := _load_credentials()
+	if creds == null:
+		return false
+
+	var setup_ok: bool = await HPlatform.setup_eos_async(creds)
+	if not setup_ok:
+		push_error("NetworkManager: EOS platform setup failed")
+		connection_failed_signal.emit()
+		return false
+
+	var login_ok: bool = await HAuth.login_anonymous_async("User_" + str(randi() % 1000))
+	if not login_ok:
+		push_error("NetworkManager: EOS anonymous login failed")
+		connection_failed_signal.emit()
+		return false
+
+	return true
+
+
+func _load_credentials() -> HCredentials:
+	var env_path: String = "res://.env"
+	if not FileAccess.file_exists(env_path):
+		env_path = "user://.env"
+	if not FileAccess.file_exists(env_path):
+		push_error("NetworkManager: .env not found")
+		connection_failed_signal.emit()
+		return null
+
+	var cfg := ConfigFile.new()
+	if cfg.load(env_path) != OK:
+		push_error("NetworkManager: failed to load .env")
+		connection_failed_signal.emit()
+		return null
+
+	for key in REQUIRED_ENV_KEYS:
+		if not cfg.has_section_key("", key) or cfg.get_value("", key).is_empty():
+			push_error("NetworkManager: missing or empty '%s' in .env" % key)
+			connection_failed_signal.emit()
+			return null
+
+	var creds := HCredentials.new()
+	creds.product_name = cfg.get_value("", "PRODUCT_NAME")
+	creds.product_version = cfg.get_value("", "PRODUCT_VERSION")
+	creds.product_id = cfg.get_value("", "PRODUCT_ID")
+	creds.sandbox_id = cfg.get_value("", "SANDBOX_ID")
+	creds.deployment_id = cfg.get_value("", "DEPLOYMENT_ID")
+	creds.client_id = cfg.get_value("", "CLIENT_ID")
+	creds.client_secret = cfg.get_value("", "CLIENT_SECRET")
+	creds.encryption_key = cfg.get_value("", "ENCRYPTION_KEY")
+	return creds
+
 
 func host_game(port: int = DEFAULT_PORT) -> void:
 	peer = ENetMultiplayerPeer.new()
