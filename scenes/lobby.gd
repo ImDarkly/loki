@@ -10,14 +10,14 @@ extends CanvasLayer
 @onready var ip_input: LineEdit = %IpInput
 @onready var port_input: SpinBox = %PortInput
 @onready var join_confirm_button: Button = %JoinConfirmButton
-@onready var ip_display: Label = %IpDisplay
-@onready var ip_display_row: HBoxContainer = %IpDisplayRow
-@onready var copy_ip_button: Button = %CopyIpButton
+@onready var code_display: Label = %IpDisplay
+@onready var code_row: HBoxContainer = %IpDisplayRow
+@onready var copy_code_button: Button = %CopyIpButton
 @onready var player_list: ItemList = %PlayerList
 @onready var status_label: Label = %StatusLabel
 @onready var start_button: Button = %StartButton
 
-var _displayed_ip: String = ""
+var _displayed_code: String = ""
 
 
 func _ready() -> void:
@@ -25,7 +25,7 @@ func _ready() -> void:
 	join_menu_button.pressed.connect(_on_join_menu_pressed)
 	join_confirm_button.pressed.connect(_on_join_confirm_pressed)
 	start_button.pressed.connect(_on_start_pressed)
-	copy_ip_button.pressed.connect(_on_copy_ip_pressed)
+	copy_code_button.pressed.connect(_on_copy_code_pressed)
 
 	game_manager.player_list_changed.connect(_on_player_list_changed)
 	NetworkManager.host_started.connect(_on_host_started)
@@ -41,7 +41,7 @@ func _show_main_menu() -> void:
 	main_menu.visible = true
 	lobby_view.visible = false
 	join_row.visible = false
-	ip_display_row.visible = false
+	code_row.visible = false
 	start_button.visible = false
 	status_label.text = ""
 	player_list.clear()
@@ -64,16 +64,15 @@ func _on_create_pressed() -> void:
 	join_menu_button.disabled = true
 	status_label.text = "Starting server..."
 
-	NetworkManager.host_game(int(port_input.value))
+	await NetworkManager.host_game()
 
 
-func _on_host_started(ip: String) -> void:
+func _on_host_started(room_code: String) -> void:
 	_show_lobby_view()
 
-	var public_ip := NetworkManager.public_ip
-	_displayed_ip = public_ip if not public_ip.is_empty() else ip
-	ip_display.text = "Your IP: " + _displayed_ip
-	ip_display_row.visible = true
+	_displayed_code = room_code
+	code_display.text = "Your code: " + _displayed_code
+	code_row.visible = true
 	start_button.visible = true
 	start_button.disabled = true
 
@@ -132,11 +131,11 @@ func _on_server_disconnected() -> void:
 	start_button.disabled = true
 
 
-func _on_copy_ip_pressed() -> void:
-	DisplayServer.clipboard_set(_displayed_ip)
-	copy_ip_button.text = "Copied!"
+func _on_copy_code_pressed() -> void:
+	DisplayServer.clipboard_set(_displayed_code)
+	copy_code_button.text = "Copied!"
 	await get_tree().create_timer(2.0).timeout
-	copy_ip_button.text = "Copy IP"
+	copy_code_button.text = "Copy code"
 
 
 func _on_player_list_changed() -> void:

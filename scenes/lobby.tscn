@@ -102,7 +102,7 @@ horizontal_alignment = 1
 [node name="CopyIpButton" type="Button" parent="CenterContainer/VBox/LobbyView/IpDisplayRow"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Copy IP"
+text = "Copy code"
 
 [node name="PlayersLabel" type="Label" parent="CenterContainer/VBox/LobbyView"]
 layout_mode = 2
