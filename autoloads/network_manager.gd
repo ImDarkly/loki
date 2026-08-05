@@ -3,8 +3,7 @@ extends Node
 signal host_started(room_code: String)
 signal connection_success()
 signal connection_failed_signal()
-
-const DEFAULT_PORT := 7777
+signal connection_candidates(candidates: Array[HLobby])
 
 # Must match the 4 spawn positions in player.gd; expanding beyond 4 needs new spawn points.
 const LOBBY_MAX_MEMBERS := 4
@@ -78,12 +77,19 @@ func _load_credentials() -> HCredentials:
 	return creds
 
 
+func _ensure_eos_ready_async() -> bool:
+	if _eos_ready:
+		return true
+	if not await initialize_and_login_async():
+		return false
+	_eos_ready = true
+	return true
+
+
 func host_game() -> void:
 	# Coroutine: awaits login, lobby, and peer setup even though callers fire-and-forget.
-	if not _eos_ready:
-		if not await initialize_and_login_async():
-			return
-		_eos_ready = true
+	if not await _ensure_eos_ready_async():
+		return
 
 	var room_code := str(generate_room_code())
 
@@ -114,10 +120,41 @@ func host_game() -> void:
 	host_started.emit(room_code)
 
 
-func join_game(address: String, port: int = DEFAULT_PORT) -> void:
-	var enet_peer := ENetMultiplayerPeer.new()
-	peer = enet_peer
-	var err := enet_peer.create_client(address, port)
+func join_game(code: String) -> void:
+	# Coroutine: awaits login, lobby search, lobby join, and peer setup even though callers fire-and-forget.
+	if not await _ensure_eos_ready_async():
+		return
+
+	var lobbies: Array[HLobby] = await HLobbies.search_by_bucket_id_async(code)
+	if lobbies == null or lobbies.is_empty():
+		push_error("NetworkManager: no lobby found for code '%s'" % code)
+		connection_failed_signal.emit()
+		return
+	if lobbies.size() > 1:
+		connection_candidates.emit(lobbies)
+		return
+
+	_join_selected_lobby(code, lobbies[0])
+
+
+func join_candidate(code: String, candidate: HLobby) -> void:
+	if not await _ensure_eos_ready_async():
+		return
+	_join_selected_lobby(code, candidate)
+
+
+func _join_selected_lobby(code: String, host_lobby: HLobby) -> void:
+	var joined: HLobby = await HLobbies.join_async(host_lobby)
+	if joined == null:
+		push_error("NetworkManager: failed to join EOS lobby")
+		connection_failed_signal.emit()
+		return
+	lobby = joined
+
+	var eos_peer := EOSGMultiplayerPeer.new()
+	eos_peer.set_auto_accept_connection_requests(true)
+	peer = eos_peer
+	var err := eos_peer.create_client(code, joined.owner_product_user_id)
 	if err != OK:
 		push_error("NetworkManager: create_client failed — error %d" % err)
 		connection_failed_signal.emit()

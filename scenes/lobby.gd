@@ -7,8 +7,7 @@ extends CanvasLayer
 @onready var create_button: Button = %CreateButton
 @onready var join_menu_button: Button = %JoinMenuButton
 @onready var join_row: HBoxContainer = %JoinRow
-@onready var ip_input: LineEdit = %IpInput
-@onready var port_input: SpinBox = %PortInput
+@onready var code_input: LineEdit = %CodeInput
 @onready var join_confirm_button: Button = %JoinConfirmButton
 @onready var code_display: Label = %IpDisplay
 @onready var code_row: HBoxContainer = %IpDisplayRow
@@ -18,6 +17,7 @@ extends CanvasLayer
 @onready var start_button: Button = %StartButton
 
 var _displayed_code: String = ""
+var _pending_candidates: Array[HLobby] = []
 
 
 func _ready() -> void:
@@ -31,6 +31,7 @@ func _ready() -> void:
 	NetworkManager.host_started.connect(_on_host_started)
 	NetworkManager.connection_success.connect(_on_connection_success)
 	NetworkManager.connection_failed_signal.connect(_on_connection_failed)
+	NetworkManager.connection_candidates.connect(_on_connection_candidates)
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
@@ -45,6 +46,9 @@ func _show_main_menu() -> void:
 	start_button.visible = false
 	status_label.text = ""
 	player_list.clear()
+	_pending_candidates = []
+	if player_list.item_clicked.is_connected(_on_candidate_picked):
+		player_list.item_clicked.disconnect(_on_candidate_picked)
 	create_button.disabled = false
 	join_menu_button.disabled = false
 	join_confirm_button.disabled = false
@@ -85,20 +89,51 @@ func _on_host_started(room_code: String) -> void:
 
 func _on_join_menu_pressed() -> void:
 	join_row.visible = true
-	ip_input.grab_focus()
+	code_input.grab_focus()
+
+
+func _validate_code() -> String:
+	var code := code_input.text.strip_edges()
+	if code.is_empty() or code.length() != 6 or not code.is_valid_int():
+		status_label.text = "Enter a 6-digit code"
+		return ""
+	return code
 
 
 func _on_join_confirm_pressed() -> void:
-	var ip := ip_input.text.strip_edges()
-	if ip.is_empty():
-		status_label.text = "Enter host IP"
+	var code := _validate_code()
+	if code.is_empty():
 		return
-	var port := int(port_input.value)
 
 	join_confirm_button.disabled = true
 	status_label.text = "Connecting..."
 
-	NetworkManager.join_game(ip, port)
+	NetworkManager.join_game(code)
+
+
+func _on_connection_candidates(candidates: Array[HLobby]) -> void:
+	_pending_candidates = candidates
+	_show_lobby_view()
+	player_list.clear()
+	for i in candidates.size():
+		var lobby: HLobby = candidates[i]
+		player_list.add_item("Lobby %d (%s)" % [i + 1, lobby.lobby_id])
+	status_label.text = "Multiple lobbies found — pick one."
+	start_button.visible = false
+	if not player_list.item_clicked.is_connected(_on_candidate_picked):
+		player_list.item_clicked.connect(_on_candidate_picked)
+
+
+func _on_candidate_picked(index: int, _at_position: Vector2, _mouse_button_index: int) -> void:
+	var code := _validate_code()
+	if code.is_empty():
+		return
+	var candidates := _pending_candidates
+	if index < 0 or index >= candidates.size():
+		return
+	if player_list.item_clicked.is_connected(_on_candidate_picked):
+		player_list.item_clicked.disconnect(_on_candidate_picked)
+	NetworkManager.join_candidate(code, candidates[index])
 
 
 func _on_connection_success() -> void:
@@ -112,6 +147,7 @@ func _on_connection_success() -> void:
 
 func _on_connection_failed() -> void:
 	push_error("Lobby: Connection failed")
+	_show_main_menu()
 	status_label.text = "Connection failed"
 	create_button.disabled = false
 	join_menu_button.disabled = false
