@@ -25,3 +25,7 @@ func test_generated_code_deterministic_with_same_seed() -> void:
 	var first: int = NetworkManager.generate_room_code(_seeded_rng())
 	var second: int = NetworkManager.generate_room_code(_seeded_rng())
 	assert_eq(first, second)
+
+
+func test_lobby_max_members_is_four() -> void:
+	assert_eq(NetworkManager.LOBBY_MAX_MEMBERS, 4)

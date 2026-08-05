@@ -6,7 +6,7 @@ signal connection_failed_signal()
 
 const DEFAULT_PORT := 7777
 
-# Provisional host lobby cap; final value owned by the capacity-clamp ticket.
+# Must match the 4 spawn positions in player.gd; expanding beyond 4 needs new spawn points.
 const LOBBY_MAX_MEMBERS := 4
 
 var peer: MultiplayerPeer
