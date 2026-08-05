@@ -1,15 +1,23 @@
 extends Node
 
-signal host_started(ip: String)
+signal host_started(room_code: String)
 signal connection_success()
 signal connection_failed_signal()
 
 const DEFAULT_PORT := 7777
-const MAX_CLIENTS := 16
 
-var peer: ENetMultiplayerPeer
-var public_ip: String = ""
-var local_ip: String = ""
+# Provisional host lobby cap; final value owned by the capacity-clamp ticket.
+const LOBBY_MAX_MEMBERS := 4
+
+var peer: MultiplayerPeer
+var lobby: HLobby
+var _eos_ready: bool = false
+
+
+static func generate_room_code(rng: RandomNumberGenerator = null) -> int:
+	if rng == null:
+		rng = RandomNumberGenerator.new()
+	return rng.randi_range(100000, 999999)
 
 const REQUIRED_ENV_KEYS: Array[String] = [
 	"PRODUCT_NAME", "PRODUCT_VERSION", "PRODUCT_ID", "SANDBOX_ID",
@@ -17,8 +25,6 @@ const REQUIRED_ENV_KEYS: Array[String] = [
 ]
 
 
-# Call path is wired in a follow-up lobby slice (PRD eosg-networking-migration
-# Decision 6); login must complete before host_game()/join_game().
 func initialize_and_login_async() -> bool:
 	var creds := _load_credentials()
 	if creds == null:
@@ -72,22 +78,46 @@ func _load_credentials() -> HCredentials:
 	return creds
 
 
-func host_game(port: int = DEFAULT_PORT) -> void:
-	peer = ENetMultiplayerPeer.new()
-	var err := peer.create_server(port, MAX_CLIENTS)
+func host_game() -> void:
+	# Coroutine: awaits login, lobby, and peer setup even though callers fire-and-forget.
+	if not _eos_ready:
+		if not await initialize_and_login_async():
+			return
+		_eos_ready = true
+
+	var room_code := str(generate_room_code())
+
+	var opts := EOS.Lobby.CreateLobbyOptions.new()
+	opts.bucket_id = room_code
+	opts.max_lobby_members = LOBBY_MAX_MEMBERS
+	opts.enable_rtc_room = false
+	lobby = await HLobbies.create_lobby_async(opts)
+	if not lobby:
+		push_error("NetworkManager: EOS lobby creation failed")
+		connection_failed_signal.emit()
+		return
+
+	var eos_peer := EOSGMultiplayerPeer.new()
+	eos_peer.set_auto_accept_connection_requests(true)
+	peer = eos_peer
+	# Assumed: the EOSG peer channel is keyed by the same code as the lobby bucket_id.
+	# Linkage is an open item in PRD Decision 3 (matches the EOSG spike).
+	var err := eos_peer.create_server(room_code)
 	if err != OK:
 		push_error("NetworkManager: create_server failed — error %d" % err)
+		await lobby.destroy_async()
+		lobby = null
+		peer = null
 		connection_failed_signal.emit()
 		return
 	multiplayer.multiplayer_peer = peer
-	_fetch_public_ip()
-	_find_local_ip()
-	host_started.emit(local_ip)
+	host_started.emit(room_code)
 
 
 func join_game(address: String, port: int = DEFAULT_PORT) -> void:
-	peer = ENetMultiplayerPeer.new()
-	var err := peer.create_client(address, port)
+	var enet_peer := ENetMultiplayerPeer.new()
+	peer = enet_peer
+	var err := enet_peer.create_client(address, port)
 	if err != OK:
 		push_error("NetworkManager: create_client failed — error %d" % err)
 		connection_failed_signal.emit()
@@ -104,21 +134,6 @@ func disconnect_from_game() -> void:
 		peer.close()
 		peer = null
 	multiplayer.multiplayer_peer = null
-	public_ip = ""
-	local_ip = ""
-
-
-func _fetch_public_ip() -> void:
-	var http := HTTPRequest.new()
-	add_child(http)
-	http.request_completed.connect(_on_ip_fetched.bind(http))
-	http.request("https://api.ipify.org")
-
-
-func _on_ip_fetched(result: int, _code: int, _headers: PackedStringArray, body: PackedByteArray, http: HTTPRequest) -> void:
-	if result == HTTPRequest.RESULT_SUCCESS:
-		public_ip = body.get_string_from_utf8().strip_edges()
-	http.queue_free()
 
 
 func _on_connected_to_server() -> void:
@@ -128,13 +143,3 @@ func _on_connected_to_server() -> void:
 func _on_async_connection_failed() -> void:
 	push_error("NetworkManager: async connection failed")
 	connection_failed_signal.emit()
-
-
-func _find_local_ip() -> void:
-	var addresses := IP.get_local_addresses()
-	for addr in addresses:
-		if addr.begins_with("192.168.") or addr.begins_with("10."):
-			local_ip = addr
-			return
-	if addresses.size() > 0:
-		local_ip = addresses[0]
