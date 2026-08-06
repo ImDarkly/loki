@@ -58,3 +58,12 @@ func test_stale_join_flag_resets_before_host_failure() -> void:
 	assert_false(lobby.join_row.visible, "Join row hidden on host-side failure")
 	assert_eq(lobby.status_label.text, "Connection failed")
 	assert_false(lobby.create_button.disabled, "Create button should be re-enabled")
+
+
+func test_candidate_pick_clears_pending_pool() -> void:
+	lobby.code_input.text = "123456"
+	var pool: Array[HLobby] = []
+	pool.append(HLobby.new())
+	lobby._pending_candidates = pool
+	lobby._on_candidate_picked(0, Vector2.ZERO, 1)
+	assert_true(lobby._pending_candidates.is_empty(), "Pool cleared after a pick so repeat clicks are ignored")

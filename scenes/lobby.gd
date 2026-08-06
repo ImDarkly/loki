@@ -147,6 +147,7 @@ func _on_candidate_picked(index: int, _at_position: Vector2, _mouse_button_index
 	var candidates := _pending_candidates
 	if index < 0 or index >= candidates.size():
 		return
+	_pending_candidates = []
 	NetworkManager.join_candidate(code, candidates[index])
 
 
