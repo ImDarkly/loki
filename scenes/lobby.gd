@@ -1,5 +1,8 @@
 extends CanvasLayer
 
+const CODE_LENGTH := 6
+const CODE_DIGITS := "0123456789"
+
 
 @onready var main_menu: VBoxContainer = %MainMenu
 @onready var lobby_view: VBoxContainer = %LobbyView
@@ -9,15 +12,16 @@ extends CanvasLayer
 @onready var join_row: HBoxContainer = %JoinRow
 @onready var code_input: LineEdit = %CodeInput
 @onready var join_confirm_button: Button = %JoinConfirmButton
-@onready var code_display: Label = %IpDisplay
-@onready var code_row: HBoxContainer = %IpDisplayRow
-@onready var copy_code_button: Button = %CopyIpButton
+@onready var code_display: Label = %CodeDisplay
+@onready var code_row: HBoxContainer = %CodeRow
+@onready var copy_code_button: Button = %CopyCodeButton
 @onready var player_list: ItemList = %PlayerList
 @onready var status_label: Label = %StatusLabel
 @onready var start_button: Button = %StartButton
 
 var _displayed_code: String = ""
 var _pending_candidates: Array[HLobby] = []
+var _joining: bool = false
 
 
 func _ready() -> void:
@@ -26,6 +30,9 @@ func _ready() -> void:
 	join_confirm_button.pressed.connect(_on_join_confirm_pressed)
 	start_button.pressed.connect(_on_start_pressed)
 	copy_code_button.pressed.connect(_on_copy_code_pressed)
+	code_input.text_changed.connect(_on_code_text_changed)
+	player_list.item_clicked.connect(_on_candidate_picked)
+	code_input.max_length = CODE_LENGTH
 
 	game_manager.player_list_changed.connect(_on_player_list_changed)
 	NetworkManager.host_started.connect(_on_host_started)
@@ -38,17 +45,16 @@ func _ready() -> void:
 	_show_main_menu()
 
 
-func _show_main_menu() -> void:
+func _show_main_menu(keep_join_row: bool = false) -> void:
 	main_menu.visible = true
 	lobby_view.visible = false
-	join_row.visible = false
+	join_row.visible = keep_join_row
 	code_row.visible = false
 	start_button.visible = false
 	status_label.text = ""
 	player_list.clear()
 	_pending_candidates = []
-	if player_list.item_clicked.is_connected(_on_candidate_picked):
-		player_list.item_clicked.disconnect(_on_candidate_picked)
+	_joining = false
 	create_button.disabled = false
 	join_menu_button.disabled = false
 	join_confirm_button.disabled = false
@@ -94,10 +100,19 @@ func _on_join_menu_pressed() -> void:
 
 func _validate_code() -> String:
 	var code := code_input.text.strip_edges()
-	if code.is_empty() or code.length() != 6 or not code.is_valid_int():
+	if code.is_empty() or code.length() != CODE_LENGTH or not code.is_valid_int():
 		status_label.text = "Enter a 6-digit code"
 		return ""
 	return code
+
+
+func _on_code_text_changed(new_text: String) -> void:
+	var cleaned := ""
+	for ch in new_text:
+		if ch in CODE_DIGITS:
+			cleaned += ch
+	if cleaned != new_text:
+		code_input.text = cleaned
 
 
 func _on_join_confirm_pressed() -> void:
@@ -107,6 +122,7 @@ func _on_join_confirm_pressed() -> void:
 
 	join_confirm_button.disabled = true
 	status_label.text = "Connecting..."
+	_joining = true
 
 	NetworkManager.join_game(code)
 
@@ -120,23 +136,23 @@ func _on_connection_candidates(candidates: Array[HLobby]) -> void:
 		player_list.add_item("Lobby %d (%s)" % [i + 1, lobby.lobby_id])
 	status_label.text = "Multiple lobbies found — pick one."
 	start_button.visible = false
-	if not player_list.item_clicked.is_connected(_on_candidate_picked):
-		player_list.item_clicked.connect(_on_candidate_picked)
 
 
 func _on_candidate_picked(index: int, _at_position: Vector2, _mouse_button_index: int) -> void:
+	if _pending_candidates.is_empty():
+		return
 	var code := _validate_code()
 	if code.is_empty():
 		return
 	var candidates := _pending_candidates
 	if index < 0 or index >= candidates.size():
 		return
-	if player_list.item_clicked.is_connected(_on_candidate_picked):
-		player_list.item_clicked.disconnect(_on_candidate_picked)
+	_pending_candidates = []
 	NetworkManager.join_candidate(code, candidates[index])
 
 
 func _on_connection_success() -> void:
+	_joining = false
 	_show_lobby_view()
 	status_label.text = "Connected to server..."
 	var name_text := username_input.text.strip_edges()
@@ -146,12 +162,13 @@ func _on_connection_success() -> void:
 
 
 func _on_connection_failed() -> void:
-	push_error("Lobby: Connection failed")
-	_show_main_menu()
-	status_label.text = "Connection failed"
-	create_button.disabled = false
-	join_menu_button.disabled = false
-	join_confirm_button.disabled = false
+	push_warning("Lobby: Connection failed")
+	if _joining:
+		_show_main_menu(true)
+		status_label.text = "Couldn't connect — check the code"
+	else:
+		_show_main_menu()
+		status_label.text = "Connection failed"
 
 
 func _on_peer_connected(_id: int) -> void:
@@ -168,10 +185,13 @@ func _on_server_disconnected() -> void:
 
 
 func _on_copy_code_pressed() -> void:
+	if _displayed_code.is_empty():
+		return
 	DisplayServer.clipboard_set(_displayed_code)
 	copy_code_button.text = "Copied!"
-	await get_tree().create_timer(2.0).timeout
-	copy_code_button.text = "Copy code"
+	copy_code_button.create_tween().tween_interval(2.0).tween_callback(
+		func() -> void: copy_code_button.text = "Copy code"
+	)
 
 
 func _on_player_list_changed() -> void:
