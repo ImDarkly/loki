@@ -1,8 +1,5 @@
 extends Node3D
 
-const WATER_HALF_SIZE: float = 25.0
-const WATER_CENTER: Vector3 = Vector3(0, 0, -7)
-const GROUND_HALF_SIZE: float = 40.0
 const NO_ROCK_INDEX: int = -1
 const _PLACEMENT_ATTEMPTS: int = 32
 const _RESPAWN_TICK: float = 1.0
@@ -104,10 +101,10 @@ func _pick_rock_position() -> Vector3:
 
 
 func _pick_random_rock_position() -> Vector3:
-	var cx := WATER_CENTER.x
-	var cz := WATER_CENTER.z
-	var wh := WATER_HALF_SIZE
-	var gh := GROUND_HALF_SIZE
+	var cx := MapConfig.MAP_CENTER.x
+	var cz := MapConfig.MAP_CENTER.z
+	var wh := MapConfig.FISHABLE_BAND_RADIUS
+	var gh := MapConfig.GROUND_HALF_SIZE
 	var strip := randi() % 4
 	match strip:
 		0:
@@ -126,10 +123,10 @@ func _is_valid_rock_position(candidate: Vector3) -> bool:
 
 
 func _is_on_land(candidate: Vector3) -> bool:
-	var cx: float = WATER_CENTER.x
-	var cz: float = WATER_CENTER.z
-	var wh: float = WATER_HALF_SIZE
-	var gh: float = GROUND_HALF_SIZE
+	var cx: float = MapConfig.MAP_CENTER.x
+	var cz: float = MapConfig.MAP_CENTER.z
+	var wh: float = MapConfig.FISHABLE_BAND_RADIUS
+	var gh: float = MapConfig.GROUND_HALF_SIZE
 	return abs(candidate.x - cx) <= gh and abs(candidate.z - cz) <= gh and (abs(candidate.x - cx) > wh or abs(candidate.z - cz) > wh)
 
 

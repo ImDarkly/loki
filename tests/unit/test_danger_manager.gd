@@ -97,6 +97,18 @@ func test_retreating_exits_boundary_transitions_to_waiting() -> void:
 	assert_eq(manager.current_state, 4, "Should be WAITING (4) after exiting boundary")
 
 
+func test_retreat_along_diagonal_transitions_to_waiting_at_radius() -> void:
+	manager.current_state = 0
+	manager._on_spawn_timer_timeout()
+	manager.current_state = 3
+	manager.spawn_position = Vector3(25, 0, 25)
+	manager.shark_node.position = Vector3(15, 0, 15)
+
+	manager._physics_process(10.0)
+
+	assert_eq(manager.current_state, 4, "Corners of the legacy square fall outside the circular fishable band")
+
+
 func test_return_timer_transitions_from_waiting_to_approaching() -> void:
 	manager.current_state = 4
 	manager._on_return_timer_timeout()
