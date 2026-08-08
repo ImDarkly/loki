@@ -109,6 +109,18 @@ func test_retreat_along_diagonal_transitions_to_waiting_at_radius() -> void:
 	assert_eq(manager.current_state, 4, "Corners of the legacy square fall outside the circular fishable band")
 
 
+func test_retreat_reaching_spawn_position_transitions_to_waiting() -> void:
+	manager.current_state = 0
+	manager._on_spawn_timer_timeout()
+	manager.current_state = 3
+	manager.spawn_position = MapConfig.MAP_CENTER + Vector3(MapConfig.FISHABLE_BAND_RADIUS - 1.0, 0, 0)
+	manager.shark_node.position = Vector3(20, 0, -7)
+
+	manager._physics_process(1.0)
+
+	assert_eq(manager.current_state, 4, "Reaching a spawn point inside the band should transition to WAITING")
+
+
 func test_return_timer_transitions_from_waiting_to_approaching() -> void:
 	manager.current_state = 4
 	manager._on_return_timer_timeout()

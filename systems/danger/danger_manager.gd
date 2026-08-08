@@ -181,13 +181,15 @@ func _process_retreating(delta: float) -> void:
 	var target := Vector3(spawn_position.x, 0, spawn_position.z)
 	var current := Vector3(shark_node.position.x, 0, shark_node.position.z)
 	var direction := (target - current).normalized()
-	var new_pos := shark_node.position + direction * initial_swim_speed * delta
+	var step := initial_swim_speed * delta
+	var new_pos := shark_node.position + direction * step
 	shark_node.position = new_pos
 
 	if direction.length_squared() > 0.001:
 		shark_node.look_at(shark_node.position + direction, Vector3.UP)
 
-	if not MapConfig.is_within_radius(new_pos, MapConfig.MAP_CENTER, MapConfig.FISHABLE_BAND_RADIUS):
+	var reached_spawn := new_pos.distance_to(target) <= step
+	if reached_spawn or not MapConfig.is_within_radius(new_pos, MapConfig.MAP_CENTER, MapConfig.FISHABLE_BAND_RADIUS):
 		shark_node.visible = false
 		current_state = State.WAITING
 		return_timer.start(randf_range(45.0, 90.0))
