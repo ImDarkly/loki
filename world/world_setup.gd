@@ -55,7 +55,7 @@ func setup_lighting() -> void:
 
 func setup_ground() -> void:
 	var mesh := PlaneMesh.new()
-	mesh.size = Vector2(80, 80)
+	mesh.size = Vector2(MapConfig.GROUND_HALF_SIZE * 2.0, MapConfig.GROUND_HALF_SIZE * 2.0)
 
 	_ground_mat = ORMMaterial3D.new()
 	_ground_mat.albedo_color = Color(0.90, 0.56, 0.31)
@@ -64,7 +64,7 @@ func setup_ground() -> void:
 	var ground := MeshInstance3D.new()
 	ground.mesh = mesh
 	ground.material_override = _ground_mat
-	ground.position = Vector3(0, -0.1, -7)
+	ground.position = Vector3(0, -0.1, MapConfig.MAP_CENTER.z)
 	add_child(ground)
 
 
@@ -72,10 +72,10 @@ func setup_ground_collision() -> void:
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
 	body.collision_mask = 2
-	body.position = Vector3(0, -0.35, -7)
+	body.position = Vector3(0, -0.35, MapConfig.MAP_CENTER.z)
 
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(80, 0.5, 80)
+	shape.size = Vector3(MapConfig.GROUND_HALF_SIZE * 2.0, 0.5, MapConfig.GROUND_HALF_SIZE * 2.0)
 
 	var collision := CollisionShape3D.new()
 	collision.shape = shape
@@ -85,7 +85,7 @@ func setup_ground_collision() -> void:
 
 func setup_water() -> void:
 	var mesh := PlaneMesh.new()
-	mesh.size = Vector2(50, 50)
+	mesh.size = Vector2(MapConfig.FISHABLE_BAND_RADIUS * 2.0, MapConfig.FISHABLE_BAND_RADIUS * 2.0)
 
 	_water_mat = ORMMaterial3D.new()
 	_water_mat.albedo_color = Color(0.04, 0.54, 0.56)
@@ -95,7 +95,7 @@ func setup_water() -> void:
 	var water := MeshInstance3D.new()
 	water.mesh = mesh
 	water.material_override = _water_mat
-	water.position = Vector3(0, 0, -7)
+	water.position = Vector3(0, 0, MapConfig.MAP_CENTER.z)
 	add_child(water)
 
 

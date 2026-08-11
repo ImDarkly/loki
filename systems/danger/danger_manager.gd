@@ -13,9 +13,6 @@ signal quota_penalty(amount: int)
 @export var min_spawn_distance_from_player: float = 12.0
 @export var shark_bite_damage: int = 2
 
-const WATER_HALF_SIZE: float = 25.0
-const WATER_CENTER: Vector3 = Vector3(0, 0, -7)
-
 var current_state: State = State.INACTIVE
 var player_ref: Node3D = null
 var shark_node: MeshInstance3D = null
@@ -86,20 +83,17 @@ func _spawn_shark() -> void:
 
 func _pick_spawn_position(target_player: Node3D) -> Vector3:
 	var player_pos := target_player.global_position
-	var half := WATER_HALF_SIZE
-	var cx := WATER_CENTER.x
-	var cz := WATER_CENTER.z
 
 	for attempt in 10:
-		var pos := _random_perimeter_point(half, cx, cz)
+		var pos := _random_perimeter_point()
 		var dist := Vector2(pos.x - player_pos.x, pos.z - player_pos.z).length()
 		if dist >= min_spawn_distance_from_player:
 			return pos
 
-	var best_pos := _random_perimeter_point(half, cx, cz)
+	var best_pos := _random_perimeter_point()
 	var best_dist := 0.0
 	for _i in 20:
-		var pos := _random_perimeter_point(half, cx, cz)
+		var pos := _random_perimeter_point()
 		var dist := Vector2(pos.x - player_pos.x, pos.z - player_pos.z).length()
 		if dist > best_dist:
 			best_dist = dist
@@ -107,18 +101,14 @@ func _pick_spawn_position(target_player: Node3D) -> Vector3:
 	return best_pos
 
 
-func _random_perimeter_point(half: float, cx: float, cz: float) -> Vector3:
-	var edge := randi() % 4
-	match edge:
-		0:
-			return Vector3(randf_range(cx - half, cx + half), 0, cz - half)
-		1:
-			return Vector3(randf_range(cx - half, cx + half), 0, cz + half)
-		2:
-			return Vector3(cx - half, 0, randf_range(cz - half, cz + half))
-		3:
-			return Vector3(cx + half, 0, randf_range(cz - half, cz + half))
-	return WATER_CENTER
+func _random_perimeter_point() -> Vector3:
+	var angle := randf() * TAU
+	var dir := Vector2(cos(angle), sin(angle))
+	return Vector3(
+		MapConfig.MAP_CENTER.x + dir.x * MapConfig.FISHABLE_BAND_RADIUS,
+		0,
+		MapConfig.MAP_CENTER.z + dir.y * MapConfig.FISHABLE_BAND_RADIUS
+	)
 
 
 func _create_shark_mesh() -> MeshInstance3D:
@@ -191,16 +181,15 @@ func _process_retreating(delta: float) -> void:
 	var target := Vector3(spawn_position.x, 0, spawn_position.z)
 	var current := Vector3(shark_node.position.x, 0, shark_node.position.z)
 	var direction := (target - current).normalized()
-	var new_pos := shark_node.position + direction * initial_swim_speed * delta
+	var step := initial_swim_speed * delta
+	var new_pos := shark_node.position + direction * step
 	shark_node.position = new_pos
 
 	if direction.length_squared() > 0.001:
 		shark_node.look_at(shark_node.position + direction, Vector3.UP)
 
-	var half := WATER_HALF_SIZE
-	var cx := WATER_CENTER.x
-	var cz := WATER_CENTER.z
-	if abs(new_pos.x - cx) > half or abs(new_pos.z - cz) > half:
+	var reached_spawn := new_pos.distance_to(target) <= step
+	if reached_spawn or not MapConfig.is_within_radius(new_pos, MapConfig.MAP_CENTER, MapConfig.FISHABLE_BAND_RADIUS):
 		shark_node.visible = false
 		current_state = State.WAITING
 		return_timer.start(randf_range(45.0, 90.0))

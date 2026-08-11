@@ -1,7 +1,5 @@
 extends Node3D
 
-const WATER_HALF_SIZE: float = 25.0
-const WATER_CENTER: Vector3 = Vector3(0, 0, -7)
 const NO_ZONE_INDEX: int = -1
 
 @export var min_zone_count: int = 6
@@ -79,7 +77,7 @@ func _pick_zone_center() -> Vector3:
 		if _is_valid_zone_position(candidate):
 			return candidate
 
-	return WATER_CENTER
+	return MapConfig.MAP_CENTER
 
 
 func _is_valid_zone_position(candidate: Vector3) -> bool:
@@ -199,10 +197,9 @@ func _is_valid_zone_position_excluding(candidate: Vector3, excluded_index: int) 
 
 
 func _is_within_water_boundary(candidate: Vector3) -> bool:
-	var half := WATER_HALF_SIZE - zone_radius - water_boundary_margin
-	var cx := WATER_CENTER.x
-	var cz := WATER_CENTER.z
-	return abs(candidate.x - cx) <= half and abs(candidate.z - cz) <= half
+	return MapConfig.is_within_radius(
+		candidate, MapConfig.MAP_CENTER, MapConfig.FISHABLE_BAND_RADIUS - zone_radius - water_boundary_margin
+	)
 
 
 func _is_clear_of_other_zones(candidate: Vector3, excluded_index: int) -> bool:
@@ -216,14 +213,10 @@ func _is_clear_of_other_zones(candidate: Vector3, excluded_index: int) -> bool:
 
 
 func _pick_random_zone_center() -> Vector3:
-	var half := WATER_HALF_SIZE - zone_radius - water_boundary_margin
-	var cx := WATER_CENTER.x
-	var cz := WATER_CENTER.z
-	return Vector3(
-		randf_range(cx - half, cx + half),
-		0,
-		randf_range(cz - half, cz + half)
-	)
+	var radius := MapConfig.FISHABLE_BAND_RADIUS - zone_radius - water_boundary_margin
+	var angle := randf() * TAU
+	var offset := Vector2(cos(angle), sin(angle)) * (radius * sqrt(randf()))
+	return Vector3(MapConfig.MAP_CENTER.x + offset.x, 0, MapConfig.MAP_CENTER.z + offset.y)
 
 
 func _ensure_zone_nodes() -> void:
