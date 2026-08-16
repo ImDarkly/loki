@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" path="res://systems/fishing/fishing_mechanic.tscn" id="2_jg4e3"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_manager.tscn" id="3_lh5f4"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/mic_level_bar.tscn" id="4_yshjx"]
-[ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_network.tscn" id="5_ih6f4"]
+[ext_resource type="PackedScene" path="res://systems/voice_chat/eos_voice_network.tscn" id="5_ih6f4"]
 [ext_resource type="Script" path="res://systems/health/health_label.gd" id="6_lm3n1"]
 [ext_resource type="PackedScene" path="res://systems/health/health_component.tscn" id="7_ok2f6"]
 

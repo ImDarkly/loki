@@ -14,6 +14,20 @@ var is_yelling: bool = false
 var _bus_index: int = -1
 var _bus_error_logged: bool = false
 var _mic_error_logged: bool = false
+var _capture: AudioEffectCapture = null
+
+
+func get_frames_available() -> int:
+	if _capture == null:
+		return 0
+	return _capture.get_frames_available()
+
+
+func get_captured_frames(max_frames: int) -> PackedVector2Array:
+	if _capture == null or _capture.get_frames_available() <= 0:
+		return PackedVector2Array()
+	var count := mini(max_frames, _capture.get_frames_available())
+	return _capture.get_buffer(count)
 
 
 func _process(_delta: float) -> void:
@@ -72,6 +86,7 @@ func _auto_create_bus() -> void:
 
 	var capture := AudioEffectCapture.new()
 	AudioServer.add_bus_effect(rec_idx, capture, 0)
+	_capture = capture
 
 	if not _has_input_devices():
 		_report_mic_unavailable()

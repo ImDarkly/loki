@@ -120,7 +120,7 @@ func is_server() -> bool:
 func start_game() -> void:
 	if not multiplayer.is_server():
 		return
-	await NetworkManager.close_lobby()
+	# Lobby stays open during gameplay: its RTC room carries the in-game voice chat.
 	var path := "res://scenes/main.tscn"
 	load_scene.rpc(path)
 	get_tree().change_scene_to_file(path)

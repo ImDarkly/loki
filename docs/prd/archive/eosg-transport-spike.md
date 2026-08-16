@@ -36,7 +36,7 @@ A three-slice verification spike in an isolated test project (`tests/eosg_spike/
 
 Install EOSG via the Godot Asset Library at a pinned release tag (v2.3.0), enable the plugin (EOSG ships `plugin.cfg`, unlike GD-EOS's auto-loading `.gdextension`), and fix the `export_presets.cfg` packaging. Scaffold `tests/eosg_spike/` with:
 - Epic Dev Auth Tool auth path (standalone — does not reuse `autoloads/eos_manager.gd`)
-- Credentials sourced from `.env` (`PRODUCT_ID`, `SANDBOX_ID`, `DEPLOYMENT_ID`, `CLIENT_ID`, `CLIENT_SECRET`, `ENCRYPTION_KEY`; field-name mapping to EOSG's credential struct confirmed empirically)
+- Credentials sourced from `eos_credentials.cfg` (`PRODUCT_ID`, `SANDBOX_ID`, `DEPLOYMENT_ID`, `CLIENT_ID`, `ENCRYPTION_KEY`; field-name mapping to EOSG's credential struct confirmed empirically)
 - `--role=host/client --room-code=X` CLI args
 - Peer connection through `EOSGMultiplayerPeer`
 - Verify `get_unique_id()` non-zero + distinct per peer, `peer_connected` fires on both sides, `is_server()` correct per role
@@ -122,4 +122,4 @@ If later EOSG verification slices stall (~2 days no concrete progress on a speci
 
 ## Blocking Prerequisite
 
-EOS product/sandbox/deployment/client credentials in Epic Dev Portal with **Peer2Peer**, **Lobby**, and **Connect** features enabled (per `eos-crossplay.md`). `.env` present next to the executable for auth at runtime. Slice 3 blocked by RPC Verification (#140) — closed.
+EOS product/sandbox/deployment/client credentials in Epic Dev Portal with **Peer2Peer**, **Lobby**, and **Connect** features enabled (per `eos-crossplay.md`). `eos_credentials.cfg` (a non-dotfile so it ships inside the embedded PCK — Godot's exporter never includes dotfiles like `.env`). Slice 3 blocked by RPC Verification (#140) — closed.

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://solo_driver4_1"]
+
+[ext_resource type="Script" path="res://tests/voice_crash_proof/solo_driver4.gd" id="1_solo4"]
+
+[node name="SoloDriver4" type="Node"]
+script = ExtResource("1_solo4")

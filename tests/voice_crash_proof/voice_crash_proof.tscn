@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://voicecrashproof1"]
+
+[ext_resource type="Script" path="res://tests/voice_crash_proof/voice_crash_proof.gd" id="1_proof"]
+
+[node name="VoiceCrashProof" type="Node3D"]
+script = ExtResource("1_proof")

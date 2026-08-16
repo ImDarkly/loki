@@ -17,7 +17,6 @@ var _product_id: String
 var _sandbox_id: String
 var _deployment_id: String
 var _client_id: String
-var _client_secret: String
 var _encryption_key: String
 
 var _peer: EOSGMultiplayerPeer
@@ -87,23 +86,23 @@ func _ready() -> void:
 
 
 func _load_credentials() -> void:
-	var env_path: String = "res://.env"
-	if not FileAccess.file_exists(env_path):
-		env_path = "user://.env"
-	if not FileAccess.file_exists(env_path):
-		push_error("[SPIKE] .env not found")
+	var cfg_path: String = "res://eos_credentials.cfg"
+	if not FileAccess.file_exists(cfg_path):
+		cfg_path = "user://eos_credentials.cfg"
+	if not FileAccess.file_exists(cfg_path):
+		push_error("[SPIKE] eos_credentials.cfg not found")
 		get_tree().quit(1)
 		return
 
 	var cfg: ConfigFile = ConfigFile.new()
-	if cfg.load(env_path) != OK:
-		push_error("[SPIKE] Failed to load .env")
+	if cfg.load(cfg_path) != OK:
+		push_error("[SPIKE] Failed to load eos_credentials.cfg")
 		get_tree().quit(1)
 		return
 
-	for key in ["PRODUCT_NAME", "PRODUCT_VERSION", "PRODUCT_ID", "SANDBOX_ID", "DEPLOYMENT_ID", "CLIENT_ID", "CLIENT_SECRET", "ENCRYPTION_KEY"]:
+	for key in ["PRODUCT_NAME", "PRODUCT_VERSION", "PRODUCT_ID", "SANDBOX_ID", "DEPLOYMENT_ID", "CLIENT_ID", "ENCRYPTION_KEY"]:
 		if not cfg.has_section_key("", key) or cfg.get_value("", key).is_empty():
-			push_error("[SPIKE] Missing or empty '%s' in .env" % key)
+			push_error("[SPIKE] Missing or empty '%s' in eos_credentials.cfg" % key)
 			get_tree().quit(1)
 			return
 
@@ -113,10 +112,9 @@ func _load_credentials() -> void:
 	_sandbox_id = cfg.get_value("", "SANDBOX_ID")
 	_deployment_id = cfg.get_value("", "DEPLOYMENT_ID")
 	_client_id = cfg.get_value("", "CLIENT_ID")
-	_client_secret = cfg.get_value("", "CLIENT_SECRET")
 	_encryption_key = cfg.get_value("", "ENCRYPTION_KEY")
 
-	print("[SPIKE] Credentials loaded from .env")
+	print("[SPIKE] Credentials loaded from eos_credentials.cfg")
 	_init_eos()
 
 
@@ -128,7 +126,6 @@ func _init_eos() -> void:
 	credentials.sandbox_id = _sandbox_id
 	credentials.deployment_id = _deployment_id
 	credentials.client_id = _client_id
-	credentials.client_secret = _client_secret
 	credentials.encryption_key = _encryption_key
 	var setup_ok: bool = await HPlatform.setup_eos_async(credentials)
 	if not setup_ok:
