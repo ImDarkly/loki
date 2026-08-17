@@ -263,3 +263,53 @@ func test_pull_spike_decays_after_linger() -> void:
 
 	var expected_normal_vel: float = 0.5
 	assert_true(abs(player.velocity.x) <= expected_normal_vel + 0.01, "After spike decays, velocity should return to 0.5-strength level")
+
+
+func test_fall_off_island_triggers_death() -> void:
+	player.global_position = Vector3(0, -5.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+
+	assert_lt(player.global_position.y, Player.FALL_DEATH_Y, "player should be below fall threshold")
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "player should be ALIVE")
+	assert_false(player._fell_off_island_reported, "fall flag should start false")
+
+	player._check_fell_off_island()
+
+	assert_true(player._fell_off_island_reported, "fall flag should be set after detection")
+
+	var hp := player.get_node("HealthComponent") as HealthComponent
+	assert_eq(hp.current_health, 0, "Falling off island should deplete health to 0")
+
+
+func test_above_threshold_does_not_trigger_fall() -> void:
+	player.global_position = Vector3(0, 2.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+
+	player._check_fell_off_island()
+
+	assert_false(player._fell_off_island_reported, "fall flag should stay false above threshold")
+	var hp := player.get_node("HealthComponent") as HealthComponent
+	assert_eq(hp.current_health, hp.max_health, "No damage should be taken above threshold")
+
+
+func test_fall_reports_only_once() -> void:
+	player.global_position = Vector3(0, -5.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+
+	player._check_fell_off_island()
+	var hp := player.get_node("HealthComponent") as HealthComponent
+	var first_health := hp.current_health
+
+	player._check_fell_off_island()
+	assert_eq(hp.current_health, first_health, "Repeated checks should not re-apply damage")
+	assert_true(player._fell_off_island_reported, "fall flag should remain set")
+
+
+func test_respawn_at_spawn() -> void:
+	player.spawn_index = 2
+	player.velocity = Vector3(10, 5, 10)
+	player._respawn_at_spawn()
+
+	var expected_pos := player._spawn_positions()[2]
+	assert_eq(player.position, expected_pos, "Player position should reset to designated spawn index")
+	assert_eq(player.velocity, Vector3.ZERO, "Player velocity should zero out on respawn")

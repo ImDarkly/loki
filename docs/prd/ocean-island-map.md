@@ -9,31 +9,32 @@ The playable map is currently a small, static square lake (a 50×50 water plane 
 ## Solution
 The lake becomes a large, effectively boundless ocean surrounding a small circular island at the center, sized to contain today's existing spawn points, shop hut, and storage box without moving any of them. The island sits visibly above the ocean's surface with a hard shoreline edge; players are physically confined to it, and walking off the edge drops them into the ocean, which is treated as a lethal fall that routes through the game's existing death/respawn flow — the same one the shark attack already uses. Fishing zones and the shark's spawn/patrol behavior keep operating at exactly the same range from shore as they do today, so day-one fishing feel doesn't change, only the world around it. All of the map's geometry (island size, fishable range, ocean extent, and center point) is consolidated into one small shared config that the four affected systems read from, instead of each keeping its own independent copy.
 ## User Stories
-1. As a player, I want to see a clear island of land surrounded by ocean, so that the map actually looks and feels like the ocean setting the game is going for.
-2. As a player, I want the ocean to feel like it goes on forever, so that the world feels bigger than a small enclosed pond.
-3. As a player, I want to walk right up to the island's shoreline without any invisible wall stopping me, so that the space feels open rather than artificially boxed in.
-4. As a player, I want to fall into the ocean and suffer a real consequence if I walk off the island's edge, so that the shoreline has actual stakes rather than being purely decorative.
-5. As a player, I want falling into the ocean to put me into the same down/spectate state as being attacked by the shark, so that failure states feel consistent across the game rather than introducing a brand-new mechanic.
-6. As a player, I want my existing spawn point, the shop hut, and the storage box to still be exactly where they are today, so that this map change doesn't disorient me or break my mental map of the space.
-7. As a player, I want fishing zones to still appear at the same range from shore I'm used to, so that casting and finding a bite doesn't suddenly feel farther away or harder to reach.
-8. As a player, I want the shark to still spawn and approach from roughly the same distance it does today, so that danger pacing doesn't change just because the ocean got bigger.
-9. As a player, I want to be able to find and pick up rocks anywhere across the island, so that repelling the shark stays just as viable as it is today.
-10. As a player in multiplayer, I want to see a teammate visibly fall into the ocean and go down, so that I understand what happened to them without needing to see their screen.
-11. As a developer, I want a single shared source of truth for the map's island/fishable/ocean radii and center point, so that the four systems that depend on map geometry can never silently drift out of sync with each other.
-12. As a developer, I want the island's visual mesh and its walkable collision shape to match exactly, so that players never see land they can't actually stand on, or a gap where they can walk on what looks like open water.
-13. As a developer, I want the ocean's far edge to be visually hidden (fog/skybox) rather than requiring an actual unbounded/streaming mesh, so that "neverending" is achieved without introducing new per-frame rendering complexity.
-14. As a developer, I want fall-into-ocean detection to run on the client that owns the player and report to the server via RPC, so that it follows the same client-detects/server-applies authority pattern the rest of the multiplayer code already uses (e.g. rock-throw repel).
-15. As a developer, I want the existing fishing-zone boundary test's hardcoded expectations to keep passing unmodified, so that this change doesn't require touching test literals that already correctly encode today's fishing range.
-16. As a developer, I want the rock-placement annulus logic (land-ring-outside-water) removed entirely in favor of a single island-radius check, so that the old two-plane topology's placement math doesn't linger as dead complexity after the redesign.
-17. As a developer, I want the new map constants named for what they actually represent (radii of a circular topology), so that the next person reading the code isn't misled by names like "half-size" describing what is now a radius.
-18. As a developer, I want the shared map config to be a plain constants-only script rather than a new autoload, so that it has no lifecycle, no `project.godot` registration, and no runtime state to reason about.
+1. As a developer, I want the shop hut moved to `(0, 0, -14)` on the island, so that it isn't stranded in open ocean now that `ISLAND_RADIUS = 10.0` no longer reaches its old position at `(5, 0, 5)`.
+2. As a player, I want to see a clear island of land surrounded by ocean, so that the map actually looks and feels like the ocean setting the game is going for.
+3. As a player, I want the ocean to feel like it goes on forever, so that the world feels bigger than a small enclosed pond.
+4. As a player, I want to walk right up to the island's shoreline without any invisible wall stopping me, so that the space feels open rather than artificially boxed in.
+5. As a player, I want to fall into the ocean and suffer a real consequence if I walk off the island's edge, so that the shoreline has actual stakes rather than being purely decorative.
+6. As a player, I want falling into the ocean to put me into the same down/spectate state as being attacked by the shark, so that failure states feel consistent across the game rather than introducing a brand-new mechanic.
+7. As a player, I want my existing spawn point, the shop hut, and the storage box to still be exactly where they are today, so that this map change doesn't disorient me or break my mental map of the space.
+8. As a player, I want fishing zones to still appear at the same range from shore I'm used to, so that casting and finding a bite doesn't suddenly feel farther away or harder to reach.
+9. As a player, I want the shark to still spawn and approach from roughly the same distance it does today, so that danger pacing doesn't change just because the ocean got bigger.
+10. As a player, I want to be able to find and pick up rocks anywhere across the island, so that repelling the shark stays just as viable as it is today.
+11. As a player in multiplayer, I want to see a teammate visibly fall into the ocean and go down, so that I understand what happened to them without needing to see their screen.
+12. As a developer, I want a single shared source of truth for the map's island/fishable/ocean radii and center point, so that the four systems that depend on map geometry can never silently drift out of sync with each other.
+13. As a developer, I want the island's visual mesh and its walkable collision shape to match exactly, so that players never see land they can't actually stand on, or a gap where they can walk on what looks like open water.
+14. As a developer, I want the ocean's far edge to be visually hidden (fog/skybox) rather than requiring an actual unbounded/streaming mesh, so that "neverending" is achieved without introducing new per-frame rendering complexity.
+15. As a developer, I want fall-into-ocean detection to run on the client that owns the player and report to the server via RPC, so that it follows the same client-detects/server-applies authority pattern the rest of the multiplayer code already uses (e.g. rock-throw repel).
+16. As a developer, I want the existing fishing-zone boundary test's hardcoded expectations to keep passing unmodified, so that this change doesn't require touching test literals that already correctly encode today's fishing range.
+17. As a developer, I want the rock-placement annulus logic (land-ring-outside-water) removed entirely in favor of a single island-radius check, so that the old two-plane topology's placement math doesn't linger as dead complexity after the redesign.
+18. As a developer, I want the new map constants named for what they actually represent (radii of a circular topology), so that the next person reading the code isn't misled by names like "half-size" describing what is now a radius.
+19. As a developer, I want the shared map config to be a plain constants-only script rather than a new autoload, so that it has no lifecycle, no `project.godot` registration, and no runtime state to reason about.
 ## Implementation Decisions
 ### Decision 1: Real Geometry Change, Not a Visual Reskin
 This is a genuine topology inversion — small island at the center, large ocean surrounding it — not a re-texturing of the existing square lake. It requires edits to the boundary-dependent logic in `DangerManager` (shark spawn/retreat), `ZoneManager` (fishing-zone placement), `RockManager` (land placement), and `world_setup.gd` (mesh/collision), not just their materials or scale.
 ### Decision 2: Centralized Map Config
 A new constants-only module holds `MAP_CENTER`, `ISLAND_RADIUS`, `FISHABLE_BAND_RADIUS`, and `OCEAN_RADIUS`. All four systems read from this single source instead of each keeping an independently duplicated copy, which is the drift risk that exists in the current code today (e.g. `rock_manager.gd`'s ground size and `world_setup.gd`'s ground mesh size are already the same number in two unlinked places).
 ### Decision 3: Island Sized to Contain the Existing Layout
-The island is circular, centered at today's existing water-center point, and sized to comfortably contain the current player spawn row, shop hut, and storage box without moving any of them. No entity transform in the main scene, and no spawn-position array, needs to change as part of this work.
+The island is circular, centered at today's existing water-center point, and sized to comfortably contain the current player spawn row and storage box without moving either of them. The shop hut is the one exception: at its current position `(5, 0, 5)` it sits `13.0` units from `MAP_CENTER (0, 0, -7)` — outside `ISLAND_RADIUS = 10.0` — so it is relocated to `(0, 0, -14)` (`7.0` units from center, ~1.9 units of margin including its roof footprint) as part of this work. No other entity transform in the main scene, and no spawn-position array, needs to change.
 ### Decision 4: Large-but-Finite Ocean, Not a Truly Unbounded Mesh
 "Neverending" is achieved with a much larger (but still finite) ocean plane combined with fog/skybox hiding the horizon — not a camera-relative recentering mesh or a shader-based infinite ocean. This keeps every boundary-dependent system's existing distance-based math working unmodified, just against bigger numbers.
 ### Decision 5: Distinct Fishable-Band Radius
@@ -62,9 +63,10 @@ A second small module extracts the "is this point within radius X of the map cen
 The old square-topology names (`WATER_HALF_SIZE`, `GROUND_HALF_SIZE`) are replaced with names describing the new circular topology (`ISLAND_RADIUS`, `FISHABLE_BAND_RADIUS`, `OCEAN_RADIUS`, `MAP_CENTER`). None of the existing tests reference these constants by name directly, so the rename carries no test risk.
 ### Final Values
 - `MAP_CENTER = Vector3(0, 0, -7)` — unchanged from today
-- `ISLAND_RADIUS = 10.0` — clears the existing shop hut / storage box footprint with margin
+- `ISLAND_RADIUS = 10.0` — clears the existing spawn row and storage box footprint with margin; the shop hut is relocated (see Decision 3) rather than accommodated in place
 - `FISHABLE_BAND_RADIUS = 25.0` — unchanged from today's water extent (see Decision 8)
 - `OCEAN_RADIUS = 120.0` — roughly 5x the fishable band, large enough that its edge is well outside where fog/skybox already hide it
+- Shop hut relocated to `(0, 0, -14)` in `scenes/main.tscn` (was `(5, 0, 5)`) as the one entity-position change this PRD requires
 ## Testing Decisions
 Consistent with this project's existing precedent (`test_zone_manager.gd`, `test_rock_manager.gd`, `test_danger_manager.gd`): tests exercise external behavior — state transitions, distance/boundary checks, signals emitted — not rendering, physics feel, or hardware input.
 - **Covered:** the new shared island-geometry helper gets dedicated unit tests covering boundary conditions (exactly at radius, just inside, just outside) for both the island and fishable-band checks — this is the one genuinely new piece of testable-in-isolation logic in this change.

@@ -101,21 +101,9 @@ func _pick_rock_position() -> Vector3:
 
 
 func _pick_random_rock_position() -> Vector3:
-	var cx := MapConfig.MAP_CENTER.x
-	var cz := MapConfig.MAP_CENTER.z
-	var wh := MapConfig.FISHABLE_BAND_RADIUS
-	var gh := MapConfig.GROUND_HALF_SIZE
-	var strip := randi() % 4
-	match strip:
-		0:
-			return Vector3(randf_range(cx - gh, cx + gh), 0, randf_range(cz + wh, cz + gh))
-		1:
-			return Vector3(randf_range(cx - gh, cx + gh), 0, randf_range(cz - gh, cz - wh))
-		2:
-			return Vector3(randf_range(cx - gh, cx - wh), 0, randf_range(cz - wh, cz + wh))
-		3:
-			return Vector3(randf_range(cx + wh, cx + gh), 0, randf_range(cz - wh, cz + wh))
-	return Vector3(0, 0, 0)
+	var angle := randf() * TAU
+	var offset := Vector2(cos(angle), sin(angle)) * (MapConfig.ISLAND_RADIUS * sqrt(randf()))
+	return Vector3(MapConfig.MAP_CENTER.x + offset.x, 0, MapConfig.MAP_CENTER.z + offset.y)
 
 
 func _is_valid_rock_position(candidate: Vector3) -> bool:
@@ -123,11 +111,7 @@ func _is_valid_rock_position(candidate: Vector3) -> bool:
 
 
 func _is_on_land(candidate: Vector3) -> bool:
-	var cx: float = MapConfig.MAP_CENTER.x
-	var cz: float = MapConfig.MAP_CENTER.z
-	var wh: float = MapConfig.FISHABLE_BAND_RADIUS
-	var gh: float = MapConfig.GROUND_HALF_SIZE
-	return abs(candidate.x - cx) <= gh and abs(candidate.z - cz) <= gh and (abs(candidate.x - cx) > wh or abs(candidate.z - cz) > wh)
+	return MapConfig.is_within_radius(candidate, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS)
 
 
 func _is_clear_of_other_rocks(candidate: Vector3) -> bool:
