@@ -113,7 +113,7 @@ func _is_valid_rock_position(candidate: Vector3) -> bool:
 
 
 func _is_on_land(candidate: Vector3) -> bool:
-	return MapConfig.is_within_radius(candidate, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS)
+	return MapConfig.is_within_radius(candidate, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS - ROCK_HALF_EXTENT)
 
 
 func _is_clear_of_other_rocks(candidate: Vector3) -> bool:

@@ -522,6 +522,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if player_state == PlayerState.SPECTATE:
+		# Freeze the body at the waterline so a fallen corpse doesn't sink into the void.
 		if global_position.y <= FALL_DEATH_Y:
 			velocity = Vector3.ZERO
 			move_and_slide()
@@ -747,6 +748,7 @@ func _on_restart() -> void:
 	if hp:
 		hp.reset_to_max()
 	_spectate_target = null
+	# Reposition to a spawn: without it, a fall-death in the ocean would instantly re-trigger the fall check.
 	_respawn_at_spawn()
 	if get_multiplayer_authority() != multiplayer.get_unique_id():
 		return
@@ -770,8 +772,7 @@ func _setup_authority_from_name() -> void:
 			spawn_index = i
 			break
 
-	var spawns := _spawn_positions()
-	position = spawns[spawn_index] if spawn_index < spawns.size() else spawns[0]
+	_respawn_at_spawn()
 
 
 static func _spawn_positions() -> Array[Vector3]:
@@ -805,6 +806,7 @@ func _check_fell_off_island() -> void:
 			report_fell_off_island(global_position)
 
 
+# "authority" (not "any_peer"): only the node's owner may report a fall, so no peer can remotely kill another player.
 @rpc("authority", "reliable", "call_remote")
 func report_fell_off_island(fell_position: Vector3) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
