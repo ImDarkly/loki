@@ -3,7 +3,6 @@ extends Node
 const MAIN := preload("res://scenes/main.tscn")
 
 func _ready() -> void:
-	# NO multiplayer peer at all.
 	game_manager.add_player(1, "Host")
 	game_manager.add_player(2, "Player_2")
 	print("PROOF[solo2]: mounting main.tscn, NO network peer")

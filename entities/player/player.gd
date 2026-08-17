@@ -522,7 +522,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if player_state == PlayerState.SPECTATE:
-		# Freeze the body at the waterline so a fallen corpse doesn't sink into the void.
 		if global_position.y <= FALL_DEATH_Y:
 			velocity = Vector3.ZERO
 			move_and_slide()
@@ -806,7 +805,7 @@ func _check_fell_off_island() -> void:
 			report_fell_off_island(global_position)
 
 
-# "authority" (not "any_peer"): only the node's owner may report a fall, so no peer can remotely kill another player.
+# authority, not any_peer: blocks one peer remotely killing another player's node.
 @rpc("authority", "reliable", "call_remote")
 func report_fell_off_island(fell_position: Vector3) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():

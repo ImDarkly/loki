@@ -17,7 +17,6 @@ func _ready() -> void:
 		multiplayer.multiplayer_peer = peer
 		game_manager.add_player(1, "Host")
 		multiplayer.peer_connected.connect(_on_host_peer_connected)
-		# When client is in and ready, start the real game flow.
 	else:
 		var peer := ENetMultiplayerPeer.new()
 		var err := peer.create_client("127.0.0.1", PORT)
