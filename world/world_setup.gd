@@ -5,6 +5,8 @@ var _sky_material: ProceduralSkyMaterial
 var _directional_light: DirectionalLight3D
 var _ground_mat: ORMMaterial3D
 var _water_mat: ORMMaterial3D
+var _round_manager: Node = null
+var _fps_label: Label = null
 var _last_fishing_active: bool = false
 
 
@@ -37,8 +39,8 @@ func setup_environment() -> void:
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.56, 0.83, 1.0)
-	env.fog_density = 0.012
-	env.fog_sky_affect = 0.2
+	env.fog_density = 0.02
+	env.fog_sky_affect = 0.05
 
 	var world_env := WorldEnvironment.new()
 	world_env.environment = env
@@ -120,17 +122,18 @@ func _add_fps_counter() -> void:
 	label.position = Vector2(10, 50)
 	layer.add_child(label)
 	add_child(layer)
+	_fps_label = label
 
 
 func _process(_delta: float) -> void:
-	var label := get_node_or_null("FPSLayer/FPSLabel")
-	if label:
-		label.text = "FPS: %d" % Engine.get_frames_per_second()
+	if _fps_label:
+		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
-	var rm := get_node_or_null("/root/main/RoundManager")
-	if rm and rm.fishing_active != _last_fishing_active:
-		_last_fishing_active = rm.fishing_active
-		if rm.fishing_active:
+	if _round_manager == null:
+		_round_manager = get_node_or_null("/root/main/RoundManager")
+	if _round_manager and _round_manager.fishing_active != _last_fishing_active:
+		_last_fishing_active = _round_manager.fishing_active
+		if _round_manager.fishing_active:
 			_apply_night()
 		else:
 			_apply_day()
@@ -150,8 +153,9 @@ func _apply_night() -> void:
 func _apply_day() -> void:
 	_sky_material.sky_top_color = Color(0.30, 0.61, 0.90)
 	_sky_material.sky_horizon_color = Color(0.56, 0.83, 1.0)
-	_sky_material.ground_horizon_color = Color(0.67, 0.58, 0.48)
-	_sky_material.ground_bottom_color = Color(0.48, 0.19, 0.27)
+	_sky_material.ground_horizon_color = Color(0.04, 0.54, 0.56)
+	_sky_material.ground_bottom_color = Color(0.02, 0.25, 0.30)
+	_sky_material.ground_curve = 0.4
 	_directional_light.light_energy = 1.0
 	_directional_light.light_color = Color.WHITE
 	_ground_mat.albedo_color = Color(0.90, 0.56, 0.31)

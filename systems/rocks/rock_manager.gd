@@ -3,6 +3,7 @@ extends Node3D
 const NO_ROCK_INDEX: int = -1
 const _PLACEMENT_ATTEMPTS: int = 32
 const _RESPAWN_TICK: float = 1.0
+const ROCK_HALF_EXTENT: float = 0.25
 
 @export var rock_count: int = 15
 @export var min_rock_spacing: float = 2.0
@@ -102,7 +103,8 @@ func _pick_rock_position() -> Vector3:
 
 func _pick_random_rock_position() -> Vector3:
 	var angle := randf() * TAU
-	var offset := Vector2(cos(angle), sin(angle)) * (MapConfig.ISLAND_RADIUS * sqrt(randf()))
+	var max_radius := MapConfig.ISLAND_RADIUS - ROCK_HALF_EXTENT
+	var offset := Vector2(cos(angle), sin(angle)) * (max_radius * sqrt(randf()))
 	return Vector3(MapConfig.MAP_CENTER.x + offset.x, 0, MapConfig.MAP_CENTER.z + offset.y)
 
 

@@ -522,6 +522,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if player_state == PlayerState.SPECTATE:
+		if global_position.y <= FALL_DEATH_Y:
+			velocity = Vector3.ZERO
+			move_and_slide()
+			return
 		if not is_on_floor():
 			velocity.y -= _gravity * delta
 		else:
@@ -796,14 +800,16 @@ func _check_fell_off_island() -> void:
 	if global_position.y < FALL_DEATH_Y:
 		_fell_off_island_reported = true
 		if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-			report_fell_off_island.rpc()
+			report_fell_off_island.rpc(global_position)
 		else:
-			report_fell_off_island()
+			report_fell_off_island(global_position)
 
 
-@rpc("any_peer", "reliable", "call_remote")
-func report_fell_off_island() -> void:
+@rpc("authority", "reliable", "call_remote")
+func report_fell_off_island(fell_position: Vector3) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if fell_position.y >= FALL_DEATH_Y:
 		return
 	if _health_component:
 		_health_component.take_damage(_health_component.max_health)

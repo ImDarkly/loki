@@ -305,6 +305,35 @@ func test_fall_reports_only_once() -> void:
 	assert_true(player._fell_off_island_reported, "fall flag should remain set")
 
 
+func test_fall_enters_spectate() -> void:
+	player.global_position = Vector3(0, -5.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+
+	player._check_fell_off_island()
+
+	assert_eq(player.player_state, Player.PlayerState.SPECTATE, "Falling off island should enter spectate")
+
+
+func test_fall_drops_carried_fish() -> void:
+	player.start_carrying()
+	player.global_position = Vector3(0, -5.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+
+	player._check_fell_off_island()
+
+	assert_false(player.is_carrying, "Carried fish should be dropped when falling to death")
+
+
+func test_report_validates_position() -> void:
+	player.report_fell_off_island(Vector3(0, -5.0, 0))
+	var hp := player.get_node("HealthComponent") as HealthComponent
+	assert_eq(hp.current_health, 0, "Report from below threshold should damage")
+
+	hp.reset_to_max()
+	player.report_fell_off_island(Vector3(0, 0, 0))
+	assert_eq(hp.current_health, hp.max_health, "Report from above threshold should be ignored")
+
+
 func test_respawn_at_spawn() -> void:
 	player.spawn_index = 2
 	player.velocity = Vector3(10, 5, 10)
