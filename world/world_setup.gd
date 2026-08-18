@@ -5,6 +5,8 @@ var _sky_material: ProceduralSkyMaterial
 var _directional_light: DirectionalLight3D
 var _ground_mat: ORMMaterial3D
 var _water_mat: ORMMaterial3D
+var _round_manager: Node = null
+var _fps_label: Label = null
 var _last_fishing_active: bool = false
 
 
@@ -23,9 +25,9 @@ func setup_environment() -> void:
 	_sky_material.sky_top_color = Color(0.30, 0.61, 0.90)
 	_sky_material.sky_horizon_color = Color(0.56, 0.83, 1.0)
 	_sky_material.sky_curve = 0.15
-	_sky_material.ground_horizon_color = Color(0.67, 0.58, 0.48)
-	_sky_material.ground_bottom_color = Color(0.48, 0.19, 0.27)
-	_sky_material.ground_curve = 0.02
+	_sky_material.ground_horizon_color = Color(0.04, 0.54, 0.56)
+	_sky_material.ground_bottom_color = Color(0.02, 0.25, 0.30)
+	_sky_material.ground_curve = 0.4
 
 	var sky := Sky.new()
 	sky.sky_material = _sky_material
@@ -35,6 +37,10 @@ func setup_environment() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.fog_enabled = true
+	env.fog_light_color = Color(0.56, 0.83, 1.0)
+	env.fog_density = 0.02
+	env.fog_sky_affect = 0.05
 
 	var world_env := WorldEnvironment.new()
 	world_env.environment = env
@@ -54,8 +60,11 @@ func setup_lighting() -> void:
 
 
 func setup_ground() -> void:
-	var mesh := PlaneMesh.new()
-	mesh.size = Vector2(MapConfig.GROUND_HALF_SIZE * 2.0, MapConfig.GROUND_HALF_SIZE * 2.0)
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = MapConfig.ISLAND_RADIUS
+	mesh.bottom_radius = MapConfig.ISLAND_RADIUS
+	mesh.height = 1.0
+	mesh.radial_segments = 48
 
 	_ground_mat = ORMMaterial3D.new()
 	_ground_mat.albedo_color = Color(0.90, 0.56, 0.31)
@@ -64,7 +73,7 @@ func setup_ground() -> void:
 	var ground := MeshInstance3D.new()
 	ground.mesh = mesh
 	ground.material_override = _ground_mat
-	ground.position = Vector3(0, -0.1, MapConfig.MAP_CENTER.z)
+	ground.position = Vector3(0, -0.5, MapConfig.MAP_CENTER.z)
 	add_child(ground)
 
 
@@ -72,10 +81,11 @@ func setup_ground_collision() -> void:
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
 	body.collision_mask = 2
-	body.position = Vector3(0, -0.35, MapConfig.MAP_CENTER.z)
+	body.position = Vector3(0, -0.5, MapConfig.MAP_CENTER.z)
 
-	var shape := BoxShape3D.new()
-	shape.size = Vector3(MapConfig.GROUND_HALF_SIZE * 2.0, 0.5, MapConfig.GROUND_HALF_SIZE * 2.0)
+	var shape := CylinderShape3D.new()
+	shape.radius = MapConfig.ISLAND_RADIUS
+	shape.height = 1.0
 
 	var collision := CollisionShape3D.new()
 	collision.shape = shape
@@ -85,7 +95,7 @@ func setup_ground_collision() -> void:
 
 func setup_water() -> void:
 	var mesh := PlaneMesh.new()
-	mesh.size = Vector2(MapConfig.FISHABLE_BAND_RADIUS * 2.0, MapConfig.FISHABLE_BAND_RADIUS * 2.0)
+	mesh.size = Vector2(MapConfig.OCEAN_RADIUS * 2.0, MapConfig.OCEAN_RADIUS * 2.0)
 
 	_water_mat = ORMMaterial3D.new()
 	_water_mat.albedo_color = Color(0.04, 0.54, 0.56)
@@ -95,7 +105,7 @@ func setup_water() -> void:
 	var water := MeshInstance3D.new()
 	water.mesh = mesh
 	water.material_override = _water_mat
-	water.position = Vector3(0, 0, MapConfig.MAP_CENTER.z)
+	water.position = Vector3(0, -0.5, MapConfig.MAP_CENTER.z)
 	add_child(water)
 
 
@@ -112,17 +122,18 @@ func _add_fps_counter() -> void:
 	label.position = Vector2(10, 50)
 	layer.add_child(label)
 	add_child(layer)
+	_fps_label = label
 
 
 func _process(_delta: float) -> void:
-	var label := get_node_or_null("FPSLayer/FPSLabel")
-	if label:
-		label.text = "FPS: %d" % Engine.get_frames_per_second()
+	if _fps_label:
+		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
-	var rm := get_node_or_null("/root/main/RoundManager")
-	if rm and rm.fishing_active != _last_fishing_active:
-		_last_fishing_active = rm.fishing_active
-		if rm.fishing_active:
+	if _round_manager == null:
+		_round_manager = get_node_or_null("/root/main/RoundManager")
+	if _round_manager and _round_manager.fishing_active != _last_fishing_active:
+		_last_fishing_active = _round_manager.fishing_active
+		if _round_manager.fishing_active:
 			_apply_night()
 		else:
 			_apply_day()
@@ -142,8 +153,9 @@ func _apply_night() -> void:
 func _apply_day() -> void:
 	_sky_material.sky_top_color = Color(0.30, 0.61, 0.90)
 	_sky_material.sky_horizon_color = Color(0.56, 0.83, 1.0)
-	_sky_material.ground_horizon_color = Color(0.67, 0.58, 0.48)
-	_sky_material.ground_bottom_color = Color(0.48, 0.19, 0.27)
+	_sky_material.ground_horizon_color = Color(0.04, 0.54, 0.56)
+	_sky_material.ground_bottom_color = Color(0.02, 0.25, 0.30)
+	_sky_material.ground_curve = 0.4
 	_directional_light.light_energy = 1.0
 	_directional_light.light_color = Color.WHITE
 	_ground_mat.albedo_color = Color(0.90, 0.56, 0.31)

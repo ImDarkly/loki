@@ -189,9 +189,9 @@ func _on_copy_code_pressed() -> void:
 		return
 	DisplayServer.clipboard_set(_displayed_code)
 	copy_code_button.text = "Copied!"
-	copy_code_button.create_tween().tween_interval(2.0).tween_callback(
-		func() -> void: copy_code_button.text = "Copy code"
-	)
+	var tween := copy_code_button.create_tween()
+	tween.tween_interval(2.0)
+	tween.tween_callback(func() -> void: copy_code_button.text = "Copy code")
 
 
 func _on_player_list_changed() -> void:

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bisect_main_1"]
+
+[ext_resource type="Script" path="res://tests/voice_crash_proof/bisect_main.gd" id="1_bm"]
+
+[node name="BisectMain" type="Node"]
+script = ExtResource("1_bm")

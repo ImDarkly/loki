@@ -67,3 +67,9 @@ func test_candidate_pick_clears_pending_pool() -> void:
 	lobby._pending_candidates = pool
 	lobby._on_candidate_picked(0, Vector2.ZERO, 1)
 	assert_true(lobby._pending_candidates.is_empty(), "Pool cleared after a pick so repeat clicks are ignored")
+
+
+func test_copy_code_button_shows_feedback_without_error() -> void:
+	lobby._displayed_code = "123456"
+	lobby._on_copy_code_pressed()
+	assert_eq(lobby.copy_code_button.text, "Copied!", "Button should show feedback immediately")

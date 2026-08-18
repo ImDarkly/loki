@@ -11,4 +11,4 @@ build/
 
 # Environment variables
 # EOS credentials (downloaded separately, per-machine)
-.env
+eos_credentials.cfg

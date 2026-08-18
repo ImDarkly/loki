@@ -85,10 +85,12 @@ var _quota_manager_ref: Node3D = null
 var _rock_manager_ref: Node = null
 var _danger_manager_ref: Node = null
 var _is_shop_open: bool = false
+var _fell_off_island_reported: bool = false
 @export var interact_range: float = 3.0
 @export var rock_pickup_range: float = 3.0
 
 const INTERACTABLE_LAYER: int = 1 << 5
+const FALL_DEATH_Y: float = -3.0
 
 
 func _ready() -> void:
@@ -520,6 +522,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if player_state == PlayerState.SPECTATE:
+		if global_position.y <= FALL_DEATH_Y:
+			velocity = Vector3.ZERO
+			move_and_slide()
+			return
 		if not is_on_floor():
 			velocity.y -= _gravity * delta
 		else:
@@ -568,6 +574,7 @@ func _physics_process(delta: float) -> void:
 
 	var was_on_floor := is_on_floor()
 	move_and_slide()
+	_check_fell_off_island()
 
 	if not was_on_floor and is_on_floor():
 		_hand_bounce = -hand_land_drop
@@ -659,6 +666,7 @@ func _process_fight(delta: float) -> void:
 	velocity.z = pull_force.z + wasd_force.z
 
 	move_and_slide()
+	_check_fell_off_island()
 
 	_sync_tick += 1
 	if _sync_tick >= 2:
@@ -739,6 +747,8 @@ func _on_restart() -> void:
 	if hp:
 		hp.reset_to_max()
 	_spectate_target = null
+	# Reposition to a spawn: without it, a fall-death in the ocean would instantly re-trigger the fall check.
+	_respawn_at_spawn()
 	if get_multiplayer_authority() != multiplayer.get_unique_id():
 		return
 	player_state = PlayerState.ALIVE
@@ -755,20 +765,55 @@ func _setup_authority_from_name() -> void:
 	var owning_id := _parse_owner_id()
 	set_multiplayer_authority(owning_id)
 
-	var spawn_positions := [
-		Vector3(-2.25, 0, 2.5),
-		Vector3(-0.75, 0, 2.5),
-		Vector3(0.75, 0, 2.5),
-		Vector3(2.25, 0, 2.5),
-	]
-
 	spawn_index = 0
 	for i in game_manager.players.size():
 		if game_manager.players[i].id == owning_id:
 			spawn_index = i
 			break
 
-	position = spawn_positions[spawn_index] if spawn_index < spawn_positions.size() else spawn_positions[0]
+	_respawn_at_spawn()
+
+
+static func _spawn_positions() -> Array[Vector3]:
+	return [
+		Vector3(-2.25, 0, 2.5),
+		Vector3(-0.75, 0, 2.5),
+		Vector3(0.75, 0, 2.5),
+		Vector3(2.25, 0, 2.5),
+	]
+
+
+func _respawn_at_spawn() -> void:
+	var spawns := _spawn_positions()
+	position = spawns[spawn_index] if spawn_index < spawns.size() else spawns[0]
+	velocity = Vector3.ZERO
+
+
+func _check_fell_off_island() -> void:
+	if player_state != PlayerState.ALIVE:
+		return
+	if multiplayer.has_multiplayer_peer():
+		if get_multiplayer_authority() != multiplayer.get_unique_id():
+			return
+	if _fell_off_island_reported:
+		return
+	if global_position.y < FALL_DEATH_Y:
+		_fell_off_island_reported = true
+		if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+			report_fell_off_island.rpc(global_position)
+		else:
+			report_fell_off_island(global_position)
+
+
+# authority, not any_peer: blocks one peer remotely killing another player's node.
+@rpc("authority", "reliable", "call_remote")
+func report_fell_off_island(fell_position: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if fell_position.y >= FALL_DEATH_Y:
+		return
+	if _health_component:
+		_health_component.take_damage(_health_component.max_health)
 
 
 func _apply_player_visibility() -> void:
@@ -883,6 +928,7 @@ func reset_for_restart() -> void:
 	if holding_rock:
 		holding_rock = false
 		_hide_held_rock_remote()
+	_fell_off_island_reported = false
 
 
 func _on_yelling_state_changed(is_yelling: bool) -> void:

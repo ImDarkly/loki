@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://systems/voice_chat/eos_voice_network.gd" id="1_eosvn"]
+
+[node name="EosVoiceNetwork" type="Node3D"]
+script = ExtResource("1_eosvn")
+
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+attenuation_model = 1
+volume_db = 24.0
+unit_size = 8.0
+max_distance = 0.0

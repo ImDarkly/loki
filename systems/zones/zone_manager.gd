@@ -196,10 +196,19 @@ func _is_valid_zone_position_excluding(candidate: Vector3, excluded_index: int) 
 	return _is_within_water_boundary(candidate) and _is_clear_of_other_zones(candidate, excluded_index)
 
 
+func _placement_bounds() -> Dictionary:
+	return {
+		"outer": MapConfig.FISHABLE_BAND_RADIUS - zone_radius - water_boundary_margin,
+		"inner": MapConfig.ISLAND_RADIUS + zone_radius + water_boundary_margin,
+	}
+
+
 func _is_within_water_boundary(candidate: Vector3) -> bool:
-	return MapConfig.is_within_radius(
-		candidate, MapConfig.MAP_CENTER, MapConfig.FISHABLE_BAND_RADIUS - zone_radius - water_boundary_margin
-	)
+	var bounds := _placement_bounds()
+	if not MapConfig.is_within_radius(candidate, MapConfig.MAP_CENTER, bounds["outer"]):
+		return false
+	# Zones must sit in the water ring outside the island, not on dry land.
+	return not MapConfig.is_within_radius(candidate, MapConfig.MAP_CENTER, bounds["inner"])
 
 
 func _is_clear_of_other_zones(candidate: Vector3, excluded_index: int) -> bool:
@@ -213,9 +222,12 @@ func _is_clear_of_other_zones(candidate: Vector3, excluded_index: int) -> bool:
 
 
 func _pick_random_zone_center() -> Vector3:
-	var radius := MapConfig.FISHABLE_BAND_RADIUS - zone_radius - water_boundary_margin
+	var bounds := _placement_bounds()
+	var outer: float = bounds["outer"]
+	var inner: float = bounds["inner"]
+	var r := sqrt(randf() * (outer * outer - inner * inner) + inner * inner)
 	var angle := randf() * TAU
-	var offset := Vector2(cos(angle), sin(angle)) * (radius * sqrt(randf()))
+	var offset := Vector2(cos(angle), sin(angle)) * r
 	return Vector3(MapConfig.MAP_CENTER.x + offset.x, 0, MapConfig.MAP_CENTER.z + offset.y)
 
 

@@ -45,7 +45,7 @@ spawn_path = NodePath("..")
 [node name="Shops" type="Node3D" parent="." unique_id=304189671]
 
 [node name="ShopHut" parent="Shops" unique_id=1375466103 instance=ExtResource("shop_hut_scene")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
 
 [node name="CoinManager" parent="." unique_id=1167381513 instance=ExtResource("coin_man_scene")]
 

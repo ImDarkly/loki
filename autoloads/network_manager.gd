@@ -8,6 +8,12 @@ signal connection_candidates(candidates: Array[HLobby])
 # Must match the 4 spawn positions in player.gd; expanding beyond 4 needs new spawn points.
 const LOBBY_MAX_MEMBERS := 4
 
+const LOBBY_RTC_OPTIONS := {
+	"flags": EOS.RTC.JoinRoomFlags.EnableDataChannel,
+	"use_manual_audio_input": true,
+	"use_manual_audio_output": true,
+}
+
 var peer: MultiplayerPeer
 var lobby: HLobby
 var _eos_ready: bool = false
@@ -20,7 +26,10 @@ static func generate_room_code(rng: RandomNumberGenerator = null) -> int:
 
 const REQUIRED_ENV_KEYS: Array[String] = [
 	"PRODUCT_NAME", "PRODUCT_VERSION", "PRODUCT_ID", "SANDBOX_ID",
-	"DEPLOYMENT_ID", "CLIENT_ID", "CLIENT_SECRET", "ENCRYPTION_KEY",
+	"DEPLOYMENT_ID", "CLIENT_ID", "ENCRYPTION_KEY",
+]
+const OPTIONAL_ENV_KEYS: Array[String] = [
+	"CLIENT_SECRET",
 ]
 
 
@@ -41,27 +50,28 @@ func initialize_and_login_async() -> bool:
 		connection_failed_signal.emit()
 		return false
 
+	HLobbies.local_rtc_options = LOBBY_RTC_OPTIONS
 	return true
 
 
 func _load_credentials() -> HCredentials:
-	var env_path: String = "res://.env"
-	if not FileAccess.file_exists(env_path):
-		env_path = "user://.env"
-	if not FileAccess.file_exists(env_path):
-		push_error("NetworkManager: .env not found")
+	var cfg_path: String = "res://eos_credentials.cfg"
+	if not FileAccess.file_exists(cfg_path):
+		cfg_path = "user://eos_credentials.cfg"
+	if not FileAccess.file_exists(cfg_path):
+		push_error("NetworkManager: eos_credentials.cfg not found")
 		connection_failed_signal.emit()
 		return null
 
 	var cfg := ConfigFile.new()
-	if cfg.load(env_path) != OK:
-		push_error("NetworkManager: failed to load .env")
+	if cfg.load(cfg_path) != OK:
+		push_error("NetworkManager: failed to load eos_credentials.cfg")
 		connection_failed_signal.emit()
 		return null
 
 	for key in REQUIRED_ENV_KEYS:
 		if not cfg.has_section_key("", key) or cfg.get_value("", key).is_empty():
-			push_error("NetworkManager: missing or empty '%s' in .env" % key)
+			push_error("NetworkManager: missing or empty '%s' in eos_credentials.cfg" % key)
 			connection_failed_signal.emit()
 			return null
 
@@ -72,8 +82,11 @@ func _load_credentials() -> HCredentials:
 	creds.sandbox_id = cfg.get_value("", "SANDBOX_ID")
 	creds.deployment_id = cfg.get_value("", "DEPLOYMENT_ID")
 	creds.client_id = cfg.get_value("", "CLIENT_ID")
-	creds.client_secret = cfg.get_value("", "CLIENT_SECRET")
 	creds.encryption_key = cfg.get_value("", "ENCRYPTION_KEY")
+
+	for key in OPTIONAL_ENV_KEYS:
+		if cfg.has_section_key("", key) and not str(cfg.get_value("", key)).is_empty():
+			creds.set(key.to_lower(), cfg.get_value("", key))
 	return creds
 
 
@@ -96,7 +109,8 @@ func host_game() -> void:
 	var opts := EOS.Lobby.CreateLobbyOptions.new()
 	opts.bucket_id = room_code
 	opts.max_lobby_members = LOBBY_MAX_MEMBERS
-	opts.enable_rtc_room = false
+	opts.enable_rtc_room = true
+	opts.local_rtc_options = LOBBY_RTC_OPTIONS
 	lobby = await HLobbies.create_lobby_async(opts)
 	if not lobby:
 		push_error("NetworkManager: EOS lobby creation failed")
