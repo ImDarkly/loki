@@ -4,7 +4,14 @@ var player: Player = null
 
 
 func before_each() -> void:
+	player = await _build_player()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _build_player(node_name: String = "", parent: Node = null) -> Player:
 	var player_node := CharacterBody3D.new()
+	if not node_name.is_empty():
+		player_node.name = node_name
 
 	var head := Node3D.new()
 	head.name = "Head"
@@ -51,11 +58,14 @@ func before_each() -> void:
 
 	player_node.set_script(load("res://entities/player/player.gd"))
 
-	player = autofree(player_node)
-	add_child(player)
+	var p := player_node as Player
+	if parent != null:
+		parent.add_child(p)
+	else:
+		autofree(p)
+		add_child(p)
 	await get_tree().process_frame
-
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	return p
 
 
 func test_is_yelling_starts_false() -> void:
@@ -342,3 +352,75 @@ func test_respawn_at_spawn() -> void:
 	var expected_pos := player._spawn_positions()[2]
 	assert_eq(player.position, expected_pos, "Player position should reset to designated spawn index")
 	assert_eq(player.velocity, Vector3.ZERO, "Player velocity should zero out on respawn")
+
+
+func test_fall_off_island_peer_branch_round_trip() -> void:
+	var server_peer := ENetMultiplayerPeer.new()
+	var client_peer := ENetMultiplayerPeer.new()
+	var chosen_port := -1
+	for port in [37877, 37878, 37879, 37880, 37881]:
+		if server_peer.create_server(port, 2) == OK:
+			chosen_port = port
+			break
+		server_peer = ENetMultiplayerPeer.new()
+	assert_ne(chosen_port, -1, "should bind an ENet server port")
+	client_peer.create_client("127.0.0.1", chosen_port)
+
+	var server_root := Node3D.new()
+	server_root.name = "ServerRoot"
+	add_child(server_root)
+	var client_root := Node3D.new()
+	client_root.name = "ClientRoot"
+	add_child(client_root)
+
+	var server_mp := SceneMultiplayer.new()
+	server_mp.multiplayer_peer = server_peer
+	var client_mp := SceneMultiplayer.new()
+	client_mp.multiplayer_peer = client_peer
+	get_tree().set_multiplayer(server_mp, server_root.get_path())
+	get_tree().set_multiplayer(client_mp, client_root.get_path())
+
+	var server_players := Node3D.new()
+	server_players.name = "Players"
+	server_root.add_child(server_players)
+	var client_players := Node3D.new()
+	client_players.name = "Players"
+	client_root.add_child(client_players)
+
+	var frames := 0
+	while frames < 120 and (client_mp.get_unique_id() == 1 or server_mp.get_peers().is_empty()):
+		await get_tree().process_frame
+		frames += 1
+	assert_ne(client_mp.get_unique_id(), 1, "client should obtain a unique id from server handshake")
+	assert_true(server_mp.get_peers().has(client_mp.get_unique_id()), "server should see the connected client")
+
+	var client_id := client_mp.get_unique_id()
+	var server_copy := await _build_player("Player_%d" % client_id, server_players)
+	var client_copy := await _build_player("Player_%d" % client_id, client_players)
+
+	client_copy.player_state = Player.PlayerState.ALIVE
+	client_copy._fell_off_island_reported = false
+	client_copy.global_position = Vector3(0, -5.0, 0)
+
+	client_copy._check_fell_off_island()
+
+	var client_hp := client_copy.get_node("HealthComponent") as HealthComponent
+	assert_true(client_copy._fell_off_island_reported, "client should set the fall flag")
+	assert_eq(client_hp.current_health, client_hp.max_health, "client should not damage locally; the report goes to the server")
+
+	var server_hp := server_copy.get_node("HealthComponent") as HealthComponent
+	frames = 0
+	while frames < 120 and server_hp.current_health > 0:
+		await get_tree().process_frame
+		frames += 1
+
+	assert_eq(server_hp.current_health, 0, "server should receive the fall report and apply damage")
+	assert_eq(client_hp.current_health, 0, "server should relay damage back to the owning client")
+	assert_eq(client_copy.player_state, Player.PlayerState.SPECTATE, "client should enter spectate after fall death")
+
+	server_peer.close()
+	client_peer.close()
+	get_tree().set_multiplayer(null, server_root.get_path())
+	get_tree().set_multiplayer(null, client_root.get_path())
+	server_root.queue_free()
+	client_root.queue_free()
