@@ -196,6 +196,74 @@ func _is_valid_zone_position_excluding(candidate: Vector3, excluded_index: int) 
 	return _is_within_water_boundary(candidate) and _is_clear_of_other_zones(candidate, excluded_index)
 
 
+func scare(source_position: Vector3, radius: float) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	var affected: Array[int] = []
+	for i in range(zones.size()):
+		if _flat_distance(source_position, zones[i]["center"]) <= radius:
+			affected.append(i)
+	if affected.is_empty():
+		return
+	for i in affected:
+		var next_center := _pick_farthest_zone_center(source_position, i)
+		if next_center != zones[i]["center"]:
+			zones[i]["center"] = next_center
+		_interrupt_zone_occupants(i)
+	_update_zone_visuals()
+	_sync_state_to_clients()
+
+
+func _pick_farthest_zone_center(source_position: Vector3, zone_index: int) -> Vector3:
+	var current_center: Vector3 = zones[zone_index]["center"]
+	var best := current_center
+	var best_dist := _flat_distance(source_position, current_center)
+	for _attempt in range(32):
+		var candidate := _pick_random_zone_center()
+		if not _is_valid_zone_position_excluding(candidate, zone_index):
+			continue
+		var dist := _flat_distance(source_position, candidate)
+		if dist > best_dist:
+			best = candidate
+			best_dist = dist
+	return best
+
+
+func _flat_distance(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z))
+
+
+func _interrupt_zone_occupants(zone_index: int) -> void:
+	for peer_id in _peer_zone_occupancy.keys():
+		var peer_zones: Dictionary = _peer_zone_occupancy[peer_id]
+		if not peer_zones.has(zone_index):
+			continue
+		# .rpc() reaches remote clients; -1 bypasses the owner filter for single-player.
+		if multiplayer.has_multiplayer_peer():
+			_broadcast_fish_fled_rpc.rpc(peer_id)
+		else:
+			_broadcast_fish_fled_rpc(-1)
+
+
+func _get_player_nodes() -> Array[Node3D]:
+	var players_container := get_node_or_null("../Players")
+	if players_container == null:
+		return []
+	var players: Array[Node3D] = []
+	for child in players_container.get_children():
+		if child.get_node_or_null("FishingMechanic") != null:
+			players.append(child)
+	return players
+
+
+@rpc("authority", "call_local", "reliable")
+func _broadcast_fish_fled_rpc(target_client_id: int) -> void:
+	for player in _get_player_nodes():
+		var mechanic := player.get_node_or_null("FishingMechanic")
+		if mechanic:
+			mechanic.on_fish_fled(target_client_id)
+
+
 func _placement_bounds() -> Dictionary:
 	return {
 		"outer": MapConfig.FISHABLE_BAND_RADIUS - zone_radius - water_boundary_margin,
