@@ -1,5 +1,5 @@
 **Feature ID:** MP-001
-**Status:** Ready for Development
+**Status:** CLOSED - implemented (ENet originally, rebuilt on EOSG via PR #153-#166, 2026-08-18)
 **Owner:** Solo Developer
 **Tech Stack:** Godot 4.6, GDScript, GD-Sync
 

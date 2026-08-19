@@ -1,6 +1,6 @@
 **Feature ID:** RL-001
 
-**Status:** Ready for Development
+**Status:** CLOSED - implemented (PR #59, #61, #65, 2026-07-07); structure refined by RSR-001
 
 **Owner:** Solo Developer
 

@@ -1,6 +1,6 @@
 **Feature ID:** RP-001
 
-**Status:** Ready for Development — resolved via grill-me session
+**Status:** CLOSED - implemented (PR #128, #129, 2026-07-21); note Stage-1 bite window is 1.0s in code, not 2.5s as spec'd
 
 **Owner:** Solo Developer
 
@@ -10,7 +10,7 @@
 
 ## Problem Statement
 
-The current bite-resolution step is a single button press inside a 2.5-second window (`FishingMechanic._process`, BITE state, `_bite_time >= 2.5` hard timeout). This is the thinnest possible interaction in the core loop and was flagged directly against friendslop-genre research as the highest-risk repetition antipattern (6 of 11 researched games cite "repetitive" as their primary weakness — see Friendslop Research). It also currently generates zero visible chaos for teammates — a bite resolves silently and instantly from outside the catching player's own screen.
+The current bite-resolution step is a single button press inside a 1-second window (`FishingMechanic._process`, BITE state, `_bite_time >= 1.0` hard timeout). This is the thinnest possible interaction in the core loop and was flagged directly against friendslop-genre research as the highest-risk repetition antipattern (6 of 11 researched games cite "repetitive" as their primary weakness — see Friendslop Research). It also currently generates zero visible chaos for teammates — a bite resolves silently and instantly from outside the catching player's own screen.
 
 Any fix has to fit inside a genuinely tight constraint: the shark's approach-to-attack window is ~5 seconds. A mechanic that pulls a player's attention too far inward (multi-button states, timing precision, anything requiring sustained visual focus away from the world) actively competes with the exact ambient danger-awareness the rest of the game's systems are built around.
 
@@ -68,7 +68,7 @@ The under-floor duration timer that drives Decision 5's escape-launch must also 
 
 ### Decision 7: Old Hard Timeout Is Replaced, Not Left Running
 
-The existing `_bite_time >= 2.5` unconditional force-fail is removed entirely and replaced by Decision 5's under-floor timer. Leaving the old timeout running alongside the new tug-of-war would force-fail mid-fight regardless of player performance, which would silently break the new mechanic rather than coexist with it.
+The existing `_bite_time >= 1.0` unconditional force-fail is removed entirely and replaced by Decision 5's under-floor timer. Leaving the old timeout running alongside the new tug-of-war would force-fail mid-fight regardless of player performance, which would silently break the new mechanic rather than coexist with it.
 
 ### Decision 8: No RMB / `interact` Conflict
 

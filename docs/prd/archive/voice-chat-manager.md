@@ -1,6 +1,6 @@
 **Feature ID:** VCM-001
 
-**Status:** Ready for Development
+**Status:** CLOSED - implemented (PR #30, #32, #80; transport later moved to EOS RTC via PR #166)
 
 **Target Completion:** 1 week
 

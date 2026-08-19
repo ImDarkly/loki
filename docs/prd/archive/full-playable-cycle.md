@@ -1,6 +1,6 @@
 **Feature ID:** RSK-001
 
-**Status:** Ready for Development -- ready-for-agent
+**Status:** CLOSED - implemented (PR #119-#123, 2026-07-19); Decision 11 instant-catch superseded by RP-001
 
 **Owner:** Solo Developer
 

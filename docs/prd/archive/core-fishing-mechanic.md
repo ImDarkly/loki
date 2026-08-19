@@ -2,7 +2,7 @@
 
 **Feature ID:** CFM-001
 
-**Status:** Ready for Development
+**Status:** CLOSED - implemented (PR #11, #19, 2026-06-29)
 
 **Target Completion:** Week 1-2 (14 days)
 
@@ -392,7 +392,7 @@ When implementing, use Claude to:
 
 ## Approval & Sign-Off
 
-**Status:** READY FOR DEVELOPMENT
+**Status:** CLOSED - IMPLEMENTED (PR #11, #19, 2026-06-29)
 
 **Tech Lead:** Solo Developer
 
