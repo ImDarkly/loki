@@ -11,7 +11,7 @@ Separately, ZoneManager placement already excludes the island interior via `wate
 ### Part 1: Yell Scares Fish (new)
 While a player is yelling (`is_yelling == true`, sustained - not edge-triggered), any fishing zone within a fixed radius of that player's current position is repeatedly relocated to the farthest eligible point from the player, on a fixed interval, until yelling stops. This applies globally - any zone in range, regardless of occupancy or fight state - and overrides ZoneManager's existing occupancy lock (which normally protects a zone from reshuffling while someone's actively fishing it). If a teammate is mid-fight (BITE state) in an affected zone, the fight is interrupted via the existing `on_fish_fled()` path (same mechanism already used for shark attacks), giving consistent, already-tested failure feedback.
 ### Part 2: Fish Zone Min Distance (tuning only)
-No new code. `water_boundary_margin` (export on ZoneManager, current default 1.5) already enforces a shoreline-relative minimum distance via the inner bound in _placement_bounds(). This slice is a playtest-and-tune pass on that existing export, not new logic.
+No new code. `water_boundary_margin` (export on ZoneManager, default 1.5) enforces a shoreline-relative minimum distance via the inner bound in _placement_bounds(). Playtested 2026-08-19 against MapConfig.ISLAND_RADIUS = 10.0: 1.5 reads as "near shore but not too near", so the default was retained and no placement-logic changes were required.
 ## User Stories
 1. As a player, I want yelling to scare nearby fish away, so that warning my team about danger has a real, felt cost.
 2. As a player, I want fish to keep fleeing for as long as I keep yelling, so that sustained panic (e.g. shouting about an approaching shark) feels proportionally costlier than a short shout.
@@ -33,7 +33,7 @@ Relocation picks the farthest eligible point from the yelling player's current p
 ### Decision 6: Fight Interruption via Existing Path
 If an affected zone is occupied by a player in BITE state (actively fighting), the yell relocation calls `on_fish_fled()` on that player's FishingMechanic - identical to the existing shark-attack interrupt path (_broadcast_fish_fled_rpc). No new interrupt logic; reuses proven, tested behavior (reel_failure emit, fight state reset).
 ### Decision 7: Fish Zone Min Distance - No New Code
-`water_boundary_margin` already exists and already gates placement via _placement_bounds()'s inner bound (MapConfig.ISLAND_RADIUS + zone_radius + water_boundary_margin). This slice only adjusts the exported default value after playtesting against the current island scale; no logic changes.
+`water_boundary_margin` already exists and gates placement via _placement_bounds()'s inner bound (MapConfig.ISLAND_RADIUS + zone_radius + water_boundary_margin). Playtesting kept the default at 1.5; no logic changes.
 ## Testing Decisions
 Consistent with existing precedent (test_zone_manager.gd, test_danger_manager.gd) - bypass timers/network, call methods and assert state/signals directly:
 - **Covered:** scare-trigger overrides occupancy lock (zone relocates even with `zone_occupant_counts[i] > 0`), relocation target is farther from the yeller position than the original center, rescare fires on the configured interval while sustained, stops firing once yelling stops, fight interruption calls `on_fish_fled()` and emits reel_failure for an affected in-fight zone.
@@ -46,6 +46,6 @@ Consistent with existing precedent (test_zone_manager.gd, test_danger_manager.gd
 - Changing the timer-based idle reshuffle (_on_reshuffle_timer_timeout) - unaffected by this feature; yell-triggered relocation is additive, not a replacement for the existing periodic reshuffle.
 ## Further Notes
 ### Build Order
-Part 1 (Yell Scares Fish) has no dependency on Island Shape and can be built immediately. Part 2 (min-distance tuning) was originally sequenced to wait on Island Shape landing - Island Shape has since shipped (MapConfig.ISLAND_RADIUS = 10.0), so Part 2 is unblocked and is a same-session tuning pass, not separate scheduling.
+Part 1 (Yell Scares Fish) has no dependency on Island Shape and can be built immediately. Part 2 (min-distance tuning) was originally sequenced to wait on Island Shape landing - Island Shape has since shipped (MapConfig.ISLAND_RADIUS = 10.0) and Part 2 shipped as the #169 tuning pass (2026-08-19, default retained at 1.5), so it is not separate scheduling.
 ### Design Provenance
 This PRD resolves the deferred hook RSK-001 left in place (`is_yelling` wired but unconsumed by fish behavior) and restores the original MVP design intent around yelling as a communication-cost mechanic, adapted for the current zone-based fishing system rather than the original flat-radius flee model.
