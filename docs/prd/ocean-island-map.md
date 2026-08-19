@@ -1,5 +1,5 @@
 **Feature ID:** MAP-001
-**Status:** Ready for Development — resolved via grill-me session
+**Status:** CLOSED - implemented (PR #165 #159, PR #166 #160, PR #167 #161, 2026-08-19)
 **Triage:** ready-for-agent
 **Owner:** Solo Developer
 **Tech Stack:** Godot 4.6, GDScript

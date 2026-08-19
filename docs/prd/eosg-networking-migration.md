@@ -1,7 +1,7 @@
 # EOSG Networking Migration
 **Version:** 1.0
 **Date:** August 4, 2026
-**Status:** DRAFT — pending independent re-verification that issues #141 and #142 are closed (see Further Notes)
+**Status:** CLOSED - implemented (PR #153-#158, #165, #166, 2026-08-18)
 **Owner:** Solo Developer
 **Supersedes:** "EOS Crossplay" (Notion, July 21, 2026) — confirmed dead by project owner. That doc targeted GD-EOS and full Steam+Epic crossplay; this PRD targets EOSG only and descopes Steam.
 ---
@@ -59,7 +59,9 @@ EOS login and lobby operations require a live EOS SDK connection (network, real 
 - **Public matchmaking / lobby browser** — join is code-only, no "random public game" list.
 - **GD-EOS removal cleanup** — tracked separately in issue #142; this PRD assumes it's already done or in progress.
 ## Further Notes
-### Unverified premise (flagged, not confirmed independently)
+### Unverified premise (now resolved)
 This PRD was written on the project owner's statement that issues #141 (Spawner & Synchronizer Verification) and #142 (GD-EOS Removal) are closed. This could **not** be independently re-confirmed via the GitHub API during this PRD's research due to unauthenticated rate-limiting (60 req/hour exhausted). **Re-verify both issues' state before starting implementation** — if #141 is not actually closed, `EOSGMultiplayerPeer` itself is not yet confirmed stable and this PRD's foundation is premature.
+
+**Re-verified 2026-08-19:** issue #141 (Spawner & Synchronizer Verification) and #142 (GD-EOS Removal) are both CLOSED. The migration shipped via PR #153–#158 (EOSG host/join/room code/lobby lifecycle) and #165/#166 (map config + EOS RTC voice).
 ### Why EOSG over GD-EOS (history)
 GD-EOS's own network transport was previously confirmed working after extensive debugging (per the July 27 EOSG-transport-spike spec), but was abandoned anyway in favor of EOSG for tooling/distribution reasons (EOSG ships precompiled via the Asset Library; GD-EOS requires a local MSVC/SCons build, documented in the now-obsolete `BUILD.md`). Issues #131–133 (old GD-EOS transport/auth/full-migration work) were closed as "superseded by EOSG migration" on July 27, 2026, without ever reaching production. The EOSG path carries a real risk of repeating that outcome if #141 turns out not to fully verify — there is no fallback plan in this PRD if that happens.

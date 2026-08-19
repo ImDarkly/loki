@@ -1,6 +1,6 @@
 **Feature ID:** FZP-001
 
-**Status:** Ready for Development
+**Status:** CLOSED - implemented (PR #97, #98; arc-based cast, 2026-07-13)
 
 **Owner:** Solo Developer
 

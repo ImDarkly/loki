@@ -1,6 +1,6 @@
 **Feature ID:** SHP-001
 
-**Status:** Ready for Development — ready-for-agent
+**Status:** CLOSED - implemented (PR #108-#111, 2026-07-16)
 
 **Owner:** Solo Developer
 

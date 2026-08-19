@@ -1,6 +1,6 @@
 ﻿**Feature ID:** DSS-001
 
-**Status:** Ready for Development
+**Status:** CLOSED - implemented (PR #108-#111, #121, 2026-07-18)
 
 **Owner:** Solo Developer
 

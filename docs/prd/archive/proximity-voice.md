@@ -1,16 +1,16 @@
 **Feature ID:** PVC-001
 
-**Status:** Ready for Development — ready-for-agent
+**Status:** CLOSED - implemented (PR #125 positional falloff; transport moved to EOS RTC via PR #166, 2026-08-18)
 
 **Owner:** Solo Developer
 
-**Tech Stack:** Godot 4.6, GDScript, ENet, TwoVoip addon
+**Tech Stack:** Godot 4.6, GDScript, EOS RTC (via EOSG addon)
 
 ---
 
 ## Problem Statement
 
-Voice chat currently broadcasts flat: `VoiceChatNetwork.send_voice_packet` is an
+Voice chat broadcasts flat: `VoiceChatNetwork.send_voice_packet` is an
 unreliable RPC received identically by every connected peer regardless of
 distance, via a plain `AudioStreamPlayer` with no positional attenuation.
 Friendslop-genre research (comparing this project against Lethal Company,
@@ -26,21 +26,20 @@ on for player-generated chaos and clippable content don't happen.
 
 Make each player's voice audible only within a limited radius, falling off
 with distance, by moving voice playback onto a 3D-positional audio node
-instead of a flat one. `VoiceChatNetwork` is already instanced as a per-player
-child scene (`entities/player/player.tscn`), and remote player instances
-already receive authoritative position updates via the existing
-`Player._sync_transform` RPC. This means positional playback can be achieved
-by changing the *type* of node the TwoVoip speaker plays through — from
-`AudioStreamPlayer` to `AudioStreamPlayer3D` — with no new position-sync
-plumbing required, since the node inherits its parent `Player`'s transform
-automatically via the scene tree.
+instead of a flat one. The per-player voice node is a child of `Player`, and
+remote player instances already receive authoritative position updates via the
+existing `Player._sync_transform` RPC. Positional playback is achieved by
+playing decoded voice through an `AudioStreamPlayer3D` (fed by an
+`AudioStreamGenerator`), which inherits its parent `Player`'s transform
+automatically via the scene tree — no new position-sync plumbing.
 
-A compatibility audit of the TwoVoip addon's `TwoVoipSpeaker` component
-confirmed this is a drop-in swap: the addon only calls `.stream`, `.playing`,
-`.play()`, and `.get_stream_playback()` on its parent audio node, all of
-which exist identically on `AudioStreamPlayer3D`. It does not reference
-`.bus`, `.volume_db`, or any 2D-specific API. No addon modification or proxy
-layer is required.
+The voice transport itself was re-architected during implementation: the
+original design (TwoVoip addon, `send_voice_packet` unreliable RPC) was
+superseded by **EOS RTC rooms** (`eos_voice_network.gd`). Capture is polled
+from the `VoiceChatManager` mic bus in 10ms chunks and pushed via
+`EOS.RTCAudio.send_audio`; incoming frames are routed per-participant back to
+the owning player's `AudioStreamPlayer3D` generator. This supersession is
+documented in Further Notes below.
 
 ## User Stories
 
@@ -60,56 +59,56 @@ layer is required.
 5. As a developer, I want the positional falloff radius to be a tunable
    exported variable, so that I can rebalance it against the water plane's
    scale (50×50) and character height without touching code.
-6. As a developer, I want to confirm the TwoVoip addon requires no
-   modification for this change, so that the slice stays small and doesn't
-   risk destabilizing voice transmission itself.
-7. As a developer, I want to verify remote player instances position their
-   voice audio correctly without any new per-frame sync code, so that I'm not
+6. As a developer, I want remote player instances to position their voice
+   audio correctly without any new per-frame sync code, so that I'm not
    duplicating the transform-sync work `Player._sync_transform` already does.
 
 ## Implementation Decisions
 
-### Decision 1: Swap Playback Node Type, Not Playback Logic
+### Decision 1: Playback on AudioStreamPlayer3D, Fed by a Generator
 
-`voice_chat_network.tscn`'s `AudioStreamPlayer` node (parent of
-`TwoVoipSpeaker`) is changed to `AudioStreamPlayer3D`. No changes are made to
-`TwoVoipMic`, packet transmission (`send_voice_packet` RPC), or decoding
-logic — this slice touches playback positioning only, not capture or
-network transport.
+`eos_voice_network.gd`'s `AudioStreamPlayer3D` node plays an
+`AudioStreamGenerator` (`SAMPLE_RATE = 48000`, 10ms buffer). Decoded remote
+frames are pushed into the generator's playback via `push_audio()`. The node
+uses `unit_size = 8.0`, `attenuation_model` set to 1 (inverse distance),
+`volume_db = 24.0`, `max_distance = 0.0` — the falloff reference is tunable in
+the scene file. No changes are made to capture or the RTC transport.
 
 ### Decision 2: No New Position-Sync Code
 
-Positional audio is derived for free from the existing scene hierarchy:
-`VoiceChatNetwork` is already a child of `Player`, and remote `Player`
-instances already receive `global_position` updates via the existing
-`_sync_transform` RPC (throttled to every 2 physics ticks, per current
-code). `AudioStreamPlayer3D` inherits this transform automatically as a
-descendant node. No `RemoteTransform3D`, no manual per-frame position
-assignment, and no new RPC are introduced for this feature.
+Positional audio is derived for free from the existing scene hierarchy: the
+voice node is a child of `Player`, and remote `Player` instances already
+receive `global_position` updates via the existing `_sync_transform` RPC
+(throttled to every 2 physics ticks). `AudioStreamPlayer3D` inherits this
+transform automatically as a descendant node. No `RemoteTransform3D`, no
+manual per-frame position assignment, and no new RPC are introduced.
 
 ### Decision 3: Tunable Attenuation Exports
 
 `unit_size`, `max_distance`, and `attenuation_model` are set on the
-`AudioStreamPlayer3D` node as inspector-tunable values, following this
+`AudioStreamPlayer3D` node in the scene as tunable values, following this
 project's established tunable-exports pattern (see `DangerManager`,
-`ZoneManager`). Starting defaults are chosen relative to the water plane's
-50×50 scale and average character spacing during a round, with the explicit
-expectation that these will be adjusted after playtesting, not treated as
-final.
+`ZoneManager`). Starting defaults are relative to the 50×50 water plane scale
+and average character spacing, with the explicit expectation that they will be
+adjusted after playtesting, not treated as final.
 
-### Decision 4: Reference Path Updates Only
+### Decision 4: Transport Superseded by EOS RTC (Implemented Deviation)
 
-`voice_chat_network.gd`'s two `$AudioStreamPlayer`-relative path references
-(the `@onready` speaker reference and the stream-type assignment in
-`_enter_tree`) are updated to match the renamed/retyped node. No other
-logic in the script changes.
+The original design routed voice through the TwoVoip addon over an unreliable
+RPC (`send_voice_packet`). During implementation the transport was replaced by
+**EOS RTC rooms** — the host creates an RTC room alongside the EOS lobby
+(`NetworkManager.lobby.rtc_room_name`); the EOSG addon handles Opus
+encode/decode and NAT traversal. The per-player node:
+- Sends: polls `VoiceChatManager.get_frames_available()/get_captured_frames()`
+  in fixed 480-frame (10ms) chunks → `EOS.RTCAudio.send_audio`.
+- Receives: registers `rtc_audio_audio_before_render`; queues frames from the
+  worker thread (`_render_mutex`); drains on the main thread each `_process`
+  and routes to the target player's node via `push_audio()`.
+- Authoritative gating: only the node's multiplayer authority sends audio
+  (`is_multiplayer_authority()`).
 
-### Decision 5: No Bus Routing Changes
-
-The TwoVoip addon does not reference `.bus` on its parent node, and this
-feature does not introduce any bus routing changes. Voice audio continues
-to use the default/master bus unless a future, separate feature decides to
-route it otherwise.
+This keeps the positional-falloff goal while gaining EOS's relay/NAT
+traversal. TwoVoip is no longer used anywhere in the project.
 
 ## Testing Decisions
 
@@ -120,20 +119,19 @@ prompts from automated coverage since they require a real audio runtime),
 this feature has very limited automated-test surface:
 
 - **Not covered by automated tests:** actual positional audio falloff
-  behavior, `TwoVoipSpeaker` packet playback through `AudioStreamPlayer3D`,
-  and perceived audio quality/distance feel — these require a live audio
-  runtime and multiple connected instances, validated through manual
-  multi-instance playtesting per this project's established convention for
-  networked/audio plumbing (see Danger System and Voice Chat Manager PRDs).
+  behavior, RTC packet playback through `AudioStreamPlayer3D`, and perceived
+  audio quality/distance feel — these require a live audio runtime and
+  multiple connected instances, validated through manual multi-instance
+  playtesting per this project's established convention for networked/audio
+  plumbing (see Danger System and Voice Chat Manager PRDs).
 - **Covered, if useful:** a lightweight scene-instantiation test confirming
-  `voice_chat_network.tscn` still instantiates without error post-node-type
-  change, and that the renamed node references resolve (`get_node_or_null`
-  checks don't return null) — mirrors the low-cost "does it wire up"
-  assertions already used elsewhere in this codebase rather than testing
-  audio behavior itself.
+  `eos_voice_network.tscn` still instantiates without error, and that the
+  node references resolve — mirrors the low-cost "does it wire up" assertions
+  already used elsewhere in this codebase rather than testing audio behavior
+  itself.
 
-No new GUT test file is expected to carry meaningful weight here; this is
-primarily a manual-playtest-validated change.
+No GUT test file carries meaningful weight here; this is primarily a
+manual-playtest-validated change.
 
 ## Out of Scope
 
@@ -157,26 +155,21 @@ primarily a manual-playtest-validated change.
 This slice was deliberately chosen as the smallest, most isolated fix
 identified from a broader design review against friendslop-genre convention
 (proximity voice was flagged as the single highest-impact missing mechanic
-relative to genre peers). Several other findings from that review — a
-swimming/reelable fish rework, a solo-play design decision, and additional
-skill/variety layers to replace the removed reel-meter — were deliberately
-parked out of this PRD to avoid scope creep, per this project's own
-established build-order convention of shipping and playtesting one slice at
-a time.
+relative to genre peers). Other findings from that review were parked to avoid
+scope creep, per this project's own established build-order convention of
+shipping and playtesting one slice at a time.
 
-### Compatibility Audit Summary
+### Transport Supersession
 
-A pre-implementation audit of `addons/twovoip/voiphelper/two_voip_speaker.tscn`
-confirmed no addon-side blockers: the speaker component's public surface
-(`.stream`, `.playing`, `.play()`, `.get_stream_playback()`) is available
-identically on both `AudioStreamPlayer` and `AudioStreamPlayer3D`, with no
-2D-specific dependencies found. This means the swap is expected to be a
-same-day, low-risk change rather than requiring an adapter/proxy layer.
+The TwoVoip-addon design in this document's original revision was never built.
+PR #125 shipped positional falloff via `AudioStreamPlayer3D` while still on
+the RPC transport; PR #166 replaced that transport with EOS RTC rooms
+(`eos_voice_network.gd`, `EosVoiceNetwork` scene). The positional-falloff
+behavior is preserved and unchanged by the transport swap. This document
+reflects the shipped implementation.
 
 ### Publishing Note
 
-This repository has no connected issue tracker. Following this project's
-established convention (see the 4-Player Multiplayer, Round Structure
-Rework, and Shop Upgrades PRDs), this document is published as
-`docs/prd/proximity-voice-chat.md` and should be mirrored to Notion under
-Project Loki's Specification section if that workflow is still in use.
+Following this project's established convention, this document lives at
+`docs/prd/archive/proximity-voice.md` as the historical/spec record and is
+mirrored to Notion under Project Loki's Specification section.

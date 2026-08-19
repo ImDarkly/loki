@@ -1,6 +1,6 @@
 **Feature ID:** RSR-001
 
-**Status:** Ready for Development — ready-for-agent
+**Status:** CLOSED - implemented (PR #90, #91, 2026-07-12)
 
 **Owner:** Solo Developer
 

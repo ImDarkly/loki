@@ -2,7 +2,7 @@
 
 **Version:** 1.0
 **Date:** July 21, 2026
-**Status:** DRAFT — pending EOS product registration and spike verification
+**Status:** CLOSED - superseded by eosg-networking-migration (confirmed dead by project owner; EOSG migrated 2026-08-18)
 **Owner:** Solo Developer
 **Supersedes/Amends:** `.opencode/plans/multiplayer-migration.md` (see Decision 0 below)
 

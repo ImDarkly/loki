@@ -1,5 +1,5 @@
 **Feature ID:** DS-001
-**Status:** Ready for Development
+**Status:** CLOSED - implemented (PR #22, #57; shark repel rewritten by RSK-001/#123, 2026-07-19)
 **Target Completion:** Week 3-4
 **Owner:** Solo Developer
 **Tech Stack:** Godot 4.6, GDScript
