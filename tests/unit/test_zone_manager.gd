@@ -224,6 +224,94 @@ func test_scare_interrupts_offline_occupant_with_minus_one_owner() -> void:
 	assert_signal_emitted(mechanic, "reel_failure")
 
 
+func test_yell_start_fires_immediate_scare_and_starts_timer() -> void:
+	manager.set_zones([{"center": _near_source_zone_pos(), "radius": 1.0}])
+	var yeller := _add_yelling_player(101, Vector3(0, 0, 0), true)
+	manager.set_process(false)
+	var before: Vector3 = manager.zones[0]["center"]
+	var source: Vector3 = yeller.global_position
+
+	manager._update_yell_scare_state()
+
+	var after: Vector3 = manager.zones[0]["center"]
+	assert_ne(after, before)
+	assert_gt(_flat_distance(source, after), _flat_distance(source, before))
+	assert_false(manager.yell_scare_timer.is_stopped(), "Timer must run while anyone is yelling")
+
+
+func test_sustained_yelling_fires_scare_on_each_tick() -> void:
+	manager.set_zones([{"center": _near_source_zone_pos(), "radius": 1.0}])
+	_add_yelling_player(101, Vector3(0, 0, 0), true)
+	manager.set_process(false)
+	manager._update_yell_scare_state()
+
+	for tick in range(3):
+		manager.set_zones([{"center": _near_source_zone_pos(), "radius": 1.0}])
+		var before: Vector3 = manager.zones[0]["center"]
+		assert_eq(manager._on_yell_scare_tick(), 1, "Each tick must scare once per yeller")
+		assert_ne(manager.zones[0]["center"], before, "Each tick must relocate the in-range zone")
+
+
+func test_client_peer_never_scares() -> void:
+	_saved_multiplayer_peer = manager.multiplayer.multiplayer_peer
+	var fake_peer := _make_client_peer()
+	manager.multiplayer.multiplayer_peer = fake_peer
+	manager.set_zones([{"center": _near_source_zone_pos(), "radius": 1.0}])
+	_add_yelling_player(101, Vector3(0, 0, 0), true)
+	manager.set_process(false)
+	var before: Vector3 = manager.zones[0]["center"]
+
+	manager._update_yell_scare_state()
+	assert_eq(manager.zones[0]["center"], before, "Client must not scare during poll")
+	assert_true(manager.yell_scare_timer.is_stopped(), "Client must not start the scare timer")
+
+	manager._on_yell_scare_tick()
+	assert_eq(manager.zones[0]["center"], before, "Client must not scare on tick")
+
+
+func test_sustained_yelling_runs_on_configured_interval() -> void:
+	_add_yelling_player(101, Vector3(0, 0, 0), true)
+	manager.set_process(false)
+
+	manager._update_yell_scare_state()
+
+	assert_false(manager.yell_scare_timer.is_stopped(), "Timer must run while sustained")
+	assert_eq(manager.yell_scare_timer.wait_time, manager.yell_rescare_interval)
+
+
+func test_yell_stop_stops_timer_and_halts_scares() -> void:
+	manager.set_zones([{"center": _near_source_zone_pos(), "radius": 1.0}])
+	var yeller := _add_yelling_player(101, Vector3(0, 0, 0), true)
+	manager.set_process(false)
+	manager._update_yell_scare_state()
+	assert_false(manager.yell_scare_timer.is_stopped(), "Timer must be running while yelling")
+
+	yeller.is_yelling = false
+	manager._update_yell_scare_state()
+
+	assert_true(manager.yell_scare_timer.is_stopped(), "Timer must stop when yelling ends")
+	assert_eq(manager._on_yell_scare_tick(), 0, "No scares after yelling stops")
+
+
+func test_new_yeller_while_another_yelling_fires_immediate_scare() -> void:
+	manager.set_zones([
+		{"center": Vector3(0, 0, 6.5), "radius": 1.0},
+		{"center": Vector3(0, 0, -20.0), "radius": 1.0}
+	])
+	_add_yelling_player(101, Vector3(0, 0, 0), true)
+	manager.set_process(false)
+	manager._update_yell_scare_state()
+
+	var second_zone_before: Vector3 = manager.zones[1]["center"]
+	var second_yeller := _add_yelling_player(202, Vector3(0, 0, -12.0), true)
+	manager._update_yell_scare_state()
+
+	var second_zone_after: Vector3 = manager.zones[1]["center"]
+	assert_ne(second_zone_after, second_zone_before, "New yeller's edge must scare its nearby zone")
+	assert_gt(_flat_distance(second_yeller.global_position, second_zone_after), _flat_distance(second_yeller.global_position, second_zone_before))
+	assert_false(manager.yell_scare_timer.is_stopped(), "Timer must keep running while anyone yells")
+
+
 func _flat_distance(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z))
 
@@ -255,6 +343,33 @@ func _add_mock_occupant(peer_id: int, state: int, owner_id: int) -> Node:
 	mechanic.set_script(mock_script)
 	player.add_child(mechanic)
 	return mechanic
+
+
+func _make_client_peer() -> MultiplayerPeer:
+	var peer := ENetMultiplayerPeer.new()
+	peer.create_client("127.0.0.1", 1)
+	return peer
+
+
+func _add_yelling_player(peer_id: int, position: Vector3, is_yelling: bool) -> Node3D:
+	var players := manager.get_parent().get_node_or_null("Players")
+	if players == null:
+		players = autofree(Node3D.new())
+		players.name = "Players"
+		manager.get_parent().add_child(players)
+	var player := Node3D.new()
+	player.name = "Player_%d" % peer_id
+	player.position = position
+	var yell_script := GDScript.new()
+	yell_script.source_code = "extends Node3D\nvar is_yelling: bool = false\n"
+	yell_script.reload()
+	player.set_script(yell_script)
+	player.is_yelling = is_yelling
+	players.add_child(player)
+	var mechanic := Node3D.new()
+	mechanic.name = "FishingMechanic"
+	player.add_child(mechanic)
+	return player
 
 
 
