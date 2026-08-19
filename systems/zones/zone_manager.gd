@@ -9,18 +9,23 @@ const NO_ZONE_INDEX: int = -1
 @export var min_zone_spacing: float = 2.0
 @export var reshuffle_interval_min: float = 90.0
 @export var reshuffle_interval_max: float = 180.0
+@export var yell_scare_radius: float = 8.0
+@export var yell_rescare_interval: float = 1.5
 
 var zones: Array[Dictionary] = []
 var zone_nodes: Array[MeshInstance3D] = []
 var zone_occupant_counts: Array[int] = []
 var _peer_zone_occupancy: Dictionary = {}
+var _previously_yelling: Dictionary = {}
 
 @onready var reshuffle_timer: Timer = $ReshuffleTimer
+@onready var yell_scare_timer: Timer = $YellScareTimer
 
 
 func _ready() -> void:
 	reshuffle_timer.one_shot = true
 	reshuffle_timer.timeout.connect(_on_reshuffle_timer_timeout)
+	yell_scare_timer.timeout.connect(_on_yell_scare_tick)
 
 	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		multiplayer.peer_disconnected.connect(_on_peer_disconnected)
@@ -30,7 +35,12 @@ func _ready() -> void:
 	else:
 		set_process(false)
 		reshuffle_timer.stop()
+		yell_scare_timer.stop()
 		return
+
+
+func _process(_delta: float) -> void:
+	_update_yell_scare_state()
 
 
 func _on_peer_disconnected(id: int) -> void:
@@ -243,6 +253,38 @@ func _interrupt_zone_occupants(zone_index: int) -> void:
 			_broadcast_fish_fled_rpc.rpc(peer_id)
 		else:
 			_broadcast_fish_fled_rpc(-1)
+
+
+func _update_yell_scare_state() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	var anyone_yelling := false
+	for player in _get_player_nodes():
+		var player_id := player.get_instance_id()
+		var now_yelling: bool = player.get(&"is_yelling") == true
+		if now_yelling and not _previously_yelling.get(player_id, false):
+			scare(player.global_position, yell_scare_radius)
+		if now_yelling:
+			anyone_yelling = true
+		_previously_yelling[player_id] = now_yelling
+	if not anyone_yelling:
+		yell_scare_timer.stop()
+		_previously_yelling.clear()
+		return
+	if yell_scare_timer.is_stopped():
+		yell_scare_timer.start(yell_rescare_interval)
+
+
+# Returns yeller count so direct-call tests can assert firing without a running timer.
+func _on_yell_scare_tick() -> int:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return 0
+	var count := 0
+	for player in _get_player_nodes():
+		if player.get(&"is_yelling") == true:
+			scare(player.global_position, yell_scare_radius)
+			count += 1
+	return count
 
 
 func _get_player_nodes() -> Array[Node3D]:
