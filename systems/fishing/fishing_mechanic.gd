@@ -24,8 +24,6 @@ var _current_flight_duration: float
 @onready var catch_feedback_manager: Node3D = $CatchFeedbackManager
 
 var current_state: State = State.IDLE
-var _base_min_bite_delay: float
-var _base_max_bite_delay: float
 var visual_line_node: MeshInstance3D = null
 var line_material: ORMMaterial3D = null
 var bobber_node: MeshInstance3D = null
@@ -242,9 +240,6 @@ func _ready() -> void:
 		var cast_mouse := InputEventMouseButton.new()
 		cast_mouse.button_index = MOUSE_BUTTON_LEFT
 		InputMap.action_add_event("cast_line", cast_mouse)
-
-	_base_min_bite_delay = min_bite_delay
-	_base_max_bite_delay = max_bite_delay
 
 	line_material = ORMMaterial3D.new()
 	line_material.albedo_color = Color(1.0, 1.0, 1.0)
@@ -542,16 +537,6 @@ func reset_for_restart() -> void:
 	personal_catch_count = 0
 	_active_zone_index = -1
 	personal_catch_changed.emit(personal_catch_count)
-
-
-func apply_bite_speed_multiplier(mult: float) -> void:
-	min_bite_delay = _base_min_bite_delay / mult
-	max_bite_delay = _base_max_bite_delay / mult
-
-
-func reset_bite_speed() -> void:
-	min_bite_delay = _base_min_bite_delay
-	max_bite_delay = _base_max_bite_delay
 
 
 func _snap_bobber_to_rod() -> void:

@@ -39,14 +39,6 @@ func test_coins_survive_restart() -> void:
 	assert_eq(_coin_manager.coins, 42, "Coins should survive restart")
 
 
-func test_upgrade_flags_survive_restart() -> void:
-	_coin_manager.max_health_upgrade_owned = true
-	_coin_manager.rod_pull_speed_upgrade_owned = true
-	_round_manager._apply_restart()
-	assert_true(_coin_manager.max_health_upgrade_owned, "max_health flag should survive restart")
-	assert_true(_coin_manager.rod_pull_speed_upgrade_owned, "rod_pull_speed flag should survive restart")
-
-
 func test_shop_ui_close_emits_shop_toggled_false() -> void:
 	var shop_scene = load("res://ui/shop_ui.tscn")
 	var shop = shop_scene.instantiate()
