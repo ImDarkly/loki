@@ -698,6 +698,10 @@ func _process_fight(delta: float) -> void:
 func _enter_spectate() -> void:
 	if get_multiplayer_authority() != multiplayer.get_unique_id():
 		return
+	if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
+		assigned_fireplace.release_seat_for_player(self)
+	if _sitting_heal:
+		_sitting_heal.reset()
 	player_state = PlayerState.SPECTATE
 	camera.current = false
 	spectate_cam_camera.current = true

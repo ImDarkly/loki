@@ -14,7 +14,7 @@ func before_each() -> void:
 	coin_manager.name = "CoinManager"
 	_main.add_child(coin_manager)
 
-	var notif: Node = load("res://ui/notification_label.tscn").instantiate()
+	var notif: Node = autofree(load("res://ui/notification_label.tscn").instantiate())
 	notif.name = "NotificationLabel"
 	_main.add_child(notif)
 
