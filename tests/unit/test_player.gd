@@ -48,6 +48,10 @@ func _build_player(node_name: String = "", parent: Node = null) -> Player:
 	health_component.name = "HealthComponent"
 	player_node.add_child(health_component)
 
+	var sitting_heal := SittingHealComponent.new()
+	sitting_heal.name = "SittingHeal"
+	player_node.add_child(sitting_heal)
+
 	var spectate_camera := Node3D.new()
 	spectate_camera.name = "SpectateCamera"
 	player_node.add_child(spectate_camera)
@@ -424,3 +428,51 @@ func test_fall_off_island_peer_branch_round_trip() -> void:
 	get_tree().set_multiplayer(null, client_root.get_path())
 	server_root.queue_free()
 	client_root.queue_free()
+
+
+func test_sitting_starts_false() -> void:
+	assert_false(player._sitting_heal.is_sitting, "Sitting should start false")
+
+
+func test_sitting_blocks_movement() -> void:
+	player._sitting_heal.set_sitting(true)
+	player.velocity = Vector3(5, 0, 5)
+	player._physics_process(0.016)
+	assert_true(player._sitting_heal.is_sitting, "Player should remain sitting with no input")
+	assert_eq(player.velocity.x, 0.0, "Horizontal velocity should be locked while sitting")
+	assert_eq(player.velocity.z, 0.0, "Horizontal velocity should be locked while sitting")
+
+
+func test_wasd_press_stands_player_up() -> void:
+	player._sitting_heal.set_sitting(true)
+	Input.action_press("move_right")
+	player._physics_process(0.016)
+	Input.action_release("move_right")
+	assert_false(player._sitting_heal.is_sitting, "WASD press should stand the player up")
+
+
+func test_prompt_visible_without_carrying_when_allowed() -> void:
+	player.is_carrying = false
+	player._ray_hit_box = true
+	var interactable: InteractableComponent = autofree(InteractableComponent.new())
+	interactable.show_prompt_without_carrying = true
+	interactable.prompt_text = "Sit by the Fireplace [Right-click]"
+	player._update_prompt_visibility(interactable)
+	var label := player._interact_prompt.get_node("PromptLabel") as Label
+	assert_true(label.visible, "Prompt should show without carrying when interactable allows it")
+	assert_eq(label.text, "Sit by the Fireplace [Right-click]", "Prompt should show interactable text")
+
+
+func test_prompt_hidden_without_carrying_when_not_allowed() -> void:
+	player.is_carrying = false
+	player._ray_hit_box = true
+	var interactable: InteractableComponent = autofree(InteractableComponent.new())
+	player._update_prompt_visibility(interactable)
+	var label := player._interact_prompt.get_node("PromptLabel") as Label
+	assert_false(label.visible, "Prompt should stay hidden without carrying when not allowed")
+
+
+func test_restart_clears_sitting() -> void:
+	player._sitting_heal.set_sitting(true)
+	player.reset_for_restart()
+	assert_false(player._sitting_heal.is_sitting, "Restart should stand the player up")

@@ -1,4 +1,7 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://entities/fireplace.gd" id="1_fp"]
+[ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="2_ic"]
 
 [sub_resource type="CylinderShape3D" id="shape"]
 radius = 1.1
@@ -59,6 +62,11 @@ rings = 5
 
 [node name="Fireplace" type="StaticBody3D"]
 collision_layer = 32
+script = ExtResource("1_fp")
+
+[node name="InteractableComponent" type="Node" parent="."]
+script = ExtResource("2_ic")
+show_prompt_without_carrying = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)

@@ -39,6 +39,32 @@ func _broadcast_take_damage(target_owner_id: int, amount: int) -> void:
 	_apply_damage(amount)
 
 
+func heal(amount: int) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	_apply_heal(amount)
+	var owner_id := _get_owner_id()
+	if multiplayer.has_multiplayer_peer():
+		_broadcast_heal.rpc(owner_id, amount)
+
+
+func _apply_heal(amount: int) -> void:
+	if amount <= 0:
+		return
+	var old := current_health
+	current_health = min(max_health, current_health + amount)
+	if old == current_health:
+		return
+	health_changed.emit(old, current_health)
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _broadcast_heal(target_owner_id: int, amount: int) -> void:
+	if multiplayer.get_unique_id() != target_owner_id:
+		return
+	_apply_heal(amount)
+
+
 func reset_to_max() -> void:
 	var old := current_health
 	current_health = max_health
