@@ -92,3 +92,23 @@ func test_purchase_shows_notification() -> void:
 	coin_manager.request_buy_fireplace()
 	var label := _main.get_node("NotificationLabel/Label") as Label
 	assert_string_contains(label.text, "bought the Fireplace", "Purchase should notify the team")
+
+
+func test_seats_hidden_before_purchase() -> void:
+	assert_false(fireplace.get_node("Seats").visible, "Seats should be hidden before purchase")
+
+
+func test_seats_visible_after_purchase() -> void:
+	coin_manager.fireplace_owned = true
+	coin_manager.fireplace_updated.emit()
+	assert_true(fireplace.get_node("Seats").visible, "Seats should be visible after purchase")
+
+
+func test_interact_assigns_seat_and_snaps_position() -> void:
+	coin_manager.fireplace_owned = true
+	var player := await _build_player("Player_1")
+	fireplace.get_node("InteractableComponent").interacted.emit(player)
+	assert_not_null(player.assigned_fireplace_seat, "Player should be assigned to a seat")
+	var seat_pos = (player.assigned_fireplace_seat as Node3D).global_position
+	assert_eq(player.global_position, seat_pos, "Player position should snap to the seat position")
+	player.free()

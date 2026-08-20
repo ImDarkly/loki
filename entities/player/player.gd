@@ -45,6 +45,9 @@ class_name Player extends CharacterBody3D
 @onready var _health_component: HealthComponent = $HealthComponent
 @onready var _sitting_heal: SittingHealComponent = $SittingHeal
 
+var assigned_fireplace: Node3D = null
+var assigned_fireplace_seat: Node3D = null
+
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _jump_velocity: float
 
@@ -635,6 +638,8 @@ func _physics_process(delta: float) -> void:
 func _process_sitting(delta: float) -> void:
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if input_dir != Vector2.ZERO:
+		if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
+			assigned_fireplace.release_seat_for_player(self)
 		_sitting_heal.set_sitting(false)
 		return
 	velocity.x = 0.0
@@ -944,6 +949,8 @@ func reset_for_restart() -> void:
 	if holding_rock:
 		holding_rock = false
 		_hide_held_rock_remote()
+	if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
+		assigned_fireplace.release_seat_for_player(self)
 	if _sitting_heal:
 		_sitting_heal.reset()
 	_fell_off_island_reported = false
