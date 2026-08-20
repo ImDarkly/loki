@@ -1,0 +1,100 @@
+[gd_scene load_steps=14 format=3]
+
+[sub_resource type="CylinderShape3D" id="shape"]
+radius = 1.1
+height = 0.8
+
+[sub_resource type="StandardMaterial3D" id="mat_stone"]
+albedo_color = Color(0.55, 0.5, 0.45, 1)
+shading_mode = 0
+
+[sub_resource type="StandardMaterial3D" id="mat_dark"]
+albedo_color = Color(0.15, 0.1, 0.08, 1)
+shading_mode = 0
+
+[sub_resource type="StandardMaterial3D" id="mat_log"]
+albedo_color = Color(0.45, 0.28, 0.12, 1)
+shading_mode = 0
+
+[sub_resource type="StandardMaterial3D" id="mat_flame_outer"]
+albedo_color = Color(1.0, 0.5, 0.1, 1)
+shading_mode = 0
+
+[sub_resource type="StandardMaterial3D" id="mat_flame_inner"]
+albedo_color = Color(1.0, 0.85, 0.3, 1)
+shading_mode = 0
+
+[sub_resource type="CylinderMesh" id="mesh_ring"]
+top_radius = 1.2
+bottom_radius = 1.2
+height = 0.4
+radial_segments = 24
+
+[sub_resource type="CylinderMesh" id="mesh_pit"]
+top_radius = 0.7
+bottom_radius = 0.7
+height = 0.1
+radial_segments = 20
+
+[sub_resource type="BoxMesh" id="mesh_log"]
+size = Vector3(1.3, 0.12, 0.14)
+
+[sub_resource type="SphereMesh" id="mesh_flame_low"]
+radius = 0.35
+height = 0.7
+radial_segments = 12
+rings = 8
+
+[sub_resource type="SphereMesh" id="mesh_flame_mid"]
+radius = 0.22
+height = 0.44
+radial_segments = 10
+rings = 6
+
+[sub_resource type="SphereMesh" id="mesh_flame_tip"]
+radius = 0.12
+height = 0.24
+radial_segments = 8
+rings = 5
+
+[node name="Fireplace" type="StaticBody3D"]
+collision_layer = 32
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("shape")
+
+[node name="StoneRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+mesh = SubResource("mesh_ring")
+material_override = SubResource("mat_stone")
+
+[node name="Pit" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+mesh = SubResource("mesh_pit")
+material_override = SubResource("mat_dark")
+
+[node name="Log1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.42, 0)
+mesh = SubResource("mesh_log")
+material_override = SubResource("mat_log")
+
+[node name="Log2" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0, 0.42, 0)
+mesh = SubResource("mesh_log")
+material_override = SubResource("mat_log")
+
+[node name="FlameLow" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.82, 0)
+mesh = SubResource("mesh_flame_low")
+material_override = SubResource("mat_flame_outer")
+
+[node name="FlameMid" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.02, 0)
+mesh = SubResource("mesh_flame_mid")
+material_override = SubResource("mat_flame_inner")
+
+[node name="FlameTip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.16, 0)
+mesh = SubResource("mesh_flame_tip")
+material_override = SubResource("mat_flame_outer")

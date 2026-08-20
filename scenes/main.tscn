@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://systems/quota/coin_manager.tscn" id="coin_man_scene"]
 [ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="interactable_comp_script"]
 [ext_resource type="PackedScene" path="res://entities/shop_hut.tscn" id="shop_hut_scene"]
+[ext_resource type="PackedScene" path="res://entities/fireplace.tscn" id="fireplace_scene"]
 
 [sub_resource type="BoxShape3D" id="box_shape"]
 size = Vector3(0.8, 0.6, 0.8)
@@ -46,6 +47,9 @@ spawn_path = NodePath("..")
 
 [node name="ShopHut" parent="Shops" unique_id=1375466103 instance=ExtResource("shop_hut_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
+
+[node name="Fireplace" parent="Shops" instance=ExtResource("fireplace_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7)
 
 [node name="CoinManager" parent="." unique_id=1167381513 instance=ExtResource("coin_man_scene")]
 
