@@ -85,6 +85,74 @@ func test_attack_distance_triggers_signals() -> void:
 	assert_between(manager.return_timer.time_left, 45.0, 90.0, "Return interval should be 45-90 seconds")
 
 
+func test_approaching_never_enters_island() -> void:
+	manager.current_state = 0
+	manager._on_spawn_timer_timeout()
+	manager.current_state = 1
+	manager.player_ref.global_position = MapConfig.MAP_CENTER
+	manager.attack_range = 2.0
+	manager.shark_node.position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 10.0, 0, 0)
+
+	manager._physics_process(10.0)
+
+	var flat_dist: float = Vector2(
+		manager.shark_node.position.x - MapConfig.MAP_CENTER.x,
+		manager.shark_node.position.z - MapConfig.MAP_CENTER.z
+	).length()
+	assert_gt(flat_dist, MapConfig.ISLAND_RADIUS - 0.001, "Shark should never move onto the island interior")
+	assert_eq(manager.current_state, 1, "Should stay APPROACHING while the player is beyond reach")
+
+
+func test_shoreline_player_within_attack_radius_is_bitten() -> void:
+	manager.current_state = 0
+	manager._on_spawn_timer_timeout()
+	manager.current_state = 1
+	manager.attack_range = 2.0
+	manager.shark_node.position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS, 0, 0)
+	manager.player_ref.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS - 1.0, 0, 0)
+
+	var health := mock_player.get_node("HealthComponent") as HealthComponent
+	health.current_health = 5
+
+	watch_signals(manager)
+	manager._physics_process(1.0)
+
+	assert_signal_emitted(manager, "fish_fled")
+	assert_eq(health.current_health, 3, "Health should be reduced by shark_bite_damage (2)")
+	assert_eq(manager.current_state, 4, "Should be WAITING (4) after attack")
+
+
+func test_shoreline_player_outside_attack_radius_not_bitten() -> void:
+	manager.current_state = 0
+	manager._on_spawn_timer_timeout()
+	manager.current_state = 1
+	manager.attack_range = 2.0
+	manager.shark_node.position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS, 0, 0)
+	manager.player_ref.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS - 3.0, 0, 0)
+
+	watch_signals(manager)
+	manager._physics_process(1.0)
+
+	assert_signal_not_emitted(manager, "fish_fled")
+	assert_eq(manager.current_state, 1, "Should stay APPROACHING when the player is beyond attack radius")
+
+	var flat_dist: float = Vector2(
+		manager.shark_node.position.x - MapConfig.MAP_CENTER.x,
+		manager.shark_node.position.z - MapConfig.MAP_CENTER.z
+	).length()
+	assert_gt(flat_dist, MapConfig.ISLAND_RADIUS - 0.001, "Shark should wait at the shore edge")
+
+
+func test_attack_radius_ring_created_when_enabled() -> void:
+	manager.show_attack_radius = true
+	manager.current_state = 0
+	manager._on_spawn_timer_timeout()
+	assert_eq(manager.shark_node.get_child_count(), 1, "Shark mesh should carry the attack-radius ring")
+	var ring := manager.shark_node.get_child(0) as MeshInstance3D
+	assert_true(is_instance_valid(ring), "Ring child should be a MeshInstance3D")
+	assert_true(ring.visible, "Ring should be visible when show_attack_radius is on")
+
+
 func test_retreating_exits_boundary_transitions_to_waiting() -> void:
 	manager.current_state = 0
 	manager._on_spawn_timer_timeout()

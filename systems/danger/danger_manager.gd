@@ -12,6 +12,7 @@ signal quota_penalty(amount: int)
 @export var repel_radius: float = 2.0
 @export var min_spawn_distance_from_player: float = 12.0
 @export var shark_bite_damage: int = 2
+@export var show_attack_radius: bool = false
 
 var current_state: State = State.INACTIVE
 var player_ref: Node3D = null
@@ -139,6 +140,21 @@ func _create_shark_mesh() -> MeshInstance3D:
 	mi.material_override = mat
 	mi.mesh = mesh
 
+	if show_attack_radius:
+		var ring := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		torus.inner_radius = attack_range - 0.05
+		torus.outer_radius = attack_range + 0.05
+		torus.ring_segments = 32
+		torus.rings = 8
+		ring.mesh = torus
+		var ring_mat := StandardMaterial3D.new()
+		ring_mat.albedo_color = Color(1.0, 0.2, 0.2, 0.35)
+		ring_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		ring.material_override = ring_mat
+		mi.add_child(ring)
+
 	return mi
 
 
@@ -167,11 +183,22 @@ func _process_approaching(delta: float) -> void:
 
 	var direction := (target - current).normalized()
 	var step: float = minf(initial_swim_speed * delta, dist)
-	shark_node.position += direction * step
+	var new_pos := shark_node.position + direction * step
+	if MapConfig.is_within_radius(new_pos, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS):
+		new_pos = _clamp_to_island_edge(new_pos)
+	shark_node.position = new_pos
 
 	if direction.length_squared() > 0.001:
 		shark_node.look_at(shark_node.position + direction, Vector3.UP)
 	_sync_state_to_clients()
+
+
+func _clamp_to_island_edge(pos: Vector3) -> Vector3:
+	var flat := Vector2(pos.x - MapConfig.MAP_CENTER.x, pos.z - MapConfig.MAP_CENTER.z)
+	if flat.length_squared() <= 0.0001:
+		return MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS, 0, 0)
+	flat = flat.normalized() * MapConfig.ISLAND_RADIUS
+	return Vector3(MapConfig.MAP_CENTER.x + flat.x, pos.y, MapConfig.MAP_CENTER.z + flat.y)
 
 
 func _process_retreating(delta: float) -> void:
