@@ -2,11 +2,21 @@ extends StaticBody3D
 
 @onready var interactable_component = $InteractableComponent
 @onready var coin_manager = get_node_or_null("/root/main/CoinManager")
+@onready var _flame_nodes: Array[Node3D] = [$FlameLow, $FlameMid, $FlameTip]
 
 
 func _ready() -> void:
 	interactable_component.interacted.connect(_on_interact)
+	if coin_manager:
+		coin_manager.fireplace_updated.connect(_update_flames)
+	_update_flames()
 	_update_prompt()
+
+
+func _update_flames() -> void:
+	var burning: bool = coin_manager != null and coin_manager.is_fireplace_owned()
+	for flame in _flame_nodes:
+		flame.visible = burning
 
 
 func _process(_delta: float) -> void:

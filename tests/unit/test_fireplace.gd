@@ -14,6 +14,10 @@ func before_each() -> void:
 	coin_manager.name = "CoinManager"
 	_main.add_child(coin_manager)
 
+	var notif: Node = load("res://ui/notification_label.tscn").instantiate()
+	notif.name = "NotificationLabel"
+	_main.add_child(notif)
+
 	fireplace = load("res://entities/fireplace.tscn").instantiate()
 	add_child(fireplace)
 	await get_tree().process_frame
@@ -67,3 +71,24 @@ func test_interact_after_purchase_toggles_sitting() -> void:
 	fireplace.get_node("InteractableComponent").interacted.emit(player)
 	assert_false(player._sitting_heal.is_sitting, "Second right-click should stand up")
 	player.free()
+
+
+func test_flames_hidden_before_purchase() -> void:
+	assert_false(fireplace.get_node("FlameLow").visible, "Flames should be hidden before purchase")
+	assert_false(fireplace.get_node("FlameMid").visible, "Flames should be hidden before purchase")
+	assert_false(fireplace.get_node("FlameTip").visible, "Flames should be hidden before purchase")
+
+
+func test_flames_visible_after_purchase() -> void:
+	coin_manager.fireplace_owned = true
+	coin_manager.fireplace_updated.emit()
+	assert_true(fireplace.get_node("FlameLow").visible, "Flames should burn after purchase")
+	assert_true(fireplace.get_node("FlameMid").visible, "Flames should burn after purchase")
+	assert_true(fireplace.get_node("FlameTip").visible, "Flames should burn after purchase")
+
+
+func test_purchase_shows_notification() -> void:
+	coin_manager.coins = 20
+	coin_manager.request_buy_fireplace()
+	var label := _main.get_node("NotificationLabel/Label") as Label
+	assert_string_contains(label.text, "bought the Fireplace", "Purchase should notify the team")
