@@ -1,11 +1,13 @@
 extends PanelContainer
 
-@onready var fish_label = $MarginContainer/VBoxContainer/FishLabel
-@onready var coin_label = $MarginContainer/VBoxContainer/CoinLabel
-@onready var close_button = $MarginContainer/VBoxContainer/CloseButton
-@onready var sell_all_button = $MarginContainer/VBoxContainer/SellAllButton
-@onready var quota_manager = get_node_or_null("/root/main/QuotaManager")
-@onready var coin_manager = get_node_or_null("/root/main/CoinManager")
+@onready var fish_label: Label = $MarginContainer/VBoxContainer/FishLabel
+@onready var coin_label: Label = $MarginContainer/VBoxContainer/CoinLabel
+@onready var close_button: Button = $MarginContainer/VBoxContainer/CloseButton
+@onready var sell_all_button: Button = $MarginContainer/VBoxContainer/SellAllButton
+@onready var fireplace_label: Label = $MarginContainer/VBoxContainer/FireplaceRow/FireplaceLabel
+@onready var fireplace_buy_button: Button = $MarginContainer/VBoxContainer/FireplaceRow/FireplaceBuyButton
+@onready var quota_manager: Node3D = get_node_or_null("/root/main/QuotaManager")
+@onready var coin_manager: CoinManager = get_node_or_null("/root/main/CoinManager")
 
 func _ready() -> void:
 	close_button.pressed.connect(close_shop)
@@ -25,8 +27,11 @@ func _ready() -> void:
 		quota_manager.quota_updated.connect(_update_ui)
 	if coin_manager.has_signal("coins_updated"):
 		coin_manager.coins_updated.connect(_update_ui)
+	if coin_manager.has_signal("fireplace_updated"):
+		coin_manager.fireplace_updated.connect(_update_ui)
 
 	sell_all_button.pressed.connect(_on_sell_all_pressed)
+	fireplace_buy_button.pressed.connect(_on_buy_fireplace_pressed)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -52,6 +57,12 @@ func _on_sell_all_pressed() -> void:
 	coin_manager.request_sell_all.rpc()
 
 
+func _on_buy_fireplace_pressed() -> void:
+	if not coin_manager:
+		return
+	coin_manager.request_buy_fireplace.rpc()
+
+
 func _update_ui(_val: int = 0) -> void:
 	if not quota_manager or not coin_manager:
 		return
@@ -60,3 +71,20 @@ func _update_ui(_val: int = 0) -> void:
 	fish_label.text = "Stored Fish: " + str(fish)
 	coin_label.text = "Coins: " + str(coins)
 	sell_all_button.disabled = fish <= 0
+
+	_update_fireplace_button(coins)
+
+
+func _update_fireplace_button(coins: int) -> void:
+	var cost: int = coin_manager.fireplace_cost
+	fireplace_label.text = "Fireplace — " + str(cost) + " coins"
+
+	if coin_manager.is_fireplace_owned():
+		fireplace_buy_button.text = "Owned"
+		fireplace_buy_button.disabled = true
+	elif coins >= cost:
+		fireplace_buy_button.text = "Buy"
+		fireplace_buy_button.disabled = false
+	else:
+		fireplace_buy_button.text = str(cost) + " coins"
+		fireplace_buy_button.disabled = true

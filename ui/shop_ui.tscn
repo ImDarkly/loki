@@ -44,3 +44,16 @@ text = "Coins: 0"
 [node name="SellAllButton" type="Button" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Sell All"
+
+[node name="FireplaceRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="FireplaceLabel" type="Label" parent="MarginContainer/VBoxContainer/FireplaceRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Fireplace"
+
+[node name="FireplaceBuyButton" type="Button" parent="MarginContainer/VBoxContainer/FireplaceRow"]
+layout_mode = 2
+text = "Buy"
