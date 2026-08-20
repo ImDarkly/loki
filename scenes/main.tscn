@@ -9,9 +9,10 @@
 [ext_resource type="PackedScene" path="res://ui/end_screen.tscn" id="7_7tkbk"]
 [ext_resource type="PackedScene" path="res://systems/rocks/rock_manager.tscn" id="8_rock"]
 [ext_resource type="PackedScene" path="res://systems/quota/coin_manager.tscn" id="coin_man_scene"]
-[ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="interactable_comp_script"]
-[ext_resource type="PackedScene" path="res://entities/shop_hut.tscn" id="shop_hut_scene"]
 [ext_resource type="PackedScene" path="res://entities/fireplace.tscn" id="fireplace_scene"]
+[ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="interactable_comp_script"]
+[ext_resource type="PackedScene" path="res://ui/notification_label.tscn" id="notif_scene"]
+[ext_resource type="PackedScene" path="res://entities/shop_hut.tscn" id="shop_hut_scene"]
 
 [sub_resource type="BoxShape3D" id="box_shape"]
 size = Vector3(0.8, 0.6, 0.8)
@@ -43,12 +44,14 @@ spawn_path = NodePath("..")
 
 [node name="EndScreen" parent="." unique_id=174325840 instance=ExtResource("7_7tkbk")]
 
+[node name="NotificationLabel" parent="." unique_id=1777638729 instance=ExtResource("notif_scene")]
+
 [node name="Shops" type="Node3D" parent="." unique_id=304189671]
 
 [node name="ShopHut" parent="Shops" unique_id=1375466103 instance=ExtResource("shop_hut_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
 
-[node name="Fireplace" parent="Shops" instance=ExtResource("fireplace_scene")]
+[node name="Fireplace" parent="Shops" unique_id=100141002 instance=ExtResource("fireplace_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7)
 
 [node name="CoinManager" parent="." unique_id=1167381513 instance=ExtResource("coin_man_scene")]

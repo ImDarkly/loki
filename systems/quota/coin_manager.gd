@@ -26,12 +26,33 @@ func request_buy_fireplace() -> void:
 	fireplace_owned = true
 	_sync_coins.rpc(coins)
 	_sync_fireplace.rpc(true)
+	var buyer_id := multiplayer.get_remote_sender_id()
+	if buyer_id == 0:
+		buyer_id = multiplayer.get_unique_id()
+	_notify_fireplace_bought.rpc(buyer_id, _buyer_name(buyer_id))
 
 
 @rpc("authority", "call_local", "reliable")
 func _sync_fireplace(owned: bool) -> void:
 	fireplace_owned = owned
 	fireplace_updated.emit()
+
+
+@rpc("authority", "call_local", "reliable")
+func _notify_fireplace_bought(buyer_id: int, buyer_name: String) -> void:
+	var notif := get_node_or_null("/root/main/NotificationLabel") as NotificationLabel
+	if not notif:
+		return
+	notif.show_message("%s bought the Fireplace! Team can now sit by the fire to heal" % buyer_name)
+
+
+func _buyer_name(peer_id: int) -> String:
+	var gm := get_node_or_null("/root/game_manager")
+	if gm:
+		for p in gm.players:
+			if p.id == peer_id:
+				return p.username
+	return "Player_%d" % peer_id
 
 
 func is_fireplace_owned() -> bool:

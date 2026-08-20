@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://systems/voice_chat/eos_voice_network.tscn" id="5_ih6f4"]
 [ext_resource type="Script" path="res://systems/health/health_label.gd" id="6_lm3n1"]
 [ext_resource type="PackedScene" path="res://systems/health/health_component.tscn" id="7_ok2f6"]
+[ext_resource type="Script" path="res://systems/health/sitting_heal_component.gd" id="8_sit"]
 
 [node name="Player" type="CharacterBody3D" unique_id=997464534]
 collision_layer = 2
@@ -34,6 +35,9 @@ far = 1000.0
 [node name="VoiceChatNetwork" parent="." unique_id=1582687195 instance=ExtResource("5_ih6f4")]
 
 [node name="HealthComponent" parent="." instance=ExtResource("7_ok2f6")]
+
+[node name="SittingHeal" type="Node" parent="."]
+script = ExtResource("8_sit")
 
 [node name="SpectateCamera" type="Node3D" parent="."]
 top_level = true

@@ -43,6 +43,10 @@ class_name Player extends CharacterBody3D
 @onready var spectate_cam_camera: Camera3D = $SpectateCamera/Camera3D
 @onready var _players_container: Node = get_node_or_null("/root/main/Players")
 @onready var _health_component: HealthComponent = $HealthComponent
+@onready var _sitting_heal: SittingHealComponent = $SittingHeal
+
+var assigned_fireplace: Node3D = null
+var assigned_fireplace_seat: Node3D = null
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _jump_velocity: float
@@ -339,7 +343,7 @@ func _update_prompt_visibility(interactable = null) -> void:
 	if not label:
 		return
 	
-	if _ray_hit_box and interactable and not _is_shop_open and is_carrying:
+	if _ray_hit_box and interactable and not _is_shop_open and (is_carrying or interactable.show_prompt_without_carrying):
 		label.text = interactable.prompt_text
 		label.add_theme_color_override("font_color", interactable.prompt_color)
 		label.visible = true
@@ -475,6 +479,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 
 	if event.is_action_pressed("cast_line"):
+		if _sitting_heal and _sitting_heal.is_sitting:
+			return
 		if holding_rock:
 			_throw_rock()
 		elif not is_carrying and _try_pickup_rock():
@@ -536,6 +542,10 @@ func _physics_process(delta: float) -> void:
 		if ct != _last_cast_target:
 			_last_cast_target = ct
 			rpc("_sync_cast_target", ct)
+		return
+
+	if _sitting_heal and _sitting_heal.is_sitting:
+		_process_sitting(delta)
 		return
 
 	if fishing_mechanic.is_fighting():
@@ -625,6 +635,20 @@ func _physics_process(delta: float) -> void:
 		rpc("_sync_flight_start", fsp)
 
 
+func _process_sitting(delta: float) -> void:
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if input_dir != Vector2.ZERO:
+		if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
+			assigned_fireplace.release_seat_for_player(self)
+		_sitting_heal.set_sitting(false)
+		return
+	velocity.x = 0.0
+	velocity.z = 0.0
+	if not is_on_floor():
+		velocity.y -= _gravity * delta
+	move_and_slide()
+
+
 func _process_fight(delta: float) -> void:
 	if not is_on_floor():
 		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
@@ -674,6 +698,10 @@ func _process_fight(delta: float) -> void:
 func _enter_spectate() -> void:
 	if get_multiplayer_authority() != multiplayer.get_unique_id():
 		return
+	if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
+		assigned_fireplace.release_seat_for_player(self)
+	if _sitting_heal:
+		_sitting_heal.reset()
 	player_state = PlayerState.SPECTATE
 	camera.current = false
 	spectate_cam_camera.current = true
@@ -914,12 +942,21 @@ func _clear_carry() -> void:
 	_update_prompt_visibility()
 
 
+func toggle_sitting() -> void:
+	if _sitting_heal:
+		_sitting_heal.toggle_sitting()
+
+
 func reset_for_restart() -> void:
 	if is_carrying:
 		_clear_carry()
 	if holding_rock:
 		holding_rock = false
 		_hide_held_rock_remote()
+	if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
+		assigned_fireplace.release_seat_for_player(self)
+	if _sitting_heal:
+		_sitting_heal.reset()
 	_fell_off_island_reported = false
 
 

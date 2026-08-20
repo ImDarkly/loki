@@ -1,4 +1,7 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://entities/fireplace.gd" id="1_fp"]
+[ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="2_ic"]
 
 [sub_resource type="CylinderShape3D" id="shape"]
 radius = 1.1
@@ -57,8 +60,19 @@ height = 0.24
 radial_segments = 8
 rings = 5
 
+[sub_resource type="CylinderMesh" id="mesh_seat"]
+top_radius = 0.35
+bottom_radius = 0.35
+height = 0.25
+radial_segments = 16
+
 [node name="Fireplace" type="StaticBody3D"]
 collision_layer = 32
+script = ExtResource("1_fp")
+
+[node name="InteractableComponent" type="Node" parent="."]
+script = ExtResource("2_ic")
+show_prompt_without_carrying = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
@@ -98,3 +112,38 @@ material_override = SubResource("mat_flame_inner")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.16, 0)
 mesh = SubResource("mesh_flame_tip")
 material_override = SubResource("mat_flame_outer")
+
+[node name="Seats" type="Node3D" parent="."]
+visible = false
+
+[node name="Seat1" type="Marker3D" parent="Seats"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.8)
+
+[node name="Stool" type="MeshInstance3D" parent="Seats/Seat1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.125, 0)
+mesh = SubResource("mesh_seat")
+material_override = SubResource("mat_log")
+
+[node name="Seat2" type="Marker3D" parent="Seats"]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, -1.8)
+
+[node name="Stool" type="MeshInstance3D" parent="Seats/Seat2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.125, 0)
+mesh = SubResource("mesh_seat")
+material_override = SubResource("mat_log")
+
+[node name="Seat3" type="Marker3D" parent="Seats"]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 1.8, 0, 0)
+
+[node name="Stool" type="MeshInstance3D" parent="Seats/Seat3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.125, 0)
+mesh = SubResource("mesh_seat")
+material_override = SubResource("mat_log")
+
+[node name="Seat4" type="Marker3D" parent="Seats"]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -1.8, 0, 0)
+
+[node name="Stool" type="MeshInstance3D" parent="Seats/Seat4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.125, 0)
+mesh = SubResource("mesh_seat")
+material_override = SubResource("mat_log")

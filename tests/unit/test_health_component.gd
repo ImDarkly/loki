@@ -93,3 +93,37 @@ func test_is_alive_returns_true_when_positive() -> void:
 func test_is_alive_returns_false_at_zero() -> void:
 	health.current_health = 0
 	assert_false(health.is_alive(), "Should not be alive when health == 0")
+
+
+func test_heal_increases_health() -> void:
+	health.current_health = 3
+	health.heal(1)
+	assert_eq(health.current_health, 4, "Heal should increase health by amount")
+
+
+func test_heal_clamps_at_max() -> void:
+	health.current_health = health.max_health - 1
+	health.heal(5)
+	assert_eq(health.current_health, health.max_health, "Heal should clamp at max_health")
+
+
+func test_heal_emits_health_changed() -> void:
+	health.current_health = 3
+	watch_signals(health)
+	health.heal(2)
+	assert_signal_emitted(health, "health_changed")
+
+
+func test_heal_does_not_emit_died() -> void:
+	health.current_health = 0
+	watch_signals(health)
+	health.heal(5)
+	assert_signal_not_emitted(health, "died")
+
+
+func test_heal_at_full_health_changes_nothing() -> void:
+	health.current_health = health.max_health
+	watch_signals(health)
+	health.heal(1)
+	assert_eq(health.current_health, health.max_health, "Heal at full health should not overflow")
+	assert_signal_not_emitted(health, "health_changed", "Heal at full health should not emit")
