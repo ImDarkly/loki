@@ -6,25 +6,22 @@ var _main: Node3D
 
 
 func before_each() -> void:
-	_main = Node3D.new()
+	_main = autofree(Node3D.new())
 	_main.name = "main"
 	get_node("/root").add_child(_main)
 
 	quota_manager = load("res://systems/quota/quota_manager.tscn").instantiate()
+	autofree(quota_manager)
 	quota_manager.name = "QuotaManager"
 	_main.add_child(quota_manager)
 
-	storage_box = load("res://entities/storage_box.tscn").instantiate()
+	storage_box = autofree(load("res://entities/storage_box.tscn").instantiate())
 	add_child(storage_box)
 	await get_tree().process_frame
 
 
 func after_each() -> void:
-	if storage_box and is_instance_valid(storage_box):
-		storage_box.free()
 	storage_box = null
-	if _main and is_instance_valid(_main):
-		_main.free()
 	_main = null
 
 
@@ -37,9 +34,9 @@ func test_initial_label_shows_zero_fish() -> void:
 
 
 func test_initial_label_shows_current_quota_for_late_joiner() -> void:
-	storage_box.free()
+	storage_box.queue_free()
 	quota_manager.shared_quota = 7
-	storage_box = load("res://entities/storage_box.tscn").instantiate()
+	storage_box = autofree(load("res://entities/storage_box.tscn").instantiate())
 	add_child(storage_box)
 	await get_tree().process_frame
 	assert_eq(_get_label().text, "7 fish in storage")
