@@ -26,3 +26,15 @@ shape = SubResource("box_shape")
 [node name="Mesh" type="MeshInstance3D" parent="."]
 material_override = SubResource("box_mat")
 mesh = SubResource("box_mesh")
+
+[node name="CountLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+billboard = 1
+double_sided = true
+font_size = 48
+outline_size = 12
+pixel_size = 0.005
+text = "0 fish in storage"
+horizontal_alignment = 1
+modulate = Color(1, 1, 1, 1)
+outline_modulate = Color(0, 0, 0, 1)
