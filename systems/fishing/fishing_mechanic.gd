@@ -19,7 +19,6 @@ var _current_flight_duration: float
 @onready var bite_timer: Timer = $BiteTimer
 @onready var bite_audio: AudioStreamPlayer = $BiteAudio
 @onready var casting_timer: Timer = $CastingTimer
-@onready var quota_label: Label = $CanvasLayer/QuotaLabel
 @onready var personal_label: Label = $CanvasLayer/PersonalLabel
 @onready var catch_feedback_manager: Node3D = $CatchFeedbackManager
 
@@ -34,7 +33,6 @@ var _launch_velocity: Vector3
 
 var personal_catch_count: int = 0
 
-var _quota_manager_ref: Node3D = null
 var _zone_manager_ref: Node3D = null
 var _round_manager_ref: Node = null
 var _active_zone_index: int = -1
@@ -174,21 +172,8 @@ func _complete_fight_catch() -> void:
 	catch_feedback_manager.play_catch_success()
 
 
-func _on_quota_updated(value: int) -> void:
-	quota_label.text = "Quota: %d" % value
-
-
 func _on_personal_catch_changed(count: int) -> void:
 	personal_label.text = "Your catches: %d" % count
-
-
-func _try_find_quota_manager() -> void:
-	if _quota_manager_ref:
-		return
-	var qm := get_node_or_null("/root/main/QuotaManager")
-	if qm:
-		_quota_manager_ref = qm
-		qm.quota_updated.connect(_on_quota_updated)
 
 
 func _try_find_zone_manager() -> void:
@@ -208,7 +193,6 @@ func _try_find_round_manager() -> void:
 
 
 func _ready() -> void:
-	_try_find_quota_manager()
 	_try_find_zone_manager()
 	_try_find_round_manager()
 	bite_timer.one_shot = true
@@ -218,7 +202,6 @@ func _ready() -> void:
 	casting_timer.one_shot = true
 	casting_timer.timeout.connect(_on_casting_timer_timeout)
 
-	quota_label.text = "Quota: 0"
 	personal_label.text = "Your catches: 0"
 	personal_catch_changed.connect(_on_personal_catch_changed)
 	catch_feedback_manager.feedback_completed.connect(_on_catch_feedback_completed)
