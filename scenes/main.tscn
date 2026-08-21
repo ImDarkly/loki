@@ -10,18 +10,9 @@
 [ext_resource type="PackedScene" path="res://systems/rocks/rock_manager.tscn" id="8_rock"]
 [ext_resource type="PackedScene" path="res://systems/quota/coin_manager.tscn" id="coin_man_scene"]
 [ext_resource type="PackedScene" path="res://entities/fireplace.tscn" id="fireplace_scene"]
-[ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="interactable_comp_script"]
 [ext_resource type="PackedScene" path="res://ui/notification_label.tscn" id="notif_scene"]
 [ext_resource type="PackedScene" path="res://entities/shop_hut.tscn" id="shop_hut_scene"]
-
-[sub_resource type="BoxShape3D" id="box_shape"]
-size = Vector3(0.8, 0.6, 0.8)
-
-[sub_resource type="ORMMaterial3D" id="box_mat"]
-albedo_color = Color(0.5, 0.3, 0.15, 1)
-
-[sub_resource type="BoxMesh" id="box_mesh"]
-size = Vector3(0.8, 0.6, 0.8)
+[ext_resource type="PackedScene" path="res://entities/storage_box.tscn" id="storage_box_scene"]
 
 [node name="main" type="Node3D" unique_id=1783119357]
 script = ExtResource("3_y6pqm")
@@ -56,17 +47,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7)
 
 [node name="CoinManager" parent="." unique_id=1167381513 instance=ExtResource("coin_man_scene")]
 
-[node name="StorageBox" type="StaticBody3D" parent="." unique_id=390215907 groups=["storage_box"]]
+[node name="StorageBox" parent="." unique_id=390215907 instance=ExtResource("storage_box_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, -0.2, -1.5)
-collision_layer = 32
-
-[node name="InteractableComponent" type="Node" parent="StorageBox" unique_id=2221299]
-script = ExtResource("interactable_comp_script")
-prompt_text = "Deposit Fish [Right Click]"
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StorageBox" unique_id=1649446584]
-shape = SubResource("box_shape")
-
-[node name="Mesh" type="MeshInstance3D" parent="StorageBox" unique_id=1975243973]
-material_override = SubResource("box_mat")
-mesh = SubResource("box_mesh")

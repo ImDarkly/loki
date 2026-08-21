@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://entities/storage_box.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="2_comp"]
+
+[sub_resource type="BoxShape3D" id="box_shape"]
+size = Vector3(0.8, 0.6, 0.8)
+
+[sub_resource type="ORMMaterial3D" id="box_mat"]
+albedo_color = Color(0.5, 0.3, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="box_mesh"]
+size = Vector3(0.8, 0.6, 0.8)
+
+[node name="StorageBox" type="StaticBody3D" groups=["storage_box"]]
+collision_layer = 32
+script = ExtResource("1_script")
+
+[node name="InteractableComponent" type="Node" parent="."]
+script = ExtResource("2_comp")
+prompt_text = "Deposit Fish [Right Click]"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("box_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+material_override = SubResource("box_mat")
+mesh = SubResource("box_mesh")
