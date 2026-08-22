@@ -1,6 +1,9 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://world/moon_arc.gd" id="1_script"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_moon"]
+size = Vector2(64, 64)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_moon"]
 albedo_color = Color(0.9, 0.9, 1.0, 1.0)
@@ -14,4 +17,5 @@ script = ExtResource("1_script")
 
 [node name="Sprite3D" type="Sprite3D" parent="."]
 billboard = 1
+texture = SubResource("PlaceholderTexture2D_moon")
 material_override = SubResource("StandardMaterial3D_moon")
