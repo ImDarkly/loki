@@ -63,3 +63,75 @@ func test_arc_position_custom_parameters() -> void:
 	var expected_end := custom_center + Vector3(-custom_radius, 0.0, 0.0)
 	assert_almost_eq(pos_end.x, expected_end.x, 0.001, "Custom radius end X")
 	assert_almost_eq(pos_end.y, expected_end.y, 0.001, "Custom radius end Y")
+
+
+var moon_arc: MoonArc
+var _main: Node3D
+var round_manager: Node
+
+
+func before_each() -> void:
+	_main = Node3D.new()
+	_main.name = "main"
+	get_node("/root").add_child(_main)
+
+	round_manager = Node3D.new()
+	round_manager.name = "RoundManager"
+	round_manager.set("fishing_active", false)
+	round_manager.set("round_duration", 900.0)
+	_main.add_child(round_manager)
+
+	moon_arc = load("res://world/moon_arc.tscn").instantiate()
+	add_child(moon_arc)
+	await get_tree().process_frame
+
+
+func after_each() -> void:
+	if moon_arc and is_instance_valid(moon_arc):
+		moon_arc.free()
+	moon_arc = null
+	if _main and is_instance_valid(_main):
+		_main.free()
+	_main = null
+
+
+func test_moon_arc_hidden_initially() -> void:
+	assert_false(moon_arc.sprite_3d.visible, "Moon should be hidden initially")
+
+
+func test_moon_arc_shows_on_false_to_true_edge() -> void:
+	round_manager.fishing_active = false
+	moon_arc._process(0.01)
+	assert_false(moon_arc.sprite_3d.visible, "Moon should be hidden when fishing_active is false")
+
+	round_manager.fishing_active = true
+	moon_arc._process(0.01)
+	assert_true(moon_arc.sprite_3d.visible, "Moon should become visible on false->true edge")
+	var anchor_1 := moon_arc._local_anchor_time
+	assert_gt(anchor_1, 0, "Anchor time should be stamped")
+
+	await get_tree().process_frame
+	moon_arc._process(0.01)
+	assert_eq(moon_arc._local_anchor_time, anchor_1, "Anchor time should not change on subsequent frames while true")
+
+
+func test_moon_arc_hides_on_true_to_false_edge() -> void:
+	round_manager.fishing_active = true
+	moon_arc._process(0.01)
+	assert_true(moon_arc.sprite_3d.visible, "Moon should be visible when fishing_active is true")
+
+	round_manager.fishing_active = false
+	moon_arc._process(0.01)
+	assert_false(moon_arc.sprite_3d.visible, "Moon should hide when fishing_active becomes false")
+
+
+func test_world_setup_instantiates_moon_arc() -> void:
+	var world_setup_script = load("res://world/world_setup.gd")
+	var world_setup := world_setup_script.new() as Node3D
+	_main.add_child(world_setup)
+	await get_tree().process_frame
+
+	var found_moon := world_setup.get_node_or_null("MoonArc")
+	assert_true(is_instance_valid(found_moon), "WorldSetup should instantiate MoonArc as child")
+	world_setup.queue_free()
+	await get_tree().process_frame
