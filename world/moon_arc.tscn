@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://world/moon_arc.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_moon"]
+albedo_color = Color(0.9, 0.9, 1.0, 1.0)
+emission_enabled = true
+emission = Color(0.8, 0.8, 1.0, 1.0)
+emission_energy_multiplier = 0.5
+shading_mode = 0
+
+[node name="MoonArc" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+billboard = 1
+material_override = SubResource("StandardMaterial3D_moon")
