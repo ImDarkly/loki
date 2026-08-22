@@ -46,8 +46,20 @@ func test_arc_position_clamping_above_one() -> void:
 
 func test_arc_position_custom_parameters() -> void:
 	var custom_center := Vector3(10, 5, 2)
-	var pos := MoonArc.calculate_arc_position(0.5, custom_center, 20.0, 10.0)
-	var expected := custom_center + Vector3(0.0, 10.0, 0.0)
-	assert_almost_eq(pos.x, expected.x, 0.001, "Custom center/radius zenith X")
-	assert_almost_eq(pos.y, expected.y, 0.001, "Custom center/height zenith Y")
-	assert_almost_eq(pos.z, expected.z, 0.001, "Custom center Z")
+	var custom_radius := 20.0
+	var custom_height := 10.0
+	var pos_zenith := MoonArc.calculate_arc_position(0.5, custom_center, custom_radius, custom_height)
+	var expected_zenith := custom_center + Vector3(0.0, custom_height, 0.0)
+	assert_almost_eq(pos_zenith.x, expected_zenith.x, 0.001, "Custom center/radius zenith X")
+	assert_almost_eq(pos_zenith.y, expected_zenith.y, 0.001, "Custom center/height zenith Y")
+	assert_almost_eq(pos_zenith.z, expected_zenith.z, 0.001, "Custom center Z (zenith)")
+
+	var pos_start := MoonArc.calculate_arc_position(0.0, custom_center, custom_radius, custom_height)
+	var expected_start := custom_center + Vector3(custom_radius, 0.0, 0.0)
+	assert_almost_eq(pos_start.x, expected_start.x, 0.001, "Custom radius start X")
+	assert_almost_eq(pos_start.y, expected_start.y, 0.001, "Custom radius start Y")
+
+	var pos_end := MoonArc.calculate_arc_position(1.0, custom_center, custom_radius, custom_height)
+	var expected_end := custom_center + Vector3(-custom_radius, 0.0, 0.0)
+	assert_almost_eq(pos_end.x, expected_end.x, 0.001, "Custom radius end X")
+	assert_almost_eq(pos_end.y, expected_end.y, 0.001, "Custom radius end Y")
