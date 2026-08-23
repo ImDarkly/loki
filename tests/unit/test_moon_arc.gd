@@ -135,3 +135,22 @@ func test_world_setup_instantiates_moon_arc() -> void:
 	assert_true(is_instance_valid(found_moon), "WorldSetup should instantiate MoonArc as child")
 	world_setup.queue_free()
 	await get_tree().process_frame
+
+
+func test_moon_arc_resets_on_restart() -> void:
+	round_manager.fishing_active = true
+	moon_arc._process(0.01)
+	var anchor_1 := moon_arc._local_anchor_time
+	assert_true(moon_arc.sprite_3d.visible, "Moon should be visible")
+
+	# Simulate round end / restart transition (false then true)
+	round_manager.fishing_active = false
+	moon_arc._process(0.01)
+	assert_false(moon_arc.sprite_3d.visible, "Moon should be hidden when fishing ends")
+
+	round_manager.fishing_active = true
+	moon_arc._process(0.01)
+	var anchor_2 := moon_arc._local_anchor_time
+	assert_true(moon_arc.sprite_3d.visible, "Moon should be visible again on restart")
+	assert_gt(anchor_2, 0, "New anchor time should be stamped")
+

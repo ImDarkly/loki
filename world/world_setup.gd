@@ -1,6 +1,8 @@
 extends Node3D
 
 
+const MOON_SCENE: PackedScene = preload("res://world/moon_arc.tscn")
+
 var _sky_material: ProceduralSkyMaterial
 var _directional_light: DirectionalLight3D
 var _ground_mat: ORMMaterial3D
@@ -22,9 +24,8 @@ func _ready() -> void:
 
 
 func _setup_moon_arc() -> void:
-	var moon_scene := load("res://world/moon_arc.tscn")
-	if moon_scene:
-		var moon := moon_scene.instantiate()
+	var moon: Node3D = MOON_SCENE.instantiate() as Node3D
+	if moon:
 		moon.name = "MoonArc"
 		add_child(moon)
 

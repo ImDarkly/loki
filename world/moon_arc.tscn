@@ -3,15 +3,22 @@
 [ext_resource type="Script" path="res://world/moon_arc.gd" id="1_script"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_moon"]
-albedo_color = Color(0.9, 0.9, 1.0, 1.0)
+albedo_color = Color(1.0, 1.0, 1.0, 1.0)
 emission_enabled = true
-emission = Color(0.8, 0.8, 1.0, 1.0)
-emission_energy_multiplier = 0.5
+emission = Color(1.0, 1.0, 1.0, 1.0)
+emission_energy_multiplier = 4.0
 shading_mode = 0
+cull_mode = 2
+
+[sub_resource type="SphereMesh" id="SphereMesh_moon"]
+radius = 2.0
+height = 4.0
+radial_segments = 24
+rings = 12
 
 [node name="MoonArc" type="Node3D"]
 script = ExtResource("1_script")
 
-[node name="Sprite3D" type="Sprite3D" parent="."]
-billboard = 1
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_moon")
 material_override = SubResource("StandardMaterial3D_moon")
