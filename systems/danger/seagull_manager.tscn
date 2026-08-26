@@ -8,3 +8,5 @@ script = ExtResource("1_ylr2v")
 [node name="SpawnTimer" type="Timer" parent="."]
 
 [node name="ReturnTimer" type="Timer" parent="."]
+
+[node name="RoamTimer" type="Timer" parent="."]

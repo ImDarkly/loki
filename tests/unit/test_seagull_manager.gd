@@ -22,6 +22,8 @@ func before_each() -> void:
 
 	manager.spawn_timer.stop()
 	manager.return_timer.stop()
+	if manager.has_node("RoamTimer"):
+		manager.get_node("RoamTimer").stop()
 
 
 func after_each() -> void:
@@ -36,7 +38,7 @@ func test_initial_state_is_inactive() -> void:
 func test_spawn_creates_mesh() -> void:
 	manager.current_state = manager.State.INACTIVE
 	manager._on_spawn_timer_timeout()
-	assert_eq(manager.current_state, manager.State.APPROACHING, "Should be APPROACHING")
+	assert_eq(manager.current_state, manager.State.ROAMING, "Should be ROAMING (circling before dive)")
 	assert_true(is_instance_valid(manager.seagull_node), "Seagull mesh should exist")
 	assert_true(manager.seagull_node.visible, "Seagull should be visible after spawn")
 	assert_true(manager.seagull_node.mesh != null, "Seagull mesh resource should be assigned")
@@ -48,12 +50,12 @@ func test_spawn_creates_mesh() -> void:
 func test_spawn_at_fixed_altitude_on_perimeter() -> void:
 	manager.current_state = manager.State.INACTIVE
 	manager._on_spawn_timer_timeout()
-	assert_almost_eq(manager.seagull_node.position.y, manager.flight_altitude, 0.001, "Seagull should spawn at flight_altitude")
+	assert_almost_eq(manager.seagull_node.position.y, manager.roaming_altitude, 0.001, "Seagull should spawn at roaming_altitude high")
 	var flat_dist := Vector2(
-		manager.seagull_node.position.x - MapConfig.MAP_CENTER.x,
-		manager.seagull_node.position.z - MapConfig.MAP_CENTER.z
+		manager.seagull_node.position.x - storage_box.global_position.x,
+		manager.seagull_node.position.z - storage_box.global_position.z
 	).length()
-	assert_almost_eq(flat_dist, MapConfig.FISHABLE_BAND_RADIUS, 0.01, "Spawn should be on fishable-band perimeter")
+	assert_almost_eq(flat_dist, manager.roam_radius, 0.5, "Spawn should circle StorageBox at roam_radius")
 
 
 func test_approaching_advances_toward_storage_box() -> void:
@@ -140,7 +142,7 @@ func test_retreating_exits_boundary_transitions_to_waiting() -> void:
 func test_return_timer_transitions_from_waiting_to_approaching() -> void:
 	manager.current_state = manager.State.WAITING
 	manager._on_return_timer_timeout()
-	assert_eq(manager.current_state, manager.State.APPROACHING, "Should be APPROACHING after return timer")
+	assert_eq(manager.current_state, manager.State.ROAMING, "Should be ROAMING after return timer (circles before dive)")
 	assert_true(is_instance_valid(manager.seagull_node), "Seagull mesh should exist after return")
 
 

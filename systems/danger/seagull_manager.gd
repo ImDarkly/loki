@@ -1,11 +1,18 @@
 extends Node3D
 
-enum State { INACTIVE, APPROACHING, ATTACKING, RETREATING, WAITING }
+enum State { INACTIVE, ROAMING, APPROACHING, ATTACKING, RETREATING, WAITING }
 
 @export var flight_altitude: float = 6.0
+@export var roaming_altitude: float = 12.0
+@export var roam_radius: float = 6.0
+@export var roam_duration_min: float = 10.0
+@export var roam_duration_max: float = 15.0
 @export var flight_speed: float = 4.0
 @export var repel_radius: float = 2.0
 @export var arrival_range: float = 2.0
+@export var attack_range: float:
+	get: return arrival_range
+	set(v): arrival_range = v
 @export var theft_amount: int = 1
 @export var spawn_interval_min: float = 30.0
 @export var spawn_interval_max: float = 60.0
@@ -15,12 +22,15 @@ enum State { INACTIVE, APPROACHING, ATTACKING, RETREATING, WAITING }
 var current_state: State = State.INACTIVE
 var seagull_node: MeshInstance3D = null
 var spawn_position: Vector3
+var _roam_center: Vector3
+var _roam_angle: float = 0.0
 var _storage_box: Node3D = null
 var _sync_tick: int = 0
 var _round_manager: Node = null
 var _last_fishing_active: bool = true
 @onready var spawn_timer: Timer = $SpawnTimer
 @onready var return_timer: Timer = $ReturnTimer
+@onready var roam_timer: Timer = $RoamTimer
 
 
 func _ready() -> void:
@@ -32,6 +42,8 @@ func _ready() -> void:
 		set_physics_process(false)
 		spawn_timer.stop()
 		return_timer.stop()
+		if has_node("RoamTimer"):
+			$RoamTimer.stop()
 		return
 
 	spawn_timer.one_shot = true
@@ -42,7 +54,32 @@ func _ready() -> void:
 	if not return_timer.timeout.is_connected(_on_return_timer_timeout):
 		return_timer.timeout.connect(_on_return_timer_timeout)
 
+	roam_timer.one_shot = true
+	if not roam_timer.timeout.is_connected(_on_roam_timer_timeout):
+		roam_timer.timeout.connect(_on_roam_timer_timeout)
+
 	spawn_timer.start(randf_range(spawn_interval_min, spawn_interval_max))
+
+
+func _get_quota_manager() -> Node:
+	return get_node_or_null("../QuotaManager")
+
+
+func _can_spawn() -> bool:
+	var qm := _get_quota_manager()
+	if qm == null:
+		return true
+	if "shared_quota" in qm:
+		return int(qm.shared_quota) > 0
+	return true
+
+
+func _on_roam_timer_timeout() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if current_state == State.ROAMING:
+		current_state = State.APPROACHING
+		_sync_state_to_clients()
 
 
 func _on_spawn_timer_timeout() -> void:
@@ -50,9 +87,16 @@ func _on_spawn_timer_timeout() -> void:
 		return
 	if _round_manager and "fishing_active" in _round_manager and not _round_manager.fishing_active:
 		return
+	if not _can_spawn():
+		if current_state != State.WAITING:
+			current_state = State.WAITING
+		return_timer.start(randf_range(return_interval_min, return_interval_max))
+		_sync_state_to_clients()
+		return
 	if current_state == State.INACTIVE or current_state == State.WAITING:
 		_spawn_seagull()
-		current_state = State.APPROACHING
+		current_state = State.ROAMING
+		roam_timer.start(randf_range(roam_duration_min, roam_duration_max))
 		_sync_state_to_clients()
 
 
@@ -61,15 +105,26 @@ func _on_return_timer_timeout() -> void:
 		return
 	if _round_manager and "fishing_active" in _round_manager and not _round_manager.fishing_active:
 		return
+	if not _can_spawn():
+		return_timer.start(randf_range(return_interval_min, return_interval_max))
+		_sync_state_to_clients()
+		return
 	if current_state == State.WAITING:
 		_spawn_seagull()
-		current_state = State.APPROACHING
+		current_state = State.ROAMING
+		roam_timer.start(randf_range(roam_duration_min, roam_duration_max))
 		_sync_state_to_clients()
 
 
 func _spawn_seagull() -> void:
-	spawn_position = _random_perimeter_point()
-	spawn_position.y = flight_altitude
+	var storage_box := _get_storage_box()
+	if storage_box != null:
+		_roam_center = Vector3(storage_box.global_position.x, roaming_altitude, storage_box.global_position.z)
+	else:
+		_roam_center = Vector3(MapConfig.MAP_CENTER.x, roaming_altitude, MapConfig.MAP_CENTER.z)
+	_roam_angle = randf() * TAU
+	spawn_position = _roam_center + Vector3(cos(_roam_angle) * roam_radius, 0, sin(_roam_angle) * roam_radius)
+	spawn_position.y = roaming_altitude
 
 	if not is_instance_valid(seagull_node):
 		seagull_node = _create_seagull_mesh()
@@ -78,11 +133,10 @@ func _spawn_seagull() -> void:
 	seagull_node.position = spawn_position
 	seagull_node.visible = true
 
-	var storage_box := _get_storage_box()
-	if storage_box != null and is_instance_valid(seagull_node):
-		var dir := _direction_to_storage(spawn_position, storage_box)
-		if dir.length_squared() > 0.001:
-			seagull_node.look_at(seagull_node.position + dir, Vector3.UP)
+	if is_instance_valid(seagull_node):
+		var tangent := Vector3(-sin(_roam_angle), 0, cos(_roam_angle))
+		if tangent.length_squared() > 0.001:
+			seagull_node.look_at(seagull_node.position + tangent, Vector3.UP)
 
 
 func _random_perimeter_point() -> Vector3:
@@ -190,10 +244,36 @@ func _physics_process(delta: float) -> void:
 		if not fa:
 			return
 	match current_state:
+		State.ROAMING:
+			_process_roaming(delta)
 		State.APPROACHING:
 			_process_approaching(delta)
 		State.RETREATING:
 			_process_retreating(delta)
+
+
+func _process_roaming(delta: float) -> void:
+	if not is_instance_valid(seagull_node):
+		return
+	var storage_box := _get_storage_box()
+	if storage_box != null:
+		_roam_center = Vector3(storage_box.global_position.x, roaming_altitude, storage_box.global_position.z)
+	else:
+		_roam_center = Vector3(MapConfig.MAP_CENTER.x, roaming_altitude, MapConfig.MAP_CENTER.z)
+	var angular_speed := flight_speed / maxf(roam_radius, 0.1)
+	_roam_angle += angular_speed * delta
+	var new_pos := Vector3(
+		_roam_center.x + cos(_roam_angle) * roam_radius,
+		roaming_altitude,
+		_roam_center.z + sin(_roam_angle) * roam_radius
+	)
+	seagull_node.position = new_pos
+	var tangent := Vector3(-sin(_roam_angle), 0, cos(_roam_angle))
+	if tangent.length_squared() > 0.001:
+		seagull_node.look_at(seagull_node.position + tangent, Vector3.UP)
+	_sync_tick += 1
+	if _sync_tick % 5 == 0:
+		_sync_state_to_clients()
 
 
 func _process_approaching(delta: float) -> void:
@@ -212,7 +292,7 @@ func _process_approaching(delta: float) -> void:
 	var direction := (target - current).normalized()
 	var step: float = minf(flight_speed * delta, dist)
 	var new_pos := seagull_node.position + direction * step
-	new_pos.y = flight_altitude
+	new_pos.y = move_toward(seagull_node.position.y, flight_altitude, flight_speed * delta)
 	seagull_node.position = new_pos
 
 	if direction.length_squared() > 0.001:
@@ -226,13 +306,12 @@ func _process_retreating(delta: float) -> void:
 	if not is_instance_valid(seagull_node):
 		return
 
-	var target := Vector3(spawn_position.x, flight_altitude, spawn_position.z)
-	var current := Vector3(seagull_node.position.x, flight_altitude, seagull_node.position.z)
+	var target := Vector3(spawn_position.x, spawn_position.y, spawn_position.z)
+	var current := Vector3(seagull_node.position.x, seagull_node.position.y, seagull_node.position.z)
 	var dist_to_spawn := current.distance_to(target)
 	var direction := (target - current).normalized()
 	var step := minf(flight_speed * delta, dist_to_spawn)
 	var new_pos := seagull_node.position + direction * step
-	new_pos.y = flight_altitude
 	seagull_node.position = new_pos
 
 	if direction.length_squared() > 0.001:
@@ -257,12 +336,13 @@ func _trigger_retreat() -> void:
 
 func _trigger_attack() -> void:
 	current_state = State.ATTACKING
-	var qm := get_node_or_null("../QuotaManager")
+	var qm := _get_quota_manager()
 	if qm and qm.has_method("apply_penalty"):
 		qm.apply_penalty(theft_amount)
-	var nl := get_node_or_null("../NotificationLabel")
-	if nl and nl.has_method("show_message"):
-		nl.show_message("Seagull stole %d fish!" % theft_amount)
+	if multiplayer.has_multiplayer_peer():
+		_notify_seagull_stole.rpc(theft_amount)
+	else:
+		_notify_seagull_stole(theft_amount)
 	if is_instance_valid(seagull_node):
 		seagull_node.visible = false
 	current_state = State.WAITING
@@ -270,11 +350,21 @@ func _trigger_attack() -> void:
 	_sync_state_to_clients()
 
 
+@rpc("authority", "call_local", "reliable")
+func _notify_seagull_stole(amount: int) -> void:
+	var nl := get_node_or_null("/root/main/NotificationLabel") as NotificationLabel
+	if nl == null:
+		nl = get_node_or_null("../NotificationLabel") as NotificationLabel
+	if nl and nl.has_method("show_message"):
+		nl.show_message("Seagull stole %d fish!" % amount)
+
+
 func _on_fishing_paused() -> void:
-	if current_state == State.APPROACHING or current_state == State.ATTACKING:
+	if current_state == State.ROAMING or current_state == State.APPROACHING or current_state == State.ATTACKING:
 		_trigger_retreat()
 	spawn_timer.stop()
 	return_timer.stop()
+	roam_timer.stop()
 
 
 func _on_fishing_resumed() -> void:
@@ -283,7 +373,7 @@ func _on_fishing_resumed() -> void:
 
 @rpc("any_peer", "unreliable", "call_remote")
 func repel(hit_origin: Vector3, hit_direction: Vector3) -> void:
-	if current_state != State.APPROACHING or not is_instance_valid(seagull_node):
+	if (current_state != State.ROAMING and current_state != State.APPROACHING) or not is_instance_valid(seagull_node):
 		return
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
@@ -328,5 +418,6 @@ func reset_for_restart() -> void:
 	current_state = State.INACTIVE
 	spawn_timer.stop()
 	return_timer.stop()
+	roam_timer.stop()
 	spawn_timer.start(randf_range(spawn_interval_min, spawn_interval_max))
 	_sync_state_to_clients()
