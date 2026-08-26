@@ -169,9 +169,13 @@ func test_fishing_paused_forces_retreat_and_blocks_spawn() -> void:
 	rm.name = "RoundManager"
 	_parent.add_child(autofree(rm))
 	manager._round_manager = rm
+	rm.fishing_active = true
+	manager.current_state = manager.State.INACTIVE
+	manager._on_spawn_timer_timeout()
 	rm.fishing_active = false
 	manager.current_state = manager.State.APPROACHING
-	manager._on_spawn_timer_timeout()
+	if not is_instance_valid(manager.seagull_node):
+		manager._on_spawn_timer_timeout()
 	manager.seagull_node.position = Vector3(10, manager.flight_altitude, 0)
 	manager._physics_process(0.1)
 	assert_eq(manager.current_state, manager.State.RETREATING, "Paused fishing should force retreat")
@@ -181,8 +185,11 @@ func test_fishing_paused_forces_retreat_and_blocks_spawn() -> void:
 
 
 func test_reset_for_restart() -> void:
-	manager.current_state = manager.State.APPROACHING
+	manager.current_state = manager.State.INACTIVE
 	manager._on_spawn_timer_timeout()
+	manager.current_state = manager.State.APPROACHING
+	if not is_instance_valid(manager.seagull_node):
+		manager._on_spawn_timer_timeout()
 	manager.seagull_node.visible = true
 	manager.reset_for_restart()
 	assert_eq(manager.current_state, manager.State.INACTIVE)

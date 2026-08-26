@@ -449,15 +449,15 @@ func _throw_rock() -> void:
 	get_tree().root.add_child(rock)
 	
 	if _danger_manager_ref:
-		if multiplayer.has_multiplayer_peer():
-			_danger_manager_ref.repel.rpc(rock_pos, throw_dir)
-		else:
+		if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 			_danger_manager_ref.repel(rock_pos, throw_dir)
-	if _seagull_manager_ref:
-		if multiplayer.has_multiplayer_peer():
-			_seagull_manager_ref.repel.rpc(rock_pos, throw_dir)
 		else:
+			_danger_manager_ref.repel.rpc(rock_pos, throw_dir)
+	if _seagull_manager_ref:
+		if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 			_seagull_manager_ref.repel(rock_pos, throw_dir)
+		else:
+			_seagull_manager_ref.repel.rpc(rock_pos, throw_dir)
 
 	var cleanup := Timer.new()
 	cleanup.one_shot = true
