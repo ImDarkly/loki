@@ -70,6 +70,10 @@ func restart_round() -> void:
 	if rm:
 		rm.reset_for_restart()
 
+	var sm := get_node_or_null("/root/main/SeagullManager")
+	if sm and sm.has_method("reset_for_restart"):
+		sm.reset_for_restart()
+
 	if multiplayer.has_multiplayer_peer():
 		_apply_restart.rpc()
 

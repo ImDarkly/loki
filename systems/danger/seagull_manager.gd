@@ -1,0 +1,332 @@
+extends Node3D
+
+enum State { INACTIVE, APPROACHING, ATTACKING, RETREATING, WAITING }
+
+@export var flight_altitude: float = 6.0
+@export var flight_speed: float = 4.0
+@export var repel_radius: float = 2.0
+@export var arrival_range: float = 2.0
+@export var theft_amount: int = 1
+@export var spawn_interval_min: float = 30.0
+@export var spawn_interval_max: float = 60.0
+@export var return_interval_min: float = 45.0
+@export var return_interval_max: float = 90.0
+
+var current_state: State = State.INACTIVE
+var seagull_node: MeshInstance3D = null
+var spawn_position: Vector3
+var _storage_box: Node3D = null
+var _sync_tick: int = 0
+var _round_manager: Node = null
+var _last_fishing_active: bool = true
+@onready var spawn_timer: Timer = $SpawnTimer
+@onready var return_timer: Timer = $ReturnTimer
+
+
+func _ready() -> void:
+	_storage_box = get_node_or_null("../StorageBox") as Node3D
+	_round_manager = get_node_or_null("../RoundManager")
+	if _round_manager and "fishing_active" in _round_manager:
+		_last_fishing_active = _round_manager.fishing_active
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		set_physics_process(false)
+		spawn_timer.stop()
+		return_timer.stop()
+		return
+
+	spawn_timer.one_shot = true
+	if not spawn_timer.timeout.is_connected(_on_spawn_timer_timeout):
+		spawn_timer.timeout.connect(_on_spawn_timer_timeout)
+
+	return_timer.one_shot = true
+	if not return_timer.timeout.is_connected(_on_return_timer_timeout):
+		return_timer.timeout.connect(_on_return_timer_timeout)
+
+	spawn_timer.start(randf_range(spawn_interval_min, spawn_interval_max))
+
+
+func _on_spawn_timer_timeout() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if _round_manager and "fishing_active" in _round_manager and not _round_manager.fishing_active:
+		return
+	if current_state == State.INACTIVE or current_state == State.WAITING:
+		_spawn_seagull()
+		current_state = State.APPROACHING
+		_sync_state_to_clients()
+
+
+func _on_return_timer_timeout() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if _round_manager and "fishing_active" in _round_manager and not _round_manager.fishing_active:
+		return
+	if current_state == State.WAITING:
+		_spawn_seagull()
+		current_state = State.APPROACHING
+		_sync_state_to_clients()
+
+
+func _spawn_seagull() -> void:
+	spawn_position = _random_perimeter_point()
+	spawn_position.y = flight_altitude
+
+	if not is_instance_valid(seagull_node):
+		seagull_node = _create_seagull_mesh()
+		add_child(seagull_node)
+
+	seagull_node.position = spawn_position
+	seagull_node.visible = true
+
+	var storage_box := _get_storage_box()
+	if storage_box != null and is_instance_valid(seagull_node):
+		var dir := _direction_to_storage(spawn_position, storage_box)
+		if dir.length_squared() > 0.001:
+			seagull_node.look_at(seagull_node.position + dir, Vector3.UP)
+
+
+func _random_perimeter_point() -> Vector3:
+	var angle := randf() * TAU
+	var dir := Vector2(cos(angle), sin(angle))
+	return Vector3(
+		MapConfig.MAP_CENTER.x + dir.x * MapConfig.FISHABLE_BAND_RADIUS,
+		0,
+		MapConfig.MAP_CENTER.z + dir.y * MapConfig.FISHABLE_BAND_RADIUS
+	)
+
+
+func _get_storage_box() -> Node3D:
+	if is_instance_valid(_storage_box):
+		return _storage_box
+	_storage_box = get_node_or_null("../StorageBox") as Node3D
+	return _storage_box
+
+
+func _direction_to_storage(from: Vector3, storage_box: Node3D) -> Vector3:
+	if not is_instance_valid(storage_box):
+		return Vector3.ZERO
+	var target := Vector3(storage_box.global_position.x, flight_altitude, storage_box.global_position.z)
+	return (target - Vector3(from.x, flight_altitude, from.z)).normalized()
+
+
+func _create_seagull_mesh() -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	var body_len: float = 0.5
+	var body_w: float = 0.15
+	var body_h: float = 0.12
+	var wing_span: float = 0.7
+	var wing_chord: float = 0.28
+	var y_body: float = 0.0
+
+	# Body — simple diamond prism top view, two triangles per side
+	# Top face
+	st.set_normal(Vector3(0, 1, 0))
+	st.add_vertex(Vector3(0, y_body, -body_len * 0.5))
+	st.add_vertex(Vector3(-body_w, y_body, 0))
+	st.add_vertex(Vector3(body_w, y_body, 0))
+	st.set_normal(Vector3(0, 1, 0))
+	st.add_vertex(Vector3(0, y_body, body_len * 0.5))
+	st.add_vertex(Vector3(body_w, y_body, 0))
+	st.add_vertex(Vector3(-body_w, y_body, 0))
+
+	# Bottom face
+	st.set_normal(Vector3(0, -1, 0))
+	st.add_vertex(Vector3(0, y_body - body_h, -body_len * 0.5))
+	st.add_vertex(Vector3(body_w, y_body - body_h, 0))
+	st.add_vertex(Vector3(-body_w, y_body - body_h, 0))
+	st.set_normal(Vector3(0, -1, 0))
+	st.add_vertex(Vector3(0, y_body - body_h, body_len * 0.5))
+	st.add_vertex(Vector3(-body_w, y_body - body_h, 0))
+	st.add_vertex(Vector3(body_w, y_body - body_h, 0))
+
+	# Left wing
+	st.set_normal(Vector3(0, 1, 0))
+	st.add_vertex(Vector3(-body_w, y_body, 0.08))
+	st.add_vertex(Vector3(-wing_span, y_body + 0.04, -0.12))
+	st.add_vertex(Vector3(-wing_span, y_body + 0.04, wing_chord * 0.5))
+	st.set_normal(Vector3(0, -1, 0))
+	st.add_vertex(Vector3(-body_w, y_body - 0.02, 0.08))
+	st.add_vertex(Vector3(-wing_span, y_body - 0.02, wing_chord * 0.5))
+	st.add_vertex(Vector3(-wing_span, y_body - 0.02, -0.12))
+
+	# Right wing
+	st.set_normal(Vector3(0, 1, 0))
+	st.add_vertex(Vector3(body_w, y_body, 0.08))
+	st.add_vertex(Vector3(wing_span, y_body + 0.04, wing_chord * 0.5))
+	st.add_vertex(Vector3(wing_span, y_body + 0.04, -0.12))
+	st.set_normal(Vector3(0, -1, 0))
+	st.add_vertex(Vector3(body_w, y_body - 0.02, 0.08))
+	st.add_vertex(Vector3(wing_span, y_body - 0.02, -0.12))
+	st.add_vertex(Vector3(wing_span, y_body - 0.02, wing_chord * 0.5))
+
+	var mesh := st.commit()
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.92, 0.92, 0.92)
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mi.material_override = mat
+	mi.mesh = mesh
+	return mi
+
+
+func _physics_process(delta: float) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if _round_manager == null:
+		_round_manager = get_node_or_null("../RoundManager")
+		if _round_manager and "fishing_active" in _round_manager:
+			_last_fishing_active = _round_manager.fishing_active
+	if _round_manager and "fishing_active" in _round_manager:
+		var fa: bool = _round_manager.fishing_active
+		if fa != _last_fishing_active:
+			if fa:
+				_on_fishing_resumed()
+			else:
+				_on_fishing_paused()
+			_last_fishing_active = fa
+		if not fa:
+			return
+	match current_state:
+		State.APPROACHING:
+			_process_approaching(delta)
+		State.RETREATING:
+			_process_retreating(delta)
+
+
+func _process_approaching(delta: float) -> void:
+	var storage_box := _get_storage_box()
+	if storage_box == null or not is_instance_valid(seagull_node):
+		return
+
+	var target := Vector3(storage_box.global_position.x, flight_altitude, storage_box.global_position.z)
+	var current := Vector3(seagull_node.position.x, flight_altitude, seagull_node.position.z)
+	var dist := current.distance_to(target)
+
+	if dist <= arrival_range:
+		_trigger_attack()
+		return
+
+	var direction := (target - current).normalized()
+	var step: float = minf(flight_speed * delta, dist)
+	var new_pos := seagull_node.position + direction * step
+	new_pos.y = flight_altitude
+	seagull_node.position = new_pos
+
+	if direction.length_squared() > 0.001:
+		seagull_node.look_at(seagull_node.position + direction, Vector3.UP)
+	_sync_tick += 1
+	if _sync_tick % 5 == 0:
+		_sync_state_to_clients()
+
+
+func _process_retreating(delta: float) -> void:
+	if not is_instance_valid(seagull_node):
+		return
+
+	var target := Vector3(spawn_position.x, flight_altitude, spawn_position.z)
+	var current := Vector3(seagull_node.position.x, flight_altitude, seagull_node.position.z)
+	var dist_to_spawn := current.distance_to(target)
+	var direction := (target - current).normalized()
+	var step := minf(flight_speed * delta, dist_to_spawn)
+	var new_pos := seagull_node.position + direction * step
+	new_pos.y = flight_altitude
+	seagull_node.position = new_pos
+
+	if direction.length_squared() > 0.001:
+		seagull_node.look_at(seagull_node.position + direction, Vector3.UP)
+
+	var reached_spawn := new_pos.distance_to(target) <= 0.1
+	if reached_spawn or not MapConfig.is_within_radius(new_pos, MapConfig.MAP_CENTER, MapConfig.FISHABLE_BAND_RADIUS):
+		seagull_node.visible = false
+		current_state = State.WAITING
+		return_timer.start(randf_range(return_interval_min, return_interval_max))
+		_sync_state_to_clients()
+		return
+	_sync_tick += 1
+	if _sync_tick % 5 == 0:
+		_sync_state_to_clients()
+
+
+func _trigger_retreat() -> void:
+	current_state = State.RETREATING
+	_sync_state_to_clients()
+
+
+func _trigger_attack() -> void:
+	current_state = State.ATTACKING
+	var qm := get_node_or_null("../QuotaManager")
+	if qm and qm.has_method("apply_penalty"):
+		qm.apply_penalty(theft_amount)
+	var nl := get_node_or_null("../NotificationLabel")
+	if nl and nl.has_method("show_message"):
+		nl.show_message("Seagull stole %d fish!" % theft_amount)
+	if is_instance_valid(seagull_node):
+		seagull_node.visible = false
+	current_state = State.WAITING
+	return_timer.start(randf_range(return_interval_min, return_interval_max))
+	_sync_state_to_clients()
+
+
+func _on_fishing_paused() -> void:
+	if current_state == State.APPROACHING or current_state == State.ATTACKING:
+		_trigger_retreat()
+	spawn_timer.stop()
+	return_timer.stop()
+
+
+func _on_fishing_resumed() -> void:
+	spawn_timer.start(randf_range(spawn_interval_min, spawn_interval_max))
+
+
+@rpc("any_peer", "unreliable", "call_remote")
+func repel(hit_origin: Vector3, hit_direction: Vector3) -> void:
+	if current_state != State.APPROACHING or not is_instance_valid(seagull_node):
+		return
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+
+	var seagull_pos := seagull_node.global_position
+	var v := seagull_pos - hit_origin
+	var dir_norm := hit_direction.normalized()
+	var t := v.dot(dir_norm)
+
+	if t < 0:
+		return
+
+	var closest_point := hit_origin + t * dir_norm
+	if seagull_pos.distance_to(closest_point) <= repel_radius:
+		_trigger_retreat()
+
+
+func _sync_state_to_clients() -> void:
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+		return
+	var has_seagull := is_instance_valid(seagull_node)
+	var seagull_pos := seagull_node.position if has_seagull else spawn_position
+	_apply_synced_state.rpc(current_state, seagull_pos, spawn_position, has_seagull and seagull_node.visible)
+
+
+@rpc("authority", "call_local", "reliable")
+func _apply_synced_state(state_value: int, seagull_pos: Vector3, synced_spawn_position: Vector3, seagull_visible: bool) -> void:
+	current_state = state_value
+	spawn_position = synced_spawn_position
+	if not is_instance_valid(seagull_node):
+		seagull_node = _create_seagull_mesh()
+		add_child(seagull_node)
+	seagull_node.position = seagull_pos
+	seagull_node.visible = seagull_visible
+
+
+func reset_for_restart() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if is_instance_valid(seagull_node):
+		seagull_node.visible = false
+	current_state = State.INACTIVE
+	spawn_timer.stop()
+	return_timer.stop()
+	spawn_timer.start(randf_range(spawn_interval_min, spawn_interval_max))
+	_sync_state_to_clients()

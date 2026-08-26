@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://208xm5t1nmmc" path="res://world/world_setup.gd" id="3_y6pqm"]
 [ext_resource type="PackedScene" path="res://systems/danger/danger_manager.tscn" id="4_0we7i"]
+[ext_resource type="PackedScene" path="res://systems/danger/seagull_manager.tscn" id="4_seagull"]
 [ext_resource type="Script" uid="uid://bgyet62minjw8" path="res://world/spawn_manager.gd" id="4_cu0i6"]
 [ext_resource type="PackedScene" path="res://systems/zones/zone_manager.tscn" id="4_zm01"]
 [ext_resource type="PackedScene" path="res://systems/quota/quota_manager.tscn" id="5_2ihsm"]
@@ -24,6 +25,8 @@ script = ExtResource("4_cu0i6")
 spawn_path = NodePath("..")
 
 [node name="DangerManager" parent="." unique_id=621029984 instance=ExtResource("4_0we7i")]
+
+[node name="SeagullManager" parent="." unique_id=621029986 instance=ExtResource("4_seagull")]
 
 [node name="ZoneManager" parent="." unique_id=621029985 instance=ExtResource("4_zm01")]
 

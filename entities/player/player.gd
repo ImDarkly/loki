@@ -88,6 +88,7 @@ var _interact_prompt: CanvasLayer = null
 var _quota_manager_ref: Node3D = null
 var _rock_manager_ref: Node = null
 var _danger_manager_ref: Node = null
+var _seagull_manager_ref: Node = null
 var _is_shop_open: bool = false
 var _fell_off_island_reported: bool = false
 @export var interact_range: float = 3.0
@@ -134,6 +135,10 @@ func _ready() -> void:
 	var dm := get_node_or_null("/root/main/DangerManager")
 	if dm:
 		_danger_manager_ref = dm
+
+	var sm := get_node_or_null("/root/main/SeagullManager")
+	if sm:
+		_seagull_manager_ref = sm
 
 
 func _setup_interact_prompt() -> void:
@@ -448,6 +453,11 @@ func _throw_rock() -> void:
 			_danger_manager_ref.repel.rpc(rock_pos, throw_dir)
 		else:
 			_danger_manager_ref.repel(rock_pos, throw_dir)
+	if _seagull_manager_ref:
+		if multiplayer.has_multiplayer_peer():
+			_seagull_manager_ref.repel.rpc(rock_pos, throw_dir)
+		else:
+			_seagull_manager_ref.repel(rock_pos, throw_dir)
 
 	var cleanup := Timer.new()
 	cleanup.one_shot = true
