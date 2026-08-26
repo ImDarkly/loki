@@ -31,7 +31,7 @@ func _ready() -> void:
 		_quota.shared_quota = 10
 
 	if _label:
-		_label.text = "Dev Seagull Flow — F5 spawn / F6 skip roam / G +1 fish / R restart"
+		_label.text = "Dev Seagull Flow — F5 spawn / F6 skip roam / G +5 fish / R restart"
 
 func _process(_delta: float) -> void:
 	if not OS.is_debug_build():

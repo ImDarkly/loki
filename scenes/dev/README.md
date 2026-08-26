@@ -21,6 +21,6 @@
 - **R** — Reset
 - **H** — Speed up / slow down (2x speed toggle)
 
-**Full flow to watch:** Press **F5** → bird circles high (~4 sec) → dives to box → message “Seagull stole 1 fish!” + fish count drops by 1 → bird disappears → after ~5 sec it comes back.
+**Full flow to watch:** Press **F5** → bird circles high (~10-15 sec) → dives to box → message “Seagull stole 1 fish!” + fish count drops by 1 → bird disappears → after ~5 sec it comes back.
 
 That’s the whole seagull, sped up for testing. Close the window when done — nothing changes in the real game.
