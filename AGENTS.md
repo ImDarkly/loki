@@ -99,6 +99,38 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Server-gated: `if not multiplayer.is_server(): return`
 - RPC: `@rpc("authority", "reliable", "call_remote")` for server→client, `@rpc("any_peer", "unreliable", "call_remote")` for client→server
 
+### Manual/Dev Testing (Isolated System Scenes)
+
+Every system with timers, state transitions, or player-triggered feedback (spawn/attack/return
+cycles, shop purchases, interactables) gets a standalone dev scene under `scenes/dev/`, so its
+feel/timing/visuals can be checked without booting lobby → host → full round flow.
+
+**This is not a substitute for GUT tests.** Correctness (did the quota actually decrease, did the
+signal actually fire) is proven in `tests/unit/`. Dev scenes are only for judging things tests
+can't assert on: does the timing feel right, does the rock throw visually land, does 10s of
+circling feel too long. If you're manually re-checking something a unit test already covers,
+that's a sign the dev scene isn't needed for that check.
+
+**Convention** (see `scenes/dev/dev_seagull_flow.tscn` + `.gd` as the reference implementation):
+
+- Naming: `scenes/dev/dev_<system>_flow.tscn` / `.gd`
+- Instantiate the target manager scene(s) directly — skip lobby/NetworkManager entirely, single
+  instance, no peer.
+- Wire only the minimal neighbor nodes the manager looks up via `get_node_or_null` (e.g.
+  `StorageBox`, `RockManager`, `QuotaManager`) — don't drag in the rest of `main.tscn`.
+- Include one `Player` instance if the system involves player interaction (throwing rocks,
+  right-click interact), so those code paths are actually exercised.
+- Add a debug HUD `Label` showing current state, timers, and relevant counters.
+- Shorten the manager's timers/intervals *in the dev script*, not in the manager's own
+  `@export` defaults — production values stay untouched.
+- Add keyboard shortcuts to force-trigger transitions instead of waiting (see F5/F6/G/R in
+  `dev_seagull_flow.gd`), and document them in a sibling `README.md` (see
+  `scenes/dev/README.md`).
+
+**When to add one:** when a new `systems/<name>/<name>_manager.gd` is introduced with its own
+state machine or timers, add its `dev_<name>_flow.tscn` in the same slice/PR — don't defer it to
+"later" once it becomes annoying to test.
+
 ### Testing (GUT)
 - `.gutconfig.json`: dirs `["res://tests/unit"]`, prefix `test_`, suffix `.gd`
 - Pattern: `extends GutTest`, `before_each()` creates + adds child nodes, `autofree()`
@@ -126,6 +158,9 @@ Before implementing any task:
 4. Switch to `master` branch: `git checkout master`
 5. Fetch remote: `git fetch origin`
 6. Create a new branch from master with a descriptive name, following the Branch naming convention above: `git checkout -b <branch-name>`
+7. If the feature adds a new `systems/<name>/<name>_manager.gd` with its own state machine or
+   timers, include a `scenes/dev/dev_<name>_flow.tscn` per the Manual/Dev Testing convention
+   above as part of the same slice.
 
 If anything is unclear — ambiguous requirements, missing acceptance criteria, conflicting instructions — stop and ask before proceeding. Do not guess and continue.
 
