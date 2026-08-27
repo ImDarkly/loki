@@ -80,3 +80,33 @@ func test_buy_fireplace_emits_signals() -> void:
 	coin_manager.request_buy_fireplace()
 	assert_signal_emitted(coin_manager, "coins_updated")
 	assert_signal_emitted(coin_manager, "fireplace_updated")
+
+
+func test_buy_shark_bait_deducts_coins_and_marks_owned() -> void:
+	coin_manager.coins = 20
+	coin_manager.request_buy_shark_bait()
+	assert_eq(coin_manager.coins, 5, "Coins should be reduced by shark_bait_cost (15)")
+	assert_true(coin_manager.is_shark_bait_owned(), "Shark Bait should be owned after purchase")
+
+
+func test_buy_shark_bait_prevents_second_purchase() -> void:
+	coin_manager.coins = 50
+	coin_manager.request_buy_shark_bait()
+	coin_manager.request_buy_shark_bait()
+	assert_eq(coin_manager.coins, 35, "Coins should only be deducted once")
+	assert_true(coin_manager.is_shark_bait_owned(), "Shark Bait should remain owned")
+
+
+func test_buy_shark_bait_insufficient_coins_does_nothing() -> void:
+	coin_manager.coins = 5
+	coin_manager.request_buy_shark_bait()
+	assert_eq(coin_manager.coins, 5, "Coins should not change when buy fails")
+	assert_false(coin_manager.is_shark_bait_owned(), "Shark Bait should not be owned")
+
+
+func test_buy_shark_bait_emits_signals() -> void:
+	coin_manager.coins = 20
+	watch_signals(coin_manager)
+	coin_manager.request_buy_shark_bait()
+	assert_signal_emitted(coin_manager, "coins_updated")
+	assert_signal_emitted(coin_manager, "shark_bait_updated")
