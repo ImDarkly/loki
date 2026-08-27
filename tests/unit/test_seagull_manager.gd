@@ -186,6 +186,24 @@ func test_fishing_paused_forces_retreat_and_blocks_spawn() -> void:
 	assert_eq(manager.current_state, manager.State.WAITING, "Spawn blocked when fishing_active false")
 
 
+func test_fishing_resumed_restarts_spawn_timer() -> void:
+	var script = GDScript.new()
+	script.source_code = "extends Node3D\nvar fishing_active: bool = false\n"
+	script.reload()
+	var rm = Node3D.new()
+	rm.set_script(script)
+	rm.name = "RoundManager"
+	_parent.add_child(autofree(rm))
+	manager._round_manager = rm
+	rm.fishing_active = false
+	manager._last_fishing_active = false
+	manager.spawn_timer.stop()
+
+	rm.fishing_active = true
+	manager._physics_process(0.1)
+	assert_false(manager.spawn_timer.is_stopped(), "Spawn timer should start when fishing resumes")
+
+
 func test_reset_for_restart() -> void:
 	manager.current_state = manager.State.INACTIVE
 	manager._on_spawn_timer_timeout()
