@@ -214,3 +214,133 @@ func test_reset_for_restart() -> void:
 	manager.reset_for_restart()
 	assert_eq(manager.current_state, manager.State.INACTIVE)
 	assert_false(manager.seagull_node.visible)
+
+
+func test_reset_for_restart_hides_and_re_randomizes_timer() -> void:
+	manager.current_state = manager.State.INACTIVE
+	manager._on_spawn_timer_timeout()
+	manager.current_state = manager.State.APPROACHING
+	manager.return_timer.start(99)
+	manager.get_node("RoamTimer").start(99)
+	manager.seagull_node.visible = true
+	manager.reset_for_restart()
+	assert_eq(manager.current_state, manager.State.INACTIVE, "INACTIVE after reset")
+	assert_false(manager.seagull_node.visible, "hidden after reset")
+	assert_false(manager.spawn_timer.is_stopped(), "spawn_timer re-randomized")
+	assert_true(manager.return_timer.is_stopped(), "return_timer stopped")
+	assert_true(manager.get_node("RoamTimer").is_stopped(), "roam_timer stopped")
+
+
+func _build_player_for_seagull(parent: Node3D) -> Player:
+	var player_node := CharacterBody3D.new()
+	player_node.name = "Player_1"
+	var head := Node3D.new()
+	head.name = "Head"
+	player_node.add_child(head)
+	var camera := Camera3D.new()
+	camera.name = "Camera3D"
+	head.add_child(camera)
+	var hand_left := MeshInstance3D.new()
+	hand_left.name = "HandLeft"
+	head.add_child(hand_left)
+	var hand_right := MeshInstance3D.new()
+	hand_right.name = "HandRight"
+	head.add_child(hand_right)
+	var body_mesh := MeshInstance3D.new()
+	body_mesh.name = "BodyMesh"
+	player_node.add_child(body_mesh)
+	var fishing_scene = load("res://systems/fishing/fishing_mechanic.tscn")
+	var fishing_mechanic = fishing_scene.instantiate()
+	fishing_mechanic.name = "FishingMechanic"
+	player_node.add_child(fishing_mechanic)
+	var voice_chat_manager := Node.new()
+	voice_chat_manager.name = "VoiceChatManager"
+	voice_chat_manager.set_script(load("res://systems/voice_chat/voice_chat_manager.gd"))
+	player_node.add_child(voice_chat_manager)
+	var health_component := HealthComponent.new()
+	health_component.name = "HealthComponent"
+	player_node.add_child(health_component)
+	var sitting_heal := SittingHealComponent.new()
+	sitting_heal.name = "SittingHeal"
+	player_node.add_child(sitting_heal)
+	var spectate_camera := Node3D.new()
+	spectate_camera.name = "SpectateCamera"
+	player_node.add_child(spectate_camera)
+	var spectate_cam_camera := Camera3D.new()
+	spectate_cam_camera.name = "Camera3D"
+	spectate_camera.add_child(spectate_cam_camera)
+	player_node.set_script(load("res://entities/player/player.gd"))
+	var p := player_node as Player
+	parent.add_child(p)
+	await get_tree().process_frame
+	return p
+
+
+func test_player_throw_repels_seagull_in_range() -> void:
+	manager.current_state = manager.State.INACTIVE
+	manager._on_spawn_timer_timeout()
+	manager.current_state = manager.State.APPROACHING
+	var player := await _build_player_for_seagull(_parent)
+	autofree(player)
+	player._seagull_manager_ref = manager
+	player._danger_manager_ref = null
+	player.camera.global_position = Vector3(0, manager.flight_altitude, 0)
+	player.camera.look_at(Vector3(10, manager.flight_altitude, 0), Vector3.UP)
+	manager.seagull_node.global_position = Vector3(5, manager.flight_altitude, 0)
+	player.holding_rock = true
+	var root := get_tree().root
+	var rocks_before: Array[Node] = []
+	for c in root.get_children():
+		if c is RigidBody3D:
+			rocks_before.append(c)
+	player._throw_rock()
+	for c in root.get_children():
+		if c is RigidBody3D and c not in rocks_before:
+			autofree(c)
+	assert_eq(manager.current_state, manager.State.RETREATING, "Player rock throw in range -> RETREATING")
+
+
+func test_player_throw_out_of_range_no_repel() -> void:
+	manager.current_state = manager.State.INACTIVE
+	manager._on_spawn_timer_timeout()
+	manager.current_state = manager.State.APPROACHING
+	var player := await _build_player_for_seagull(_parent)
+	autofree(player)
+	player._seagull_manager_ref = manager
+	player._danger_manager_ref = null
+	player.camera.global_position = Vector3(0, manager.flight_altitude, 0)
+	player.camera.look_at(Vector3(10, manager.flight_altitude, 0), Vector3.UP)
+	manager.seagull_node.global_position = Vector3(5, manager.flight_altitude + 5, 0)
+	player.holding_rock = true
+	var root := get_tree().root
+	var rocks_before: Array[Node] = []
+	for c in root.get_children():
+		if c is RigidBody3D:
+			rocks_before.append(c)
+	player._throw_rock()
+	for c in root.get_children():
+		if c is RigidBody3D and c not in rocks_before:
+			autofree(c)
+	assert_eq(manager.current_state, manager.State.APPROACHING, "Out-of-range throw -> no repel")
+
+
+func test_round_manager_restart_resets_seagull() -> void:
+	var rm_scene: PackedScene = load("res://systems/round/round_manager.tscn")
+	var rm = rm_scene.instantiate()
+	rm.name = "RoundManager"
+	var existing_rm := _parent.get_node_or_null("RoundManager")
+	if existing_rm:
+		_parent.remove_child(existing_rm)
+		existing_rm.queue_free()
+		await get_tree().process_frame
+	_parent.add_child(autofree(rm))
+	await get_tree().process_frame
+	rm.timer.stop()
+	manager.current_state = manager.State.INACTIVE
+	manager._on_spawn_timer_timeout()
+	manager.current_state = manager.State.APPROACHING
+	manager.seagull_node.visible = true
+	rm.restart_round()
+	assert_eq(manager.current_state, manager.State.INACTIVE, "RoundManager restart -> INACTIVE")
+	assert_false(manager.seagull_node.visible, "seagull hidden after restart")
+	assert_false(manager.spawn_timer.is_stopped(), "spawn_timer restarted after restart")
