@@ -50,6 +50,14 @@ func _get_fireplace_label() -> Label:
 	return shop_ui.get_node("MarginContainer/VBoxContainer/FireplaceRow/FireplaceLabel") as Label
 
 
+func _get_shark_bait_buy_button() -> Button:
+	return shop_ui.get_node("MarginContainer/VBoxContainer/SharkBaitRow/SharkBaitBuyButton") as Button
+
+
+func _get_shark_bait_label() -> Label:
+	return shop_ui.get_node("MarginContainer/VBoxContainer/SharkBaitRow/SharkBaitLabel") as Label
+
+
 func test_shop_ui_has_no_upgrade_rows() -> void:
 	assert_null(shop_ui.get_node_or_null("MarginContainer/VBoxContainer/MaxHealthRow"),
 		"MaxHealthRow should not exist")
@@ -105,6 +113,58 @@ func test_failed_fireplace_buy_does_not_change_coin_label() -> void:
 	shop_ui._update_ui()
 	var before = _get_coin_label().text
 	_get_fireplace_buy_button().pressed.emit()
+	shop_ui._update_ui()
+	assert_eq(_get_coin_label().text, before, "Coin label should not change when buy fails")
+
+
+func test_shark_bait_buy_button_shows_buy_when_affordable() -> void:
+	coin_manager.coins = 20
+	coin_manager.shark_bait_owned = false
+	shop_ui._update_ui()
+	assert_eq(_get_shark_bait_buy_button().text, "Buy")
+	assert_false(_get_shark_bait_buy_button().disabled)
+
+
+func test_shark_bait_buy_button_shows_owned_when_purchased() -> void:
+	coin_manager.coins = 20
+	coin_manager.shark_bait_owned = true
+	shop_ui._update_ui()
+	assert_eq(_get_shark_bait_buy_button().text, "Owned")
+	assert_true(_get_shark_bait_buy_button().disabled)
+
+
+func test_shark_bait_buy_button_disabled_when_insufficient_coins() -> void:
+	coin_manager.coins = 0
+	coin_manager.shark_bait_owned = false
+	shop_ui._update_ui()
+	assert_true(_get_shark_bait_buy_button().disabled, "Buy button should be disabled")
+	assert_ne(_get_shark_bait_buy_button().text, "Buy", "Should not show Buy text")
+	assert_ne(_get_shark_bait_buy_button().text, "Owned", "Should not show Owned text")
+
+
+func test_shark_bait_label_shows_name_and_cost() -> void:
+	coin_manager.shark_bait_cost = 15
+	shop_ui._update_ui()
+	var text = _get_shark_bait_label().text
+	assert_true(text.contains("Shark Bait"), "Label should contain shark bait name")
+	assert_true(text.contains("15"), "Label should contain cost")
+
+
+func test_successful_shark_bait_buy_updates_coin_label() -> void:
+	coin_manager.coins = 20
+	shop_ui._update_ui()
+	assert_true(_get_coin_label().text.contains("20"), "Coin label should show 20 before buy")
+	_get_shark_bait_buy_button().pressed.emit()
+	shop_ui._update_ui()
+	assert_true(_get_coin_label().text.contains("5"), "Coin label should show 5 after buy")
+	assert_true(coin_manager.is_shark_bait_owned(), "Shark Bait should be owned after buy")
+
+
+func test_failed_shark_bait_buy_does_not_change_coin_label() -> void:
+	coin_manager.coins = 5
+	shop_ui._update_ui()
+	var before = _get_coin_label().text
+	_get_shark_bait_buy_button().pressed.emit()
 	shop_ui._update_ui()
 	assert_eq(_get_coin_label().text, before, "Coin label should not change when buy fails")
 
