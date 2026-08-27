@@ -10,9 +10,6 @@ enum State { INACTIVE, ROAMING, APPROACHING, ATTACKING, RETREATING, WAITING }
 @export var flight_speed: float = 4.0
 @export var repel_radius: float = 2.0
 @export var arrival_range: float = 2.0
-@export var attack_range: float:
-	get: return arrival_range
-	set(v): arrival_range = v
 @export var theft_amount: int = 1
 @export var spawn_interval_min: float = 30.0
 @export var spawn_interval_max: float = 60.0
@@ -139,16 +136,6 @@ func _spawn_seagull() -> void:
 			seagull_node.look_at(seagull_node.position + tangent, Vector3.UP)
 
 
-func _random_perimeter_point() -> Vector3:
-	var angle := randf() * TAU
-	var dir := Vector2(cos(angle), sin(angle))
-	return Vector3(
-		MapConfig.MAP_CENTER.x + dir.x * MapConfig.FISHABLE_BAND_RADIUS,
-		0,
-		MapConfig.MAP_CENTER.z + dir.y * MapConfig.FISHABLE_BAND_RADIUS
-	)
-
-
 func _get_storage_box() -> Node3D:
 	if is_instance_valid(_storage_box):
 		return _storage_box
@@ -241,7 +228,7 @@ func _physics_process(delta: float) -> void:
 			else:
 				_on_fishing_paused()
 			_last_fishing_active = fa
-		if not fa:
+		if not fa and current_state != State.RETREATING:
 			return
 	match current_state:
 		State.ROAMING:
@@ -321,7 +308,8 @@ func _process_retreating(delta: float) -> void:
 	if reached_spawn or not MapConfig.is_within_radius(new_pos, MapConfig.MAP_CENTER, MapConfig.FISHABLE_BAND_RADIUS):
 		seagull_node.visible = false
 		current_state = State.WAITING
-		return_timer.start(randf_range(return_interval_min, return_interval_max))
+		if _round_manager == null or not ("fishing_active" in _round_manager) or _round_manager.fishing_active:
+			return_timer.start(randf_range(return_interval_min, return_interval_max))
 		_sync_state_to_clients()
 		return
 	_sync_tick += 1
@@ -368,7 +356,13 @@ func _on_fishing_paused() -> void:
 
 
 func _on_fishing_resumed() -> void:
-	spawn_timer.start(randf_range(spawn_interval_min, spawn_interval_max))
+	match current_state:
+		State.INACTIVE:
+			spawn_timer.start(randf_range(spawn_interval_min, spawn_interval_max))
+		State.WAITING:
+			return_timer.start(randf_range(return_interval_min, return_interval_max))
+		_:
+			pass
 
 
 @rpc("any_peer", "unreliable", "call_remote")
