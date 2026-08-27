@@ -6,6 +6,8 @@ extends PanelContainer
 @onready var sell_all_button: Button = $MarginContainer/VBoxContainer/SellAllButton
 @onready var fireplace_label: Label = $MarginContainer/VBoxContainer/FireplaceRow/FireplaceLabel
 @onready var fireplace_buy_button: Button = $MarginContainer/VBoxContainer/FireplaceRow/FireplaceBuyButton
+@onready var shark_bait_label: Label = $MarginContainer/VBoxContainer/SharkBaitRow/SharkBaitLabel
+@onready var shark_bait_buy_button: Button = $MarginContainer/VBoxContainer/SharkBaitRow/SharkBaitBuyButton
 @onready var quota_manager: Node3D = get_node_or_null("/root/main/QuotaManager")
 @onready var coin_manager: CoinManager = get_node_or_null("/root/main/CoinManager")
 
@@ -29,9 +31,12 @@ func _ready() -> void:
 		coin_manager.coins_updated.connect(_update_ui)
 	if coin_manager.has_signal("fireplace_updated"):
 		coin_manager.fireplace_updated.connect(_update_ui)
+	if coin_manager.has_signal("shark_bait_updated"):
+		coin_manager.shark_bait_updated.connect(_update_ui)
 
 	sell_all_button.pressed.connect(_on_sell_all_pressed)
 	fireplace_buy_button.pressed.connect(_on_buy_fireplace_pressed)
+	shark_bait_buy_button.pressed.connect(_on_buy_shark_bait_pressed)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -63,6 +68,12 @@ func _on_buy_fireplace_pressed() -> void:
 	coin_manager.request_buy_fireplace.rpc()
 
 
+func _on_buy_shark_bait_pressed() -> void:
+	if not coin_manager:
+		return
+	coin_manager.request_buy_shark_bait.rpc()
+
+
 func _update_ui(_val: int = 0) -> void:
 	if not quota_manager or not coin_manager:
 		return
@@ -73,6 +84,7 @@ func _update_ui(_val: int = 0) -> void:
 	sell_all_button.disabled = fish <= 0
 
 	_update_fireplace_button(coins)
+	_update_shark_bait_button(coins)
 
 
 func _update_fireplace_button(coins: int) -> void:
@@ -88,3 +100,18 @@ func _update_fireplace_button(coins: int) -> void:
 	else:
 		fireplace_buy_button.text = str(cost) + " coins"
 		fireplace_buy_button.disabled = true
+
+
+func _update_shark_bait_button(coins: int) -> void:
+	var cost: int = coin_manager.shark_bait_cost
+	shark_bait_label.text = "Shark Bait — " + str(cost) + " coins"
+
+	if coin_manager.is_shark_bait_owned():
+		shark_bait_buy_button.text = "Owned"
+		shark_bait_buy_button.disabled = true
+	elif coins >= cost:
+		shark_bait_buy_button.text = "Buy"
+		shark_bait_buy_button.disabled = false
+	else:
+		shark_bait_buy_button.text = str(cost) + " coins"
+		shark_bait_buy_button.disabled = true
