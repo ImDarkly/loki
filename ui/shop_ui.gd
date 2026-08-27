@@ -12,27 +12,34 @@ extends PanelContainer
 @onready var coin_manager: CoinManager = get_node_or_null("/root/main/CoinManager")
 
 func _ready() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	close_button.pressed.connect(close_shop)
+
+	if not quota_manager:
+		quota_manager = get_node_or_null("/root/main/QuotaManager")
+	if not coin_manager:
+		coin_manager = get_node_or_null("/root/main/CoinManager")
 
 	if not quota_manager or not coin_manager:
 		push_warning("ShopUI: QuotaManager or CoinManager not found")
-		return
+
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.2).set_trans(Tween.TRANS_CUBIC)
 
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-
-	get_node("/root/game_manager").shop_toggled.emit(true)
+	var gm := get_node_or_null("/root/game_manager")
+	if gm:
+		gm.shop_toggled.emit(true)
 
 	_update_ui()
-	if quota_manager.has_signal("quota_updated"):
+	if quota_manager and quota_manager.has_signal("quota_updated"):
 		quota_manager.quota_updated.connect(_update_ui)
-	if coin_manager.has_signal("coins_updated"):
-		coin_manager.coins_updated.connect(_update_ui)
-	if coin_manager.has_signal("fireplace_updated"):
-		coin_manager.fireplace_updated.connect(_update_ui)
-	if coin_manager.has_signal("shark_bait_updated"):
-		coin_manager.shark_bait_updated.connect(_update_ui)
+	if coin_manager:
+		if coin_manager.has_signal("coins_updated"):
+			coin_manager.coins_updated.connect(_update_ui)
+		if coin_manager.has_signal("fireplace_updated"):
+			coin_manager.fireplace_updated.connect(_update_ui)
+		if coin_manager.has_signal("shark_bait_updated"):
+			coin_manager.shark_bait_updated.connect(_update_ui)
 
 	sell_all_button.pressed.connect(_on_sell_all_pressed)
 	fireplace_buy_button.pressed.connect(_on_buy_fireplace_pressed)
