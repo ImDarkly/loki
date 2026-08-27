@@ -288,7 +288,15 @@ func test_player_throw_repels_seagull_in_range() -> void:
 	player.camera.look_at(Vector3(10, manager.flight_altitude, 0), Vector3.UP)
 	manager.seagull_node.global_position = Vector3(5, manager.flight_altitude, 0)
 	player.holding_rock = true
+	var root := get_tree().root
+	var rocks_before: Array[Node] = []
+	for c in root.get_children():
+		if c is RigidBody3D:
+			rocks_before.append(c)
 	player._throw_rock()
+	for c in root.get_children():
+		if c is RigidBody3D and c not in rocks_before:
+			autofree(c)
 	assert_eq(manager.current_state, manager.State.RETREATING, "Player rock throw in range -> RETREATING")
 
 
@@ -304,7 +312,15 @@ func test_player_throw_out_of_range_no_repel() -> void:
 	player.camera.look_at(Vector3(10, manager.flight_altitude, 0), Vector3.UP)
 	manager.seagull_node.global_position = Vector3(5, manager.flight_altitude + 5, 0)
 	player.holding_rock = true
+	var root := get_tree().root
+	var rocks_before: Array[Node] = []
+	for c in root.get_children():
+		if c is RigidBody3D:
+			rocks_before.append(c)
 	player._throw_rock()
+	for c in root.get_children():
+		if c is RigidBody3D and c not in rocks_before:
+			autofree(c)
 	assert_eq(manager.current_state, manager.State.APPROACHING, "Out-of-range throw -> no repel")
 
 
