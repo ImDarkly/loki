@@ -109,6 +109,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_H:
 				Engine.time_scale = 1.0 if Engine.time_scale > 1.5 else 2.0
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if get_tree().root.has_node("ShopUI"):
+			return
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
