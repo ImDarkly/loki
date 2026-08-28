@@ -13,6 +13,23 @@ var fireplace_owned: bool = false
 var shark_bait_owned: bool = false
 
 
+func _ready() -> void:
+	multiplayer.peer_connected.connect(_on_peer_connected)
+
+
+func _exit_tree() -> void:
+	if multiplayer.peer_connected.is_connected(_on_peer_connected):
+		multiplayer.peer_connected.disconnect(_on_peer_connected)
+
+
+func _on_peer_connected(id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	_sync_coins.rpc_id(id, coins)
+	_sync_fireplace.rpc_id(id, fireplace_owned)
+	_sync_shark_bait.rpc_id(id, shark_bait_owned)
+
+
 @rpc("authority", "call_local", "reliable")
 func _sync_coins(value: int) -> void:
 	coins = value
