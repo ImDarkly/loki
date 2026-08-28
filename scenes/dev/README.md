@@ -23,7 +23,7 @@
 - **G** — +5 fish (`QuotaManager.shared_quota`)
 - **H** — 1x / 2x speed toggle
 
-**Full flow to watch:** Press **C** → Owned `yes` → **P** while looking at water (outside red ring) → red bait box spawns at `Last: Placed ✓` → **P** again → `Already placed` → **R** → back to `(none)` → **I** → `correctly rejected ✓` → look at water → **P** → places again. Production remains `15` cost / `10` radius — close window when done.
+**Full flow to watch:** Press **C** → Owned `yes` → **P** while looking at water (outside red ring) → red bait box spawns at `Last: Placed ✓` → **P** again → `Already placed` → **R** → back to `(none)` → **C** (re-acquire owned after reset) → **I** → `correctly rejected ✓` → look at water → **P** → places again. Production remains `15` cost / `10` radius — close window when done.
 
 ---
 

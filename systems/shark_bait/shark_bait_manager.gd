@@ -34,6 +34,8 @@ func request_place_shark_bait(position: Vector3) -> void:
 		return
 	if is_placed:
 		return
+	if not position.is_finite():
+		return
 	if MapConfig.is_within_radius(position, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS):
 		return
 	placed_position = Vector3(position.x, 0, position.z)
@@ -54,7 +56,9 @@ func _sync_placed(position: Vector3) -> void:
 func _ensure_bait_instance() -> void:
 	if is_instance_valid(_bait_instance):
 		return
-	_bait_instance = SHARK_BAIT_SCENE.instantiate()
+	_bait_instance = SHARK_BAIT_SCENE.instantiate() as Node3D
+	if _bait_instance == null:
+		return
 	add_child(_bait_instance)
 	_bait_instance.global_position = placed_position
 
