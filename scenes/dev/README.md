@@ -1,5 +1,32 @@
 # Dev Scenes — Quick Guides
 
+## Shark Bait Placement — Water Test (`dev_shark_bait_flow.tscn`)
+
+**What it does:** Isolated placement without lobby → host → round. Tests `SharkBaitManager` server-authoritative placement: owned-gate (`shark_bait_owned`), `is_placed` single-bait guard, `MapConfig.ISLAND_RADIUS` water check (red torus at radius 10), `request_place_shark_bait → _sync_placed` broadcast + `shark_bait_placed` signal, and red `SharkBait` box at `placed_position`.
+
+**Prod values stay untouched:** `shark_bait_cost` is `15`, `ISLAND_RADIUS` is `10.0` (`scripts/map_config.gd`), bait cost/placement live in `systems/shark_bait/shark_bait_manager.gd` / `entities/shark_bait.tscn`. This dev scene overrides them *in the dev script only* to `0` cost and shows the island ring at `10` for instant testing (per Manual/Dev Testing convention — shorten in dev script, not `@export` defaults).
+
+**How to open and move:**
+1. In Godot FileSystem go to `scenes/dev/dev_shark_bait_flow.tscn`
+2. Click **Play** (▶) — no lobby, single instance, no peer (`multiplayer.has_multiplayer_peer()==false` → server path).
+3. Click inside game window to capture mouse, **W/A/S/D + Mouse** to look (Player at `0,1,-7`).
+
+**What you see:** Top HUD shows `Owned / Cost / Coins / Fish | Placed / Pos / Dist to center / inside? | BaitVisible / BaitPos / PlayerPos / Fwd | Last`. Red torus = island boundary (`ISLAND_RADIUS`), brown box = island (`20×20`), blue box = water (`120×120`), red box appears at placed water pos.
+
+**Controls:**
+- **C** — Buy Shark Bait (`request_buy_shark_bait()` — cost `0` in dev, sets owned, broadcasts `_sync_shark_bait`)
+- **P** — Place at camera 8m ahead (`request_place_shark_bait(target)` — snaps `y=0`; auto-pushes out to `ISLAND_RADIUS+5` if you aim inside)
+- **I** — Try place at island center (`MAP_CENTER + (ISLAND_RADIUS-0.5)`) — should be **rejected** ✓
+- **O** — Toggle `shark_bait_owned` (`_sync_shark_bait` + signal)
+- **R** — Reset (`reset_for_restart()` — clears `is_placed`/`placed_position`/instance, coins 0, owned `false`, fish 3)
+- **B** — +5 coins
+- **G** — +5 fish (`QuotaManager.shared_quota`)
+- **H** — 1x / 2x speed toggle
+
+**Full flow to watch:** Press **C** → Owned `yes` → **P** while looking at water (outside red ring) → red bait box spawns at `Last: Placed ✓` → **P** again → `Already placed` → **R** → back to `(none)` → **I** → `correctly rejected ✓` → look at water → **P** → places again. Production remains `15` cost / `10` radius — close window when done.
+
+---
+
 ## Shop Test — Shark Bait (`dev_shop_flow.tscn`)
 
 **What it does:** Isolated Shop without lobby → host → round. Tests `CoinManager` purchase flow for Shark Bait / Fireplace: `Owned / Buy / "N coins"` disabled states, `coins_updated` / `shark_bait_updated` signals, and `NotificationLabel` toast.
