@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" path="res://entities/fireplace.tscn" id="fireplace_scene"]
 [ext_resource type="PackedScene" path="res://ui/notification_label.tscn" id="notif_scene"]
 [ext_resource type="PackedScene" path="res://entities/shop_hut.tscn" id="shop_hut_scene"]
+[ext_resource type="PackedScene" path="res://systems/shark_bait/shark_bait_manager.tscn" id="shark_bait_manager_scene"]
 [ext_resource type="PackedScene" path="res://entities/storage_box.tscn" id="storage_box_scene"]
 
 [node name="main" type="Node3D" unique_id=1783119357]
@@ -49,6 +50,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7)
 
 [node name="CoinManager" parent="." unique_id=1167381513 instance=ExtResource("coin_man_scene")]
+
+[node name="SharkBaitManager" parent="." unique_id=4167381514 instance=ExtResource("shark_bait_manager_scene")]
 
 [node name="StorageBox" parent="." unique_id=390215907 instance=ExtResource("storage_box_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, -0.2, -1.5)

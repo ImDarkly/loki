@@ -1,0 +1,82 @@
+[gd_scene format=3 uid="uid://b6aka5wsfnbu7"]
+
+[ext_resource type="Script" path="res://scenes/dev/dev_shark_bait_flow.gd" id="1_dev"]
+[ext_resource type="PackedScene" path="res://systems/quota/quota_manager.tscn" id="2_quota"]
+[ext_resource type="PackedScene" path="res://systems/quota/coin_manager.tscn" id="3_coin"]
+[ext_resource type="PackedScene" path="res://systems/shark_bait/shark_bait_manager.tscn" id="4_bait"]
+[ext_resource type="PackedScene" path="res://ui/notification_label.tscn" id="5_notif"]
+[ext_resource type="PackedScene" uid="uid://q81wy3dp7niu" path="res://entities/player/player.tscn" id="6_player"]
+
+[sub_resource type="StandardMaterial3D" id="mat_water"]
+albedo_color = Color(0.04, 0.54, 0.56, 1)
+shading_mode = 0
+transparency = 3
+
+[sub_resource type="StandardMaterial3D" id="mat_island"]
+albedo_color = Color(0.9, 0.56, 0.31, 1)
+shading_mode = 0
+
+[sub_resource type="StandardMaterial3D" id="mat_ring"]
+albedo_color = Color(1, 0.2, 0.2, 0.6)
+shading_mode = 0
+transparency = 3
+
+[sub_resource type="TorusMesh" id="ring_mesh"]
+inner_radius = 9.9
+outer_radius = 10.1
+rings = 64
+ring_segments = 8
+
+[node name="DevSharkBaitFlow" type="Node3D" unique_id=2068167174]
+script = ExtResource("1_dev")
+
+[node name="main" type="Node3D" parent="." unique_id=2096183862]
+
+[node name="QuotaManager" parent="main" unique_id=1659417899 instance=ExtResource("2_quota")]
+
+[node name="CoinManager" parent="main" unique_id=1812507126 instance=ExtResource("3_coin")]
+
+[node name="SharkBaitManager" parent="main" unique_id=4167381515 instance=ExtResource("4_bait")]
+
+[node name="NotificationLabel" parent="main" unique_id=2081426045 instance=ExtResource("5_notif")]
+
+[node name="Players" type="Node3D" parent="." unique_id=195150237]
+
+[node name="Player" parent="Players" unique_id=807358745 instance=ExtResource("6_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -7)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=261518047]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+light_energy = 1.0
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=2088250277]
+
+[node name="Label" type="Label" parent="HUD" unique_id=1766755229]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 1280.0
+offset_bottom = 140.0
+theme_override_font_sizes/font_size = 14
+text = "Dev Shark Bait Flow"
+autowrap_mode = 3
+
+[node name="Island" type="CSGBox3D" parent="." unique_id=943371727]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -7)
+use_collision = true
+size = Vector3(20, 1, 20)
+material = SubResource("mat_island")
+
+[node name="Water" type="CSGBox3D" parent="." unique_id=943371728]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.9, -7)
+use_collision = false
+size = Vector3(120, 0.2, 120)
+material = SubResource("mat_water")
+
+[node name="IslandRing" type="MeshInstance3D" parent="." unique_id=943371729]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -7)
+mesh = SubResource("ring_mesh")
+material_override = SubResource("mat_ring")
+
+[node name="DevCamera" type="Camera3D" parent="." unique_id=1937089062]
+transform = Transform3D(1, 0, 0, 0, 0.7, 0.7, 0, -0.7, 0.7, 10, 15, 15)
+current = false
