@@ -144,7 +144,12 @@ func _create_mock_player(carrying: bool = false) -> Node3D:
 	var p := MockPlayer.new()
 	p.name = "MockPlayer"
 	p.is_carrying = carrying
+	autofree(p)
 	players.add_child(p)
+	if manager and manager.is_placed:
+		p.global_position = manager.placed_position + Vector3(0.5, 0, 0)
+	else:
+		p.global_position = _water_position() + Vector3(0.5, 0, 0)
 	return p
 
 

@@ -5,7 +5,9 @@ signal bait_fill_updated(count: int, cost: int)
 
 const SHARK_BAIT_SCENE: PackedScene = preload("res://entities/shark_bait.tscn")
 
-@export var fill_cost: int = 3
+@export var fill_cost: int = 3:
+	set(value):
+		fill_cost = maxi(value, 1)
 
 var is_placed: bool = false
 var placed_position: Vector3 = Vector3.ZERO
@@ -75,6 +77,10 @@ func request_deposit_shark_bait() -> void:
 		player = _find_carrying_player_fallback()
 	if player == null or not ("is_carrying" in player) or not player.is_carrying:
 		return
+	if is_placed and is_instance_valid(player):
+		var dist := Vector2(player.global_position.x - placed_position.x, player.global_position.z - placed_position.z).length()
+		if dist > 4.0:
+			return
 	bait_fill_count += 1
 	_sync_fill.rpc(bait_fill_count)
 	if player.has_method("_clear_carry"):
