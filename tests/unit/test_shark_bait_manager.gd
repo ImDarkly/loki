@@ -1,5 +1,10 @@
 extends GutTest
 
+class MockPlayer extends Node3D:
+	var is_carrying: bool = false
+	func _clear_carry() -> void:
+		is_carrying = false
+
 var manager: Node3D
 var coin_manager: Node3D
 var _main: Node3D
@@ -126,3 +131,100 @@ func test_shark_bait_entity_is_static_body_with_interactable() -> void:
 	assert_true(bait is StaticBody3D, "SharkBait should be StaticBody3D")
 	assert_not_null(bait.get_node_or_null("InteractableComponent"), "Should have InteractableComponent")
 	assert_eq(bait.collision_layer, 32, "Should be on interactable layer 32")
+
+
+# --- Fill (BAIT-001 Decision 4) ---
+
+func _create_mock_player(carrying: bool = false) -> Node3D:
+	var players := _main.get_node_or_null("Players")
+	if players == null:
+		players = Node3D.new()
+		players.name = "Players"
+		_main.add_child(players)
+	var p := MockPlayer.new()
+	p.name = "MockPlayer"
+	p.is_carrying = carrying
+	autofree(p)
+	players.add_child(p)
+	if manager and manager.is_placed:
+		p.global_position = manager.placed_position + Vector3(0.5, 0, 0)
+	else:
+		p.global_position = _water_position() + Vector3(0.5, 0, 0)
+	return p
+
+
+func _clear_mock_players() -> void:
+	var players := _main.get_node_or_null("Players")
+	if players:
+		for c in players.get_children():
+			c.queue_free()
+
+
+func test_fill_cost_default_is_three() -> void:
+	assert_eq(manager.fill_cost, 3, "fill_cost should default to 3")
+	assert_eq(manager.bait_fill_count, 0, "initial fill should be 0")
+
+
+func test_deposit_increments_when_carrying() -> void:
+	manager._sync_placed(_water_position())
+	var player := _create_mock_player(true)
+	watch_signals(manager)
+	manager.request_deposit_shark_bait()
+	assert_eq(manager.bait_fill_count, 1, "Should increment to 1 when carrying")
+	assert_false(player.is_carrying, "Should clear carry after deposit")
+	assert_signal_emitted(manager, "bait_fill_updated")
+
+
+func test_deposit_rejected_without_carrying() -> void:
+	manager._sync_placed(_water_position())
+	_create_mock_player(false)
+	manager.request_deposit_shark_bait()
+	assert_eq(manager.bait_fill_count, 0, "Should stay 0 when not carrying")
+
+
+func test_deposit_capped_at_fill_cost() -> void:
+	manager._sync_placed(_water_position())
+	for i in 3:
+		var p := _create_mock_player(true)
+		manager.request_deposit_shark_bait()
+		_clear_mock_players()
+		await get_tree().process_frame
+	assert_eq(manager.bait_fill_count, 3, "Should cap at fill_cost=3 after 3 deposits")
+	var extra_player := _create_mock_player(true)
+	manager.request_deposit_shark_bait()
+	assert_eq(manager.bait_fill_count, 3, "Should stay at cap when already full")
+	assert_true(extra_player.is_carrying, "Should NOT clear carry when rejected at cap")
+
+
+func test_partial_values_replicate_via_sync() -> void:
+	watch_signals(manager)
+	manager._sync_fill(1)
+	assert_eq(manager.bait_fill_count, 1)
+	assert_signal_emit_count(manager, "bait_fill_updated", 1)
+	manager._sync_fill(2)
+	assert_eq(manager.bait_fill_count, 2)
+	assert_signal_emit_count(manager, "bait_fill_updated", 2)
+	manager._sync_fill(0)
+	assert_eq(manager.bait_fill_count, 0)
+
+
+func test_deposit_rejected_when_not_placed() -> void:
+	assert_false(manager.is_placed)
+	_create_mock_player(true)
+	manager.request_deposit_shark_bait()
+	assert_eq(manager.bait_fill_count, 0, "Should not fill when not yet placed")
+
+
+func test_sync_fill_clamps_beyond_cost() -> void:
+	manager._sync_fill(99)
+	assert_eq(manager.bait_fill_count, manager.fill_cost, "Should clamp to fill_cost")
+	manager._sync_fill(-5)
+	assert_eq(manager.bait_fill_count, 0, "Should clamp to 0")
+
+
+func test_reset_for_restart_clears_fill() -> void:
+	manager._sync_placed(_water_position())
+	manager._sync_fill(2)
+	assert_eq(manager.bait_fill_count, 2)
+	manager.reset_for_restart()
+	assert_eq(manager.bait_fill_count, 0, "reset_for_restart should clear fill")
