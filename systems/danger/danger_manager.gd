@@ -11,6 +11,7 @@ signal quota_penalty(amount: int)
 @export var attack_range: float = 2.0
 @export var repel_radius: float = 2.0
 @export var min_spawn_distance_from_player: float = 12.0
+@export var bait_priority_range: float = 25.0
 @export var shark_bite_damage: int = 2
 @export var show_attack_radius: bool = false
 
@@ -18,6 +19,8 @@ var current_state: State = State.INACTIVE
 var player_ref: Node3D = null
 var shark_node: MeshInstance3D = null
 var spawn_position: Vector3
+var _is_targeting_bait: bool = false
+var _bait_target_position: Vector3 = Vector3.ZERO
 @onready var spawn_timer: Timer = $SpawnTimer
 @onready var return_timer: Timer = $ReturnTimer
 
@@ -62,12 +65,46 @@ func _on_return_timer_timeout() -> void:
 		_sync_state_to_clients()
 
 
+func _get_shark_bait_manager() -> Node:
+	var m := get_node_or_null("../SharkBaitManager")
+	if m != null:
+		return m
+	m = get_node_or_null("/root/main/SharkBaitManager")
+	if m != null:
+		return m
+	return get_node_or_null("/root/SharkBaitManager")
+
+
+func _is_bait_qualified(spawn_pos: Vector3) -> bool:
+	var bm := _get_shark_bait_manager()
+	if bm == null:
+		return false
+	if not ("is_placed" in bm) or not bm.is_placed:
+		return false
+	if not ("bait_fill_count" in bm and "fill_cost" in bm):
+		return false
+	if bm.bait_fill_count != bm.fill_cost:
+		return false
+	if not ("placed_position" in bm):
+		return false
+	var bait_pos: Vector3 = bm.placed_position
+	var d := Vector2(spawn_pos.x - bait_pos.x, spawn_pos.z - bait_pos.z).length()
+	return d <= bait_priority_range
+
+
 func _spawn_shark() -> void:
 	var target_player := _get_nearest_player()
 	if target_player == null:
 		return
 
 	spawn_position = _pick_spawn_position(target_player)
+
+	if _is_bait_qualified(spawn_position):
+		_is_targeting_bait = true
+		var bm := _get_shark_bait_manager()
+		_bait_target_position = Vector3(bm.placed_position.x, 0, bm.placed_position.z)
+	else:
+		_is_targeting_bait = false
 
 	if not is_instance_valid(shark_node):
 		shark_node = _create_shark_mesh()
@@ -76,7 +113,11 @@ func _spawn_shark() -> void:
 	shark_node.position = spawn_position
 	shark_node.visible = true
 
-	var dir := _direction_to_player(spawn_position, target_player)
+	var dir: Vector3
+	if _is_targeting_bait:
+		dir = (Vector3(_bait_target_position.x, 0, _bait_target_position.z) - Vector3(spawn_position.x, 0, spawn_position.z)).normalized()
+	else:
+		dir = _direction_to_player(spawn_position, target_player)
 	if dir.length_squared() > 0.001:
 		shark_node.look_at(shark_node.position + dir, Vector3.UP)
 	_sync_state_to_clients()
@@ -169,11 +210,17 @@ func _physics_process(delta: float) -> void:
 
 
 func _process_approaching(delta: float) -> void:
-	var target_player := _get_nearest_player()
-	if target_player == null or not is_instance_valid(shark_node):
+	if not is_instance_valid(shark_node):
 		return
 
-	var target := Vector3(target_player.global_position.x, 0, target_player.global_position.z)
+	var target: Vector3
+	if _is_targeting_bait:
+		target = Vector3(_bait_target_position.x, 0, _bait_target_position.z)
+	else:
+		var target_player := _get_nearest_player()
+		if target_player == null:
+			return
+		target = Vector3(target_player.global_position.x, 0, target_player.global_position.z)
 	var current := Vector3(shark_node.position.x, 0, shark_node.position.z)
 	var dist := current.distance_to(target)
 
@@ -346,6 +393,8 @@ func _apply_synced_state(state_value: int, shark_pos: Vector3, synced_spawn_posi
 func reset_for_restart() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
+	_is_targeting_bait = false
+	_bait_target_position = Vector3.ZERO
 	if is_instance_valid(shark_node):
 		shark_node.visible = false
 	current_state = State.INACTIVE
