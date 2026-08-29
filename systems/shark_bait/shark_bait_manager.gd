@@ -38,6 +38,10 @@ func request_place_shark_bait(position: Vector3) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	var coin_manager := get_node_or_null("/root/main/CoinManager")
+	if coin_manager == null:
+		coin_manager = get_node_or_null("../CoinManager")
+	if coin_manager == null:
+		coin_manager = get_node_or_null("CoinManager")
 	if coin_manager == null or not coin_manager.is_shark_bait_owned():
 		return
 	if is_placed:

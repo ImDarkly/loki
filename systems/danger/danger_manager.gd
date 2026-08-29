@@ -21,11 +21,16 @@ var shark_node: MeshInstance3D = null
 var spawn_position: Vector3
 var _is_targeting_bait: bool = false
 var _bait_target_position: Vector3 = Vector3.ZERO
+var _bait_manager: SharkBaitManager = null
 @onready var spawn_timer: Timer = $SpawnTimer
 @onready var return_timer: Timer = $ReturnTimer
 
 
 func _ready() -> void:
+	_bait_manager = get_node_or_null("../SharkBaitManager") as SharkBaitManager
+	if _bait_manager == null:
+		_bait_manager = get_node_or_null("/root/main/SharkBaitManager") as SharkBaitManager
+
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		set_physics_process(false)
 		spawn_timer.stop()
@@ -65,27 +70,21 @@ func _on_return_timer_timeout() -> void:
 		_sync_state_to_clients()
 
 
-func _get_shark_bait_manager() -> Node:
-	var m := get_node_or_null("../SharkBaitManager")
-	if m != null:
-		return m
-	m = get_node_or_null("/root/main/SharkBaitManager")
-	if m != null:
-		return m
-	return get_node_or_null("/root/SharkBaitManager")
+func _get_shark_bait_manager() -> SharkBaitManager:
+	if is_instance_valid(_bait_manager):
+		return _bait_manager
+	_bait_manager = get_node_or_null("../SharkBaitManager") as SharkBaitManager
+	if _bait_manager != null:
+		return _bait_manager
+	_bait_manager = get_node_or_null("/root/main/SharkBaitManager") as SharkBaitManager
+	return _bait_manager
 
 
 func _is_bait_qualified(spawn_pos: Vector3) -> bool:
 	var bm := _get_shark_bait_manager()
-	if bm == null:
-		return false
-	if not ("is_placed" in bm) or not bm.is_placed:
-		return false
-	if not ("bait_fill_count" in bm and "fill_cost" in bm):
+	if bm == null or not bm.is_placed:
 		return false
 	if bm.bait_fill_count != bm.fill_cost:
-		return false
-	if not ("placed_position" in bm):
 		return false
 	var bait_pos: Vector3 = bm.placed_position
 	var d := Vector2(spawn_pos.x - bait_pos.x, spawn_pos.z - bait_pos.z).length()

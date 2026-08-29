@@ -12,14 +12,36 @@ func _ready() -> void:
 	var local_main := get_node_or_null("main")
 	if local_main and local_main.get_parent() == self:
 		remove_child(local_main)
-		get_tree().root.add_child(local_main)
-		local_main.owner = null
+		var existing_root_main := get_tree().root.get_node_or_null("main")
+		if existing_root_main == null:
+			get_tree().root.add_child(local_main)
+			local_main.owner = null
+		else:
+			# Merge children if needed or keep existing root main
+			existing_root_main.queue_free()
+			get_tree().root.add_child(local_main)
+			local_main.owner = null
 
 	await get_tree().process_frame
 
 	_coin_manager = get_node_or_null("/root/main/CoinManager")
+	if _coin_manager == null:
+		_coin_manager = get_node_or_null("main/CoinManager")
+	if _coin_manager == null:
+		_coin_manager = get_node_or_null("CoinManager")
+
 	_bait_manager = get_node_or_null("/root/main/SharkBaitManager")
+	if _bait_manager == null:
+		_bait_manager = get_node_or_null("main/SharkBaitManager")
+	if _bait_manager == null:
+		_bait_manager = get_node_or_null("SharkBaitManager")
+
 	_quota_manager = get_node_or_null("/root/main/QuotaManager")
+	if _quota_manager == null:
+		_quota_manager = get_node_or_null("main/QuotaManager")
+	if _quota_manager == null:
+		_quota_manager = get_node_or_null("QuotaManager")
+
 	_label = get_node_or_null("HUD/Label") as Label
 	_player = get_node_or_null("Players/Player") as Player
 
