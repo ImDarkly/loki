@@ -1,11 +1,15 @@
 class_name SharkBaitManager extends Node3D
 
 signal shark_bait_placed(position: Vector3)
+signal bait_fill_updated(count: int, cost: int)
 
 const SHARK_BAIT_SCENE: PackedScene = preload("res://entities/shark_bait.tscn")
 
+@export var fill_cost: int = 3
+
 var is_placed: bool = false
 var placed_position: Vector3 = Vector3.ZERO
+var bait_fill_count: int = 0
 var _bait_instance: Node3D = null
 
 
@@ -23,6 +27,8 @@ func _on_peer_connected(id: int) -> void:
 		return
 	if is_placed:
 		_sync_placed.rpc_id(id, placed_position)
+	if bait_fill_count != 0:
+		_sync_fill.rpc_id(id, bait_fill_count)
 
 
 @rpc("any_peer", "call_local", "reliable")
@@ -53,6 +59,68 @@ func _sync_placed(position: Vector3) -> void:
 	shark_bait_placed.emit(position)
 
 
+@rpc("any_peer", "call_local", "reliable")
+func request_deposit_shark_bait() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if not is_placed:
+		return
+	if bait_fill_count >= fill_cost:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if multiplayer.has_multiplayer_peer() and sender_id == 0:
+		sender_id = multiplayer.get_unique_id()
+	var player := _find_player_by_sender_id(sender_id)
+	if player == null and not multiplayer.has_multiplayer_peer():
+		player = _find_carrying_player_fallback()
+	if player == null or not ("is_carrying" in player) or not player.is_carrying:
+		return
+	bait_fill_count += 1
+	_sync_fill.rpc(bait_fill_count)
+	if player.has_method("_clear_carry"):
+		player._clear_carry()
+	elif "is_carrying" in player:
+		player.is_carrying = false
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_fill(count: int) -> void:
+	bait_fill_count = clampi(count, 0, fill_cost)
+	bait_fill_updated.emit(bait_fill_count, fill_cost)
+
+
+func _get_players_container() -> Node:
+	var container := get_node_or_null("/root/main/Players")
+	if container != null:
+		return container
+	container = get_node_or_null("../Players")
+	if container != null:
+		return container
+	return get_node_or_null("/root/Players")
+
+
+func _find_player_by_sender_id(sender_id: int) -> Node:
+	var players_container := _get_players_container()
+	if players_container == null:
+		return null
+	for child in players_container.get_children():
+		if child.get_multiplayer_authority() == sender_id:
+			return child
+		if child.name == "Player_%d" % sender_id:
+			return child
+	return null
+
+
+func _find_carrying_player_fallback() -> Node:
+	var players_container := _get_players_container()
+	if players_container == null:
+		return null
+	for child in players_container.get_children():
+		if "is_carrying" in child and child.is_carrying:
+			return child
+	return null
+
+
 func _ensure_bait_instance() -> void:
 	if is_instance_valid(_bait_instance):
 		return
@@ -68,6 +136,9 @@ func reset_for_restart() -> void:
 		return
 	is_placed = false
 	placed_position = Vector3.ZERO
+	bait_fill_count = 0
+	# TODO #209 restart-persist will define whether placement/fill persist across resets
+	_sync_fill.rpc(0)
 	if is_instance_valid(_bait_instance):
 		_bait_instance.queue_free()
 		_bait_instance = null

@@ -526,6 +526,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				interactable.interacted.emit(self)
 				if is_carrying and result.collider.is_in_group("storage_box"):
 					deposit_carried_fish()
+				elif is_carrying and result.collider.is_in_group("shark_bait"):
+					var shark_bait_manager := get_node_or_null("/root/main/SharkBaitManager")
+					if shark_bait_manager and shark_bait_manager.has_method("request_deposit_shark_bait"):
+						if multiplayer.has_multiplayer_peer():
+							shark_bait_manager.request_deposit_shark_bait.rpc()
+						else:
+							shark_bait_manager.request_deposit_shark_bait()
 
 
 func _physics_process(delta: float) -> void:
