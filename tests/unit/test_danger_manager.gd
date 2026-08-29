@@ -220,69 +220,70 @@ func _make_bait_manager(placed: bool, fill: int, pos: Vector3) -> Node:
 	bm.is_placed = placed
 	bm.placed_position = pos
 	bm.bait_fill_count = fill
-	manager._bait_manager = bm
+	manager.set_bait_manager_for_test(bm)
 	return bm
 
 
 func test_bait_filled_in_range_becomes_target() -> void:
 	var bait_pos := Vector3(15, 0, -7)
-	var bm := _make_bait_manager(true, 3, bait_pos)
+	_make_bait_manager(true, 3, bait_pos)
 	manager.bait_priority_range = 10.0
-	# spawn 5 units away -> qualified
-	assert_true(manager._is_bait_qualified(bait_pos + Vector3(5, 0, 0)), "filled+in-range should qualify")
-	manager._is_targeting_bait = false
-	# force spawn position in-range by setting bait and checking qualification directly
-	var spawn_pos := bait_pos + Vector3(5, 0, 0)
-	assert_true(manager._is_bait_qualified(spawn_pos))
-	# simulate locked targeting path
-	manager._is_targeting_bait = true
-	manager._bait_target_position = bait_pos
-	assert_true(manager._is_targeting_bait, "Should be targeting bait when filled+in-range")
+	manager._debug_spawn_override = bait_pos + Vector3(5, 0, 0)
+	manager._spawn_shark()
+	assert_true(manager._is_targeting_bait, "filled+in-range should lock bait at spawn")
+	assert_eq(manager._bait_target_position, Vector3(bait_pos.x, 0, bait_pos.z))
+	manager._debug_spawn_override = Vector3.INF
 
 
 func test_bait_filled_out_of_range_ignores() -> void:
 	var bait_pos := Vector3(15, 0, -7)
 	_make_bait_manager(true, 3, bait_pos)
 	manager.bait_priority_range = 10.0
-	var far_spawn := bait_pos + Vector3(15, 0, 0)
-	assert_false(manager._is_bait_qualified(far_spawn), "filled+out-of-range should not qualify")
+	manager._debug_spawn_override = bait_pos + Vector3(15, 0, 0)
+	manager._spawn_shark()
+	assert_false(manager._is_targeting_bait, "filled+out-of-range should not lock bait")
+	manager._debug_spawn_override = Vector3.INF
 
 
 func test_bait_unfilled_in_range_ignores() -> void:
 	var bait_pos := Vector3(15, 0, -7)
 	_make_bait_manager(true, 1, bait_pos)
 	manager.bait_priority_range = 10.0
-	var near_spawn := bait_pos + Vector3(5, 0, 0)
-	assert_false(manager._is_bait_qualified(near_spawn), "unfilled+in-range should not qualify")
-	var bm2 := _make_bait_manager(true, 0, bait_pos)
-	assert_false(manager._is_bait_qualified(near_spawn), "empty bait should not qualify")
+	manager._debug_spawn_override = bait_pos + Vector3(5, 0, 0)
+	manager._spawn_shark()
+	assert_false(manager._is_targeting_bait, "unfilled+in-range should not lock")
+	manager._debug_spawn_override = Vector3.INF
+	_make_bait_manager(true, 0, bait_pos)
+	manager._debug_spawn_override = bait_pos + Vector3(5, 0, 0)
+	manager._spawn_shark()
+	assert_false(manager._is_targeting_bait, "empty bait should not lock")
+	manager._debug_spawn_override = Vector3.INF
 
 
 func test_bait_distance_threshold_exact() -> void:
 	var bait_pos := Vector3(15, 0, -7)
 	_make_bait_manager(true, 3, bait_pos)
 	manager.bait_priority_range = 10.0
-	var exact := bait_pos + Vector3(10, 0, 0)
-	var just_over := bait_pos + Vector3(10.01, 0, 0)
-	assert_true(manager._is_bait_qualified(exact), "distance == range should qualify (inclusive)")
-	assert_false(manager._is_bait_qualified(just_over), "distance > range should not qualify")
+	manager._debug_spawn_override = bait_pos + Vector3(10, 0, 0)
+	manager._spawn_shark()
+	assert_true(manager._is_targeting_bait, "distance == range should lock (inclusive)")
+	manager._debug_spawn_override = bait_pos + Vector3(10.01, 0, 0)
+	manager._spawn_shark()
+	assert_false(manager._is_targeting_bait, "distance > range should not lock")
+	manager._debug_spawn_override = Vector3.INF
 
 
 func test_bait_no_retarget_after_spawn() -> void:
 	var bait_pos := Vector3(15, 0, -7)
 	var bm := _make_bait_manager(true, 3, bait_pos)
 	manager.bait_priority_range = 25.0
+	manager._debug_spawn_override = bait_pos + Vector3(5, 0, 0)
 	manager.current_state = 1
-	# spawn with filled bait should lock
 	manager._spawn_shark()
+	manager._debug_spawn_override = Vector3.INF
+	assert_true(manager._is_targeting_bait, "spawn in-range should lock")
 	manager.shark_node.position = Vector3(30, 0, -7)
 	mock_player.global_position = Vector3(0, 0, 0)
-	# ensure locked after spawn
-	if not manager._is_targeting_bait:
-		# force lock if random spawn fell out-of-range -> manually lock for no-retarget check
-		manager._is_targeting_bait = true
-		manager._bait_target_position = bait_pos
-	# empty bait mid-chase -> should still target bait
 	bm.bait_fill_count = 0
 	var before: Vector3 = manager.shark_node.position
 	manager._process_approaching(1.0)

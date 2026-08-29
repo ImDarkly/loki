@@ -12,36 +12,14 @@ func _ready() -> void:
 	var local_main := get_node_or_null("main")
 	if local_main and local_main.get_parent() == self:
 		remove_child(local_main)
-		var existing_root_main := get_tree().root.get_node_or_null("main")
-		if existing_root_main == null:
-			get_tree().root.add_child(local_main)
-			local_main.owner = null
-		else:
-			# Merge children if needed or keep existing root main
-			existing_root_main.queue_free()
-			get_tree().root.add_child(local_main)
-			local_main.owner = null
+		get_tree().root.add_child(local_main)
+		local_main.owner = null
 
 	await get_tree().process_frame
 
 	_coin_manager = get_node_or_null("/root/main/CoinManager")
-	if _coin_manager == null:
-		_coin_manager = get_node_or_null("main/CoinManager")
-	if _coin_manager == null:
-		_coin_manager = get_node_or_null("CoinManager")
-
 	_bait_manager = get_node_or_null("/root/main/SharkBaitManager")
-	if _bait_manager == null:
-		_bait_manager = get_node_or_null("main/SharkBaitManager")
-	if _bait_manager == null:
-		_bait_manager = get_node_or_null("SharkBaitManager")
-
 	_quota_manager = get_node_or_null("/root/main/QuotaManager")
-	if _quota_manager == null:
-		_quota_manager = get_node_or_null("main/QuotaManager")
-	if _quota_manager == null:
-		_quota_manager = get_node_or_null("QuotaManager")
-
 	_label = get_node_or_null("HUD/Label") as Label
 	_player = get_node_or_null("Players/Player") as Player
 
@@ -51,7 +29,7 @@ func _ready() -> void:
 			_bait_manager.shark_bait_placed.connect(_on_bait_placed)
 
 	if _label:
-		_label.text = "Dev Shark Bait Flow â€” C buy / P place water / I try island / O toggle owned / R reset / B +5 coins"
+		_label.text = "Dev Shark Bait Flow GÇö C buy / P place water / I try island / O toggle owned / R reset / B +5 coins"
 
 	if _player and _bait_manager:
 		pass
@@ -183,7 +161,7 @@ func _place_at_camera() -> void:
 	_bait_manager.request_place_shark_bait(target)
 	await get_tree().process_frame
 	if _bait_manager.is_placed and not was_placed:
-		_last_place_result = "Placed at (%.1f, %.1f) âœ“" % [target.x, target.z]
+		_last_place_result = "Placed at (%.1f, %.1f) G£ô" % [target.x, target.z]
 	elif _bait_manager.is_placed:
 		_last_place_result = "Already placed"
 	else:
@@ -200,7 +178,7 @@ func _try_place_inside() -> void:
 	if _bait_manager.is_placed and not was_placed:
 		_last_place_result = "Unexpected: inside accepted!"
 	else:
-		_last_place_result = "Inside (%.1f, %.1f) correctly rejected âœ“" % [inside.x, inside.z]
+		_last_place_result = "Inside (%.1f, %.1f) correctly rejected G£ô" % [inside.x, inside.z]
 
 
 func _get_camera_water_position() -> Vector3:

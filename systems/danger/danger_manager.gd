@@ -22,14 +22,24 @@ var spawn_position: Vector3
 var _is_targeting_bait: bool = false
 var _bait_target_position: Vector3 = Vector3.ZERO
 var _bait_manager: SharkBaitManager = null
+var _debug_spawn_override: Vector3 = Vector3.INF
 @onready var spawn_timer: Timer = $SpawnTimer
 @onready var return_timer: Timer = $ReturnTimer
 
 
+func set_bait_manager_for_test(m: SharkBaitManager) -> void:
+	_bait_manager = m
+
+
+func _resolve_bait_manager() -> SharkBaitManager:
+	var m := get_node_or_null("../SharkBaitManager") as SharkBaitManager
+	if m != null:
+		return m
+	return get_node_or_null("/root/main/SharkBaitManager") as SharkBaitManager
+
+
 func _ready() -> void:
-	_bait_manager = get_node_or_null("../SharkBaitManager") as SharkBaitManager
-	if _bait_manager == null:
-		_bait_manager = get_node_or_null("/root/main/SharkBaitManager") as SharkBaitManager
+	_bait_manager = _resolve_bait_manager()
 
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		set_physics_process(false)
@@ -73,10 +83,7 @@ func _on_return_timer_timeout() -> void:
 func _get_shark_bait_manager() -> SharkBaitManager:
 	if is_instance_valid(_bait_manager):
 		return _bait_manager
-	_bait_manager = get_node_or_null("../SharkBaitManager") as SharkBaitManager
-	if _bait_manager != null:
-		return _bait_manager
-	_bait_manager = get_node_or_null("/root/main/SharkBaitManager") as SharkBaitManager
+	_bait_manager = _resolve_bait_manager()
 	return _bait_manager
 
 
@@ -91,19 +98,27 @@ func _is_bait_qualified(spawn_pos: Vector3) -> bool:
 	return d <= bait_priority_range
 
 
+func _try_lock_bait(spawn_pos: Vector3) -> bool:
+	if _is_bait_qualified(spawn_pos):
+		var bm := _get_shark_bait_manager()
+		_bait_target_position = Vector3(bm.placed_position.x, 0, bm.placed_position.z)
+		_is_targeting_bait = true
+		return true
+	_is_targeting_bait = false
+	return false
+
+
 func _spawn_shark() -> void:
 	var target_player := _get_nearest_player()
 	if target_player == null:
 		return
 
-	spawn_position = _pick_spawn_position(target_player)
-
-	if _is_bait_qualified(spawn_position):
-		_is_targeting_bait = true
-		var bm := _get_shark_bait_manager()
-		_bait_target_position = Vector3(bm.placed_position.x, 0, bm.placed_position.z)
+	if _debug_spawn_override.is_finite() and _debug_spawn_override != Vector3.INF:
+		spawn_position = _debug_spawn_override
 	else:
-		_is_targeting_bait = false
+		spawn_position = _pick_spawn_position(target_player)
+
+	_try_lock_bait(spawn_position)
 
 	if not is_instance_valid(shark_node):
 		shark_node = _create_shark_mesh()
