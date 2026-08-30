@@ -358,6 +358,16 @@ func _get_player_nodes() -> Array[Node3D]:
 
 
 func _trigger_attack() -> void:
+	if _is_targeting_bait:
+		current_state = State.ATTACKING
+		if is_instance_valid(shark_node):
+			shark_node.visible = false
+		current_state = State.WAITING
+		_is_targeting_bait = false
+		_bait_target_position = Vector3.ZERO
+		return_timer.start(randf_range(45.0, 90.0))
+		_sync_state_to_clients()
+		return
 	current_state = State.ATTACKING
 	var target_player := _get_nearest_player()
 	if target_player != null:
