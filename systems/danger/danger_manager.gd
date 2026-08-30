@@ -398,6 +398,10 @@ func _broadcast_fish_fled_rpc(target_client_id: int) -> void:
 func _sync_state_to_clients() -> void:
 	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
 		return
+	# Bait targeting (_is_targeting_bait / _bait_target_position) intentionally not
+	# synced: physics and _spawn_shark are server-gated, clients receive
+	# authoritative position via _apply_synced_state. Sync bait state if
+	# client-side prediction is ever added.
 	var has_shark := is_instance_valid(shark_node)
 	var shark_pos := shark_node.position if has_shark else spawn_position
 	_apply_synced_state.rpc(current_state, shark_pos, spawn_position, has_shark and shark_node.visible)
