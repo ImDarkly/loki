@@ -95,6 +95,13 @@ func _sync_fill(count: int) -> void:
 	bait_fill_updated.emit(bait_fill_count, fill_cost)
 
 
+func consume_by_shark() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	bait_fill_count = 0
+	_sync_fill.rpc(0)
+
+
 func _get_players_container() -> Node:
 	var container := get_node_or_null("/root/main/Players")
 	if container != null:

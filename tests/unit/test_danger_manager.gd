@@ -217,8 +217,11 @@ func _make_bait_manager(placed: bool, fill: int, pos: Vector3) -> Node:
 	var bm: Node = load("res://systems/shark_bait/shark_bait_manager.tscn").instantiate()
 	bm.name = "SharkBaitManager"
 	add_child_autofree(bm)
-	bm.is_placed = placed
-	bm.placed_position = pos
+	if placed:
+		bm._sync_placed(pos)
+	else:
+		bm.is_placed = false
+		bm.placed_position = pos
 	bm.bait_fill_count = fill
 	manager.set_bait_manager_for_test(bm)
 	return bm
@@ -297,3 +300,28 @@ func test_bait_no_retarget_after_spawn() -> void:
 func test_bait_priority_range_export_exists() -> void:
 	assert_true("bait_priority_range" in manager, "bait_priority_range export should exist")
 	assert_gt(manager.bait_priority_range, 0.0, "bait_priority_range should be positive tunable")
+
+
+func test_shark_attack_on_bait_consumes_bait_without_despawn() -> void:
+	var bait_pos := Vector3(15, 0, -7)
+	var bm := _make_bait_manager(true, 3, bait_pos)
+	manager.bait_priority_range = 10.0
+	manager._debug_spawn_override = bait_pos + Vector3(5, 0, 0)
+	manager._spawn_shark()
+	assert_true(manager._is_targeting_bait)
+
+	manager.current_state = 1 # APPROACHING
+	manager.shark_node.position = bait_pos
+	manager.attack_range = 2.0
+
+	watch_signals(bm)
+	manager._physics_process(1.0)
+
+	assert_eq(bm.bait_fill_count, 0, "Bait fill count should reset to 0 on attack")
+	assert_true(bm.is_placed, "Bait is_placed should remain true")
+	assert_eq(bm.placed_position, bait_pos, "Bait placed_position should remain unchanged")
+	assert_true(is_instance_valid(bm._bait_instance), "Bait instance should not be despawned")
+	assert_eq(manager.current_state, 4, "Should transition to WAITING")
+	assert_false(manager.shark_node.visible, "Shark should be hidden after attacking bait")
+	assert_between(manager.return_timer.time_left, 45.0, 90.0, "Return interval should be 45-90 seconds")
+	assert_signal_emitted(bm, "bait_fill_updated")

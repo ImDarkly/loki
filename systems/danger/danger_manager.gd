@@ -360,6 +360,9 @@ func _get_player_nodes() -> Array[Node3D]:
 func _trigger_attack() -> void:
 	if _is_targeting_bait:
 		current_state = State.ATTACKING
+		var bm := _get_shark_bait_manager()
+		if bm != null:
+			bm.consume_by_shark()
 		if is_instance_valid(shark_node):
 			shark_node.visible = false
 		current_state = State.WAITING
