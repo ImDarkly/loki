@@ -228,3 +228,15 @@ func test_reset_for_restart_clears_fill() -> void:
 	assert_eq(manager.bait_fill_count, 2)
 	manager.reset_for_restart()
 	assert_eq(manager.bait_fill_count, 0, "reset_for_restart should clear fill")
+
+
+func test_consume_by_shark_resets_fill_and_emits_signal() -> void:
+	manager._sync_placed(_water_position())
+	manager._sync_fill(3)
+	assert_eq(manager.bait_fill_count, 3)
+	watch_signals(manager)
+	manager.consume_by_shark()
+	assert_eq(manager.bait_fill_count, 0)
+	assert_signal_emitted(manager, "bait_fill_updated")
+	assert_true(manager.is_placed)
+	assert_true(is_instance_valid(manager._bait_instance))
