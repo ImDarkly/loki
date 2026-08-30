@@ -209,3 +209,91 @@ func test_shark_not_spawned_without_player_ref() -> void:
 	manager.current_state = 0
 	manager._on_spawn_timer_timeout()
 	assert_eq(manager.current_state, 0, "Should stay INACTIVE when no player ref")
+
+
+# --- Shark Bait range-priority (BAIT-001 Decision 5) ---
+
+func _make_bait_manager(placed: bool, fill: int, pos: Vector3) -> Node:
+	var bm: Node = load("res://systems/shark_bait/shark_bait_manager.tscn").instantiate()
+	bm.name = "SharkBaitManager"
+	add_child_autofree(bm)
+	bm.is_placed = placed
+	bm.placed_position = pos
+	bm.bait_fill_count = fill
+	manager.set_bait_manager_for_test(bm)
+	return bm
+
+
+func test_bait_filled_in_range_becomes_target() -> void:
+	var bait_pos := Vector3(15, 0, -7)
+	_make_bait_manager(true, 3, bait_pos)
+	manager.bait_priority_range = 10.0
+	manager._debug_spawn_override = bait_pos + Vector3(5, 0, 0)
+	manager._spawn_shark()
+	assert_true(manager._is_targeting_bait, "filled+in-range should lock bait at spawn")
+	assert_eq(manager._bait_target_position, Vector3(bait_pos.x, 0, bait_pos.z))
+	manager._debug_spawn_override = Vector3.INF
+
+
+func test_bait_filled_out_of_range_ignores() -> void:
+	var bait_pos := Vector3(15, 0, -7)
+	_make_bait_manager(true, 3, bait_pos)
+	manager.bait_priority_range = 10.0
+	manager._debug_spawn_override = bait_pos + Vector3(15, 0, 0)
+	manager._spawn_shark()
+	assert_false(manager._is_targeting_bait, "filled+out-of-range should not lock bait")
+	manager._debug_spawn_override = Vector3.INF
+
+
+func test_bait_unfilled_in_range_ignores() -> void:
+	var bait_pos := Vector3(15, 0, -7)
+	_make_bait_manager(true, 1, bait_pos)
+	manager.bait_priority_range = 10.0
+	manager._debug_spawn_override = bait_pos + Vector3(5, 0, 0)
+	manager._spawn_shark()
+	assert_false(manager._is_targeting_bait, "unfilled+in-range should not lock")
+	manager._debug_spawn_override = Vector3.INF
+	_make_bait_manager(true, 0, bait_pos)
+	manager._debug_spawn_override = bait_pos + Vector3(5, 0, 0)
+	manager._spawn_shark()
+	assert_false(manager._is_targeting_bait, "empty bait should not lock")
+	manager._debug_spawn_override = Vector3.INF
+
+
+func test_bait_distance_threshold_exact() -> void:
+	var bait_pos := Vector3(15, 0, -7)
+	_make_bait_manager(true, 3, bait_pos)
+	manager.bait_priority_range = 10.0
+	manager._debug_spawn_override = bait_pos + Vector3(10, 0, 0)
+	manager._spawn_shark()
+	assert_true(manager._is_targeting_bait, "distance == range should lock (inclusive)")
+	manager._debug_spawn_override = bait_pos + Vector3(10.01, 0, 0)
+	manager._spawn_shark()
+	assert_false(manager._is_targeting_bait, "distance > range should not lock")
+	manager._debug_spawn_override = Vector3.INF
+
+
+func test_bait_no_retarget_after_spawn() -> void:
+	var bait_pos := Vector3(15, 0, -7)
+	var bm := _make_bait_manager(true, 3, bait_pos)
+	manager.bait_priority_range = 25.0
+	manager._debug_spawn_override = bait_pos + Vector3(5, 0, 0)
+	manager.current_state = 1
+	manager._spawn_shark()
+	manager._debug_spawn_override = Vector3.INF
+	assert_true(manager._is_targeting_bait, "spawn in-range should lock")
+	manager.shark_node.position = Vector3(30, 0, -7)
+	mock_player.global_position = Vector3(0, 0, 0)
+	bm.bait_fill_count = 0
+	var before: Vector3 = manager.shark_node.position
+	manager._process_approaching(1.0)
+	var after: Vector3 = manager.shark_node.position
+	var to_bait: Vector3 = (Vector3(bait_pos.x, 0, bait_pos.z) - Vector3(before.x, 0, before.z)).normalized()
+	var moved: Vector3 = (after - before).normalized()
+	assert_gt(moved.dot(to_bait), 0.9, "Should keep moving toward bait despite bait now empty (no retarget)")
+	assert_true(manager._is_targeting_bait, "Lock should persist after bait emptied")
+
+
+func test_bait_priority_range_export_exists() -> void:
+	assert_true("bait_priority_range" in manager, "bait_priority_range export should exist")
+	assert_gt(manager.bait_priority_range, 0.0, "bait_priority_range should be positive tunable")

@@ -29,7 +29,7 @@ func _ready() -> void:
 			_bait_manager.shark_bait_placed.connect(_on_bait_placed)
 
 	if _label:
-		_label.text = "Dev Shark Bait Flow â€” C buy / P place water / I try island / O toggle owned / R reset / B +5 coins"
+		_label.text = "Dev Shark Bait Flow GÇö C buy / P place water / I try island / O toggle owned / R reset / B +5 coins"
 
 	if _player and _bait_manager:
 		pass
@@ -161,7 +161,7 @@ func _place_at_camera() -> void:
 	_bait_manager.request_place_shark_bait(target)
 	await get_tree().process_frame
 	if _bait_manager.is_placed and not was_placed:
-		_last_place_result = "Placed at (%.1f, %.1f) âœ“" % [target.x, target.z]
+		_last_place_result = "Placed at (%.1f, %.1f) G£ô" % [target.x, target.z]
 	elif _bait_manager.is_placed:
 		_last_place_result = "Already placed"
 	else:
@@ -178,7 +178,7 @@ func _try_place_inside() -> void:
 	if _bait_manager.is_placed and not was_placed:
 		_last_place_result = "Unexpected: inside accepted!"
 	else:
-		_last_place_result = "Inside (%.1f, %.1f) correctly rejected âœ“" % [inside.x, inside.z]
+		_last_place_result = "Inside (%.1f, %.1f) correctly rejected G£ô" % [inside.x, inside.z]
 
 
 func _get_camera_water_position() -> Vector3:
