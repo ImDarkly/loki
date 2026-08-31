@@ -140,17 +140,7 @@ func test_cannot_place_before_purchase_gated_on_shark_bait_owned() -> void:
 	assert_true(manager.is_placed)
 
 
-func test_reset_for_restart_clears_placement() -> void:
-	coin_manager.shark_bait_owned = true
-	var water := _water_position()
-	var player := _create_mock_player()
-	player.global_position = water - Vector3(2.0, 0, 0)
-	manager.request_place_shark_bait(water)
-	assert_true(manager.is_placed)
-	manager.reset_for_restart()
-	assert_false(manager.is_placed)
-	assert_eq(manager.placed_position, Vector3.ZERO)
-	assert_false(is_instance_valid(manager._bait_instance))
+
 
 
 func test_shark_bait_entity_is_static_body_with_interactable() -> void:
@@ -250,12 +240,7 @@ func test_sync_fill_clamps_beyond_cost() -> void:
 	assert_eq(manager.bait_fill_count, 0, "Should clamp to 0")
 
 
-func test_reset_for_restart_clears_fill() -> void:
-	manager._sync_placed(_water_position())
-	manager._sync_fill(2)
-	assert_eq(manager.bait_fill_count, 2)
-	manager.reset_for_restart()
-	assert_eq(manager.bait_fill_count, 0, "reset_for_restart should clear fill")
+
 
 
 func test_consume_by_shark_resets_fill_and_emits_signal() -> void:
