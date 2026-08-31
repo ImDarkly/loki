@@ -168,14 +168,4 @@ func _ensure_bait_instance() -> void:
 	_bait_instance.global_position = placed_position
 
 
-func reset_for_restart() -> void:
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		return
-	is_placed = false
-	placed_position = Vector3.ZERO
-	bait_fill_count = 0
-	# TODO #209 restart-persist will define whether placement/fill persist across resets
-	_sync_fill.rpc(0)
-	if is_instance_valid(_bait_instance):
-		_bait_instance.queue_free()
-		_bait_instance = null
+

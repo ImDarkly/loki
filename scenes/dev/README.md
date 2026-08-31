@@ -18,7 +18,7 @@
 - **P** — Place at camera 8m ahead (`request_place_shark_bait(target)` — snaps `y=0`; auto-pushes out to `ISLAND_RADIUS+5` if you aim inside)
 - **I** — Try place at island center (`MAP_CENTER + (ISLAND_RADIUS-0.5)`) — should be **rejected** ✓
 - **O** — Toggle `shark_bait_owned` (`_sync_shark_bait` + signal)
-- **R** — Reset (`reset_for_restart()` — clears `is_placed`/`placed_position`/instance, coins 0, owned `false`, fish 3)
+- **R** — Reset (manually clears `is_placed`/`placed_position`/instance/fill, coins 0, owned `false`, fish 3)
 - **B** — +5 coins
 - **G** — +5 fish (`QuotaManager.shared_quota`)
 - **H** — 1x / 2x speed toggle

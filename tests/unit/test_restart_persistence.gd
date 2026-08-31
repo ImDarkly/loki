@@ -45,6 +45,36 @@ func test_fireplace_owned_survives_restart() -> void:
 	assert_true(_coin_manager.fireplace_owned, "Fireplace ownership should survive restart")
 
 
+func _water_position() -> Vector3:
+	return MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 5.0, 0, 0)
+
+
+func test_shark_bait_persistence_across_restart() -> void:
+	_coin_manager.shark_bait_owned = true
+	var shark_bait_manager = autofree(load("res://systems/shark_bait/shark_bait_manager.tscn").instantiate())
+	shark_bait_manager.name = "SharkBaitManager"
+	_main.add_child(shark_bait_manager)
+	await get_tree().process_frame
+
+	var water := _water_position()
+	shark_bait_manager._sync_placed(water)
+	shark_bait_manager._sync_fill(2)
+
+	assert_true(_coin_manager.shark_bait_owned)
+	assert_true(shark_bait_manager.is_placed)
+	assert_eq(shark_bait_manager.placed_position, water)
+	assert_eq(shark_bait_manager.bait_fill_count, 2)
+	assert_true(is_instance_valid(shark_bait_manager._bait_instance))
+
+	_round_manager._apply_restart()
+
+	assert_true(_coin_manager.shark_bait_owned, "Shark bait ownership should survive restart")
+	assert_true(shark_bait_manager.is_placed, "Shark bait placement should survive restart")
+	assert_eq(shark_bait_manager.placed_position, water, "Shark bait position should survive restart")
+	assert_eq(shark_bait_manager.bait_fill_count, 2, "Shark bait fill count should survive restart")
+	assert_true(is_instance_valid(shark_bait_manager._bait_instance), "Shark bait instance should survive restart")
+
+
 func test_shop_ui_close_emits_shop_toggled_false() -> void:
 	var shop_scene = load("res://ui/shop_ui.tscn")
 	var shop = shop_scene.instantiate()

@@ -304,8 +304,19 @@ func _add_fish(amount: int) -> void:
 
 
 func _reset_all() -> void:
-	if _bait_manager and _bait_manager.has_method("reset_for_restart"):
-		_bait_manager.reset_for_restart()
+	if _bait_manager:
+		if "is_placed" in _bait_manager:
+			_bait_manager.is_placed = false
+		if "placed_position" in _bait_manager:
+			_bait_manager.placed_position = Vector3.ZERO
+		if "bait_fill_count" in _bait_manager:
+			_bait_manager.bait_fill_count = 0
+		if _bait_manager.has_method("_sync_fill"):
+			_bait_manager._sync_fill(0)
+		var inst = _bait_manager.get("_bait_instance")
+		if is_instance_valid(inst):
+			inst.queue_free()
+			_bait_manager.set("_bait_instance", null)
 	if _coin_manager:
 		_coin_manager.coins = 0
 		_coin_manager.shark_bait_owned = false
