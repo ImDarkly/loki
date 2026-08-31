@@ -38,6 +38,12 @@ func request_place_shark_bait(position: Vector3) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	var coin_manager := get_node_or_null("/root/main/CoinManager")
+	if coin_manager == null:
+		coin_manager = get_node_or_null("../CoinManager")
+	if coin_manager == null:
+		coin_manager = get_tree().root.get_node_or_null("main/CoinManager")
+	if coin_manager == null:
+		coin_manager = get_tree().root.find_child("CoinManager", true, false)
 	if coin_manager == null or not coin_manager.is_shark_bait_owned():
 		return
 	if is_placed:
@@ -45,6 +51,21 @@ func request_place_shark_bait(position: Vector3) -> void:
 	if not position.is_finite():
 		return
 	if MapConfig.is_within_radius(position, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS):
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if multiplayer.has_multiplayer_peer() and sender_id == 0:
+		sender_id = multiplayer.get_unique_id()
+	var player := _find_player_by_sender_id(sender_id)
+	if player == null and not multiplayer.has_multiplayer_peer():
+		player = _find_carrying_player_fallback()
+	if player == null and not multiplayer.has_multiplayer_peer():
+		var container := _get_players_container()
+		if container and container.get_child_count() > 0:
+			player = container.get_child(0)
+	if player == null or not is_instance_valid(player):
+		return
+	var dist := Vector2(player.global_position.x - position.x, player.global_position.z - position.z).length()
+	if dist > 4.0 or dist < 0.0:
 		return
 	placed_position = Vector3(position.x, 0, position.z)
 	is_placed = true
@@ -109,7 +130,10 @@ func _get_players_container() -> Node:
 	container = get_node_or_null("../Players")
 	if container != null:
 		return container
-	return get_node_or_null("/root/Players")
+	container = get_node_or_null("../../Players")
+	if container != null:
+		return container
+	return get_tree().root.find_child("Players", true, false)
 
 
 func _find_player_by_sender_id(sender_id: int) -> Node:

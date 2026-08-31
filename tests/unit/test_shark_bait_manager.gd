@@ -41,13 +41,17 @@ func _inside_position() -> Vector3:
 
 func test_place_rejected_without_ownership() -> void:
 	coin_manager.shark_bait_owned = false
+	_create_mock_player()
 	manager.request_place_shark_bait(_water_position())
 	assert_false(manager.is_placed, "Should not place without ownership")
 
 
 func test_place_rejected_inside_island() -> void:
 	coin_manager.shark_bait_owned = true
-	manager.request_place_shark_bait(_inside_position())
+	var inside := _inside_position()
+	var player := _create_mock_player()
+	player.global_position = inside
+	manager.request_place_shark_bait(inside)
 	assert_false(manager.is_placed, "Should reject position inside ISLAND_RADIUS")
 
 	manager.request_place_shark_bait(MapConfig.MAP_CENTER)
@@ -60,14 +64,27 @@ func test_place_rejected_inside_island() -> void:
 func test_place_accepted_in_water() -> void:
 	coin_manager.shark_bait_owned = true
 	var water := _water_position()
+	var player := _create_mock_player()
+	player.global_position = water - Vector3(2.0, 0, 0)
 	manager.request_place_shark_bait(water)
 	assert_true(manager.is_placed, "Water position outside ISLAND_RADIUS should be accepted")
 	assert_eq(manager.placed_position, Vector3(water.x, 0, water.z))
 
 
+func test_place_rejected_too_far_from_player() -> void:
+	coin_manager.shark_bait_owned = true
+	var water := _water_position()
+	var player := _create_mock_player()
+	player.global_position = water - Vector3(6.0, 0, 0)
+	manager.request_place_shark_bait(water)
+	assert_false(manager.is_placed, "Placement > 4m from player should be rejected")
+
+
 func test_place_rejected_when_already_placed() -> void:
 	coin_manager.shark_bait_owned = true
 	var first := _water_position()
+	var player := _create_mock_player()
+	player.global_position = first - Vector3(2.0, 0, 0)
 	var second := MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 8.0, 0, 0)
 	manager.request_place_shark_bait(first)
 	assert_true(manager.is_placed)
@@ -90,6 +107,8 @@ func test_request_place_emits_signal_and_syncs() -> void:
 	coin_manager.shark_bait_owned = true
 	watch_signals(manager)
 	var water := _water_position()
+	var player := _create_mock_player()
+	player.global_position = water - Vector3(2.0, 0, 0)
 	manager.request_place_shark_bait(water)
 	assert_signal_emitted(manager, "shark_bait_placed")
 	assert_true(is_instance_valid(manager._bait_instance))
@@ -98,26 +117,35 @@ func test_request_place_emits_signal_and_syncs() -> void:
 func test_height_does_not_affect_island_check() -> void:
 	coin_manager.shark_bait_owned = true
 	var raised_inside := MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS - 0.5, 10.0, 0)
+	var player := _create_mock_player()
+	player.global_position = raised_inside - Vector3(2.0, 0, 0)
 	manager.request_place_shark_bait(raised_inside)
 	assert_false(manager.is_placed, "Y should be ignored — XZ inside island still rejected")
 
 	var raised_water := MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 5.0, 10.0, 0)
+	player.global_position = raised_water - Vector3(2.0, 0, 0)
 	manager.request_place_shark_bait(raised_water)
 	assert_true(manager.is_placed, "Y should be ignored — XZ outside island should be accepted")
 
 
 func test_cannot_place_before_purchase_gated_on_shark_bait_owned() -> void:
 	coin_manager.shark_bait_owned = false
-	manager.request_place_shark_bait(_water_position())
+	var water := _water_position()
+	var player := _create_mock_player()
+	player.global_position = water - Vector3(2.0, 0, 0)
+	manager.request_place_shark_bait(water)
 	assert_false(manager.is_placed)
 	coin_manager.shark_bait_owned = true
-	manager.request_place_shark_bait(_water_position())
+	manager.request_place_shark_bait(water)
 	assert_true(manager.is_placed)
 
 
 func test_reset_for_restart_clears_placement() -> void:
 	coin_manager.shark_bait_owned = true
-	manager.request_place_shark_bait(_water_position())
+	var water := _water_position()
+	var player := _create_mock_player()
+	player.global_position = water - Vector3(2.0, 0, 0)
+	manager.request_place_shark_bait(water)
 	assert_true(manager.is_placed)
 	manager.reset_for_restart()
 	assert_false(manager.is_placed)
@@ -240,3 +268,39 @@ func test_consume_by_shark_resets_fill_and_emits_signal() -> void:
 	assert_signal_emitted(manager, "bait_fill_updated")
 	assert_true(manager.is_placed)
 	assert_true(is_instance_valid(manager._bait_instance))
+
+
+func test_shark_bait_fill_bar_properties_and_scaling() -> void:
+	var bait = load("res://entities/shark_bait.tscn").instantiate()
+	add_child_autofree(bait)
+	var fill_root = bait.get_node_or_null("FillBarRoot")
+	assert_not_null(fill_root, "Should have FillBarRoot")
+	var frame = fill_root.get_node_or_null("Frame") as MeshInstance3D
+	var fill = fill_root.get_node_or_null("Fill") as MeshInstance3D
+	assert_not_null(frame, "Should have Frame mesh")
+	assert_not_null(fill, "Should have Fill mesh")
+
+	var frame_mat = frame.material_override as StandardMaterial3D
+	var fill_mat = fill.material_override as StandardMaterial3D
+	assert_not_null(frame_mat)
+	assert_not_null(fill_mat)
+	assert_eq(frame_mat.shading_mode, 0)
+	assert_eq(frame_mat.billboard_mode, 1)
+	assert_eq(fill_mat.shading_mode, 0)
+	assert_eq(fill_mat.billboard_mode, 1)
+
+	bait._update_bar(0, 3)
+	assert_almost_eq(fill.scale.x, 0.0, 0.001)
+	assert_eq(fill_mat.albedo_color, Color(0.0, 0.8, 0.0, 1.0))
+
+	bait._update_bar(1, 3)
+	assert_almost_eq(fill.scale.x, 1.0 / 3.0, 0.001)
+	assert_eq(fill_mat.albedo_color, Color(0.0, 0.8, 0.0, 1.0))
+
+	bait._update_bar(2, 3)
+	assert_almost_eq(fill.scale.x, 2.0 / 3.0, 0.001)
+	assert_eq(fill_mat.albedo_color, Color(0.0, 0.8, 0.0, 1.0))
+
+	bait._update_bar(3, 3)
+	assert_almost_eq(fill.scale.x, 1.0, 0.001)
+	assert_eq(fill_mat.albedo_color, Color(1.0, 0.2, 0.0, 1.0))
