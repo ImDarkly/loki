@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://entities/shark_bait.gd" id="1_bait"]
 [ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="2_comp"]
@@ -12,6 +12,23 @@ shading_mode = 0
 
 [sub_resource type="BoxMesh" id="mesh_bait"]
 size = Vector3(0.7, 0.35, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="mat_frame"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.15, 0.15, 0.15, 0.8)
+billboard_mode = 1
+cull_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="mat_fill"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0, 0.8, 0, 1)
+billboard_mode = 1
+cull_mode = 2
+
+[sub_resource type="PlaneMesh" id="mesh_bar"]
+size = Vector2(0.6, 0.1)
 
 [node name="SharkBait" type="StaticBody3D" groups=["shark_bait"]]
 collision_layer = 32
@@ -28,3 +45,15 @@ shape = SubResource("shape")
 [node name="Mesh" type="MeshInstance3D" parent="."]
 material_override = SubResource("mat_bait")
 mesh = SubResource("mesh_bait")
+
+[node name="FillBarRoot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+
+[node name="Frame" type="MeshInstance3D" parent="FillBarRoot"]
+mesh = SubResource("mesh_bar")
+material_override = SubResource("mat_frame")
+
+[node name="Fill" type="MeshInstance3D" parent="FillBarRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.001, 0)
+mesh = SubResource("mesh_bar")
+material_override = SubResource("mat_fill")
