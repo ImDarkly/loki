@@ -27,10 +27,19 @@ EOSGRuntime="*res://addons/epic-online-services-godot/runtime.gd"
 HPlatform="*res://addons/epic-online-services-godot/heos/hplatform.gd"
 HAuth="*res://addons/epic-online-services-godot/heos/hauth.gd"
 HLobbies="*res://addons/epic-online-services-godot/heos/hlobbies.gd"
+DebugOverlay="*res://autoloads/debug_overlay.gd"
 
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gut/plugin.cfg", "res://addons/epic-online-services-godot/plugin.cfg")
+
+[input]
+
+toggle_debug_overlay={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194334,"physical_keycode":4194334,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
 
 [layer_names]
 
