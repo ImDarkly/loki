@@ -39,6 +39,11 @@ func _resolve_bait_manager() -> SharkBaitManager:
 
 
 func _ready() -> void:
+	if OS.is_debug_build():
+		var dbg = get_node_or_null("/root/DebugOverlay")
+		if dbg:
+			dbg.register_system(name, self)
+
 	_bait_manager = _resolve_bait_manager()
 
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
@@ -439,3 +444,12 @@ func _get_player_client_id(player: Node3D) -> int:
 	if player.spawn_index < game_manager.players.size():
 		return game_manager.players[player.spawn_index].id
 	return -1
+
+
+func get_debug_state() -> Dictionary:
+	return {
+		"state": State.keys()[current_state] if current_state < State.size() else str(current_state),
+		"targeting_bait": _is_targeting_bait,
+		"shark_visible": is_instance_valid(shark_node) and shark_node.visible,
+		"spawn": str(spawn_position)
+	}

@@ -15,6 +15,11 @@ var fishing_active: bool = true
 
 
 func _ready() -> void:
+	if OS.is_debug_build():
+		var dbg = get_node_or_null("/root/DebugOverlay")
+		if dbg:
+			dbg.register_system(name, self)
+
 	timer.one_shot = true
 	timer.timeout.connect(_on_timer_timeout)
 
@@ -114,3 +119,11 @@ func _apply_synced_state(active: bool, success: bool = false, active_fishing: bo
 	fishing_active = active_fishing
 	if was_active and not active:
 		round_ended.emit(success)
+
+
+func get_debug_state() -> Dictionary:
+	return {
+		"round_active": round_active,
+		"round_success": round_success,
+		"fishing_active": fishing_active
+	}
