@@ -13,6 +13,21 @@ var fireplace_owned: bool = false
 var shark_bait_owned: bool = false
 
 
+func _ready() -> void:
+	if OS.is_debug_build():
+		var dbg = get_node_or_null("/root/DebugOverlay")
+		if dbg:
+			dbg.register_system(name, self)
+
+
+func get_debug_state() -> Dictionary:
+	return {
+		"coins": coins,
+		"fireplace_owned": fireplace_owned,
+		"shark_bait_owned": shark_bait_owned
+	}
+
+
 @rpc("authority", "call_local", "reliable")
 func _sync_coins(value: int) -> void:
 	coins = value

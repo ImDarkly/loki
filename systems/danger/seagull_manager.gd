@@ -31,6 +31,11 @@ var _last_fishing_active: bool = true
 
 
 func _ready() -> void:
+	if OS.is_debug_build():
+		var dbg = get_node_or_null("/root/DebugOverlay")
+		if dbg:
+			dbg.register_system(name, self)
+
 	_storage_box = get_node_or_null("../StorageBox") as Node3D
 	_round_manager = get_node_or_null("../RoundManager")
 	if _round_manager and "fishing_active" in _round_manager:
@@ -415,3 +420,11 @@ func reset_for_restart() -> void:
 	roam_timer.stop()
 	spawn_timer.start(randf_range(spawn_interval_min, spawn_interval_max))
 	_sync_state_to_clients()
+
+
+func get_debug_state() -> Dictionary:
+	return {
+		"state": State.keys()[current_state] if current_state < State.size() else str(current_state),
+		"seagull_visible": is_instance_valid(seagull_node) and seagull_node.visible,
+		"spawn": str(spawn_position)
+	}

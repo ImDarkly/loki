@@ -5,6 +5,19 @@ signal quota_updated(value: int)
 var shared_quota: int = 0
 
 
+func _ready() -> void:
+	if OS.is_debug_build():
+		var dbg = get_node_or_null("/root/DebugOverlay")
+		if dbg:
+			dbg.register_system(name, self)
+
+
+func get_debug_state() -> Dictionary:
+	return {
+		"shared_quota": shared_quota
+	}
+
+
 @rpc("any_peer", "call_remote", "reliable")
 func report_catch(amount: int) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
