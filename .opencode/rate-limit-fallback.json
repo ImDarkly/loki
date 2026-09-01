@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "cooldownMs": 60000,
+  "fallbackMode": "cycle",
+  "fallbackModels": [
+    {
+      "providerID": "google",
+      "modelID": "gemini-3.1-flash-lite"
+    }
+  ]
+}

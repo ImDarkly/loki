@@ -9,7 +9,9 @@ var _focused_index: int = 0
 
 var _panel: PanelContainer
 var _title_label: Label
+var _systems_label: Label
 var _live_label: Label
+var _actions_label: Label
 var _history_label: Label
 var _content_label: Label
 var _scroll: ScrollContainer
@@ -64,16 +66,26 @@ func _ready() -> void:
 	_title_label.text = "DebugOverlay (F3) — 0 systems"
 	vbox.add_child(_title_label)
 
+	_systems_label = Label.new()
+	_systems_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_systems_label.clip_text = false
+	vbox.add_child(_systems_label)
+
 	_live_label = Label.new()
 	_live_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	_live_label.clip_text = false
 	vbox.add_child(_live_label)
 
+	_actions_label = Label.new()
+	_actions_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_actions_label.clip_text = false
+	vbox.add_child(_actions_label)
+
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
 
 	_scroll = ScrollContainer.new()
-	_scroll.custom_minimum_size = Vector2(0, 120)
+	_scroll.custom_minimum_size = Vector2(0, 80)
 	_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(_scroll)
@@ -102,6 +114,43 @@ func _input(event: InputEvent) -> void:
 			should_toggle = true
 	if should_toggle:
 		visible = not visible
+		return
+
+	if visible and event is InputEventKey and event.pressed and not event.echo:
+		var k = event.physical_keycode
+		if k == 0:
+			k = event.keycode
+
+		var keys: Array = _systems.keys()
+		keys.sort()
+		var n = keys.size()
+
+		if k == KEY_TAB or k == KEY_DOWN:
+			if n > 0:
+				_focused_index = (_focused_index + 1) % n
+				get_viewport().set_input_as_handled()
+		elif k == KEY_UP:
+			if n > 0:
+				_focused_index = (_focused_index - 1 + n) % n
+				get_viewport().set_input_as_handled()
+		elif k >= KEY_1 and k <= KEY_9:
+			var idx = k - KEY_1
+			if n > 0:
+				var focused_name = keys[_focused_index]
+				if _systems.has(focused_name):
+					var node = _systems[focused_name]
+					if is_instance_valid(node) and node.has_method("get_debug_actions"):
+						var actions = node.get_debug_actions()
+						if typeof(actions) == TYPE_ARRAY and idx < actions.size():
+							var act = actions[idx]
+							if typeof(act) == TYPE_DICTIONARY and act.has("id"):
+								var aid = String(act["id"])
+								if multiplayer.has_multiplayer_peer():
+									_debug_action_rpc.rpc(focused_name, aid)
+								else:
+									if node.has_method("debug_action"):
+										node.debug_action(aid)
+								get_viewport().set_input_as_handled()
 
 
 func _process(_delta: float) -> void:
@@ -178,6 +227,15 @@ func _process(_delta: float) -> void:
 	if _title_label:
 		_title_label.text = "DebugOverlay (F3) — %d systems — Focus: %s" % [_systems.size(), focused_name]
 
+	var sys_lines: Array[String] = []
+	for i in range(keys.size()):
+		var prefix = "> " if i == _focused_index else "  "
+		sys_lines.append("%s%s" % [prefix, keys[i]])
+	if sys_lines.is_empty():
+		sys_lines.append("(no systems)")
+	if _systems_label:
+		_systems_label.text = "\n".join(sys_lines)
+
 	var live_lines: Array[String] = []
 	if focused_name != "" and _systems.has(focused_name):
 		var n = _systems[focused_name]
@@ -194,8 +252,35 @@ func _process(_delta: float) -> void:
 	if _content_label and _content_label != _live_label:
 		_content_label.text = _live_label.text
 
+	var action_lines: Array[String] = []
+	if focused_name != "" and _systems.has(focused_name):
+		var n = _systems[focused_name]
+		if is_instance_valid(n) and n.has_method("get_debug_actions"):
+			var acts = n.get_debug_actions()
+			if typeof(acts) == TYPE_ARRAY:
+				var limit = min(acts.size(), 9)
+				for i in range(limit):
+					var act = acts[i]
+					if typeof(act) == TYPE_DICTIONARY and act.has("label"):
+						action_lines.append("%d: %s" % [i + 1, str(act["label"])])
+	if action_lines.is_empty():
+		action_lines.append("(no actions)")
+
+	if _actions_label:
+		_actions_label.text = "\n".join(action_lines)
+
 	if _history_label:
 		_history_label.text = "\n".join(_history)
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _debug_action_rpc(sys_name: String, action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if _systems.has(sys_name):
+		var node = _systems[sys_name]
+		if is_instance_valid(node) and node.has_method("debug_action"):
+			node.debug_action(action_id)
 
 
 func register_system(sys_name: String, node: Node) -> void:

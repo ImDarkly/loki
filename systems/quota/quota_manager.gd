@@ -18,6 +18,23 @@ func get_debug_state() -> Dictionary:
 	}
 
 
+func get_debug_actions() -> Array[Dictionary]:
+	return [
+		{"id": "add_quota_10", "label": "+10 Quota"},
+		{"id": "clear_quota", "label": "Clear Quota"}
+	]
+
+
+func debug_action(action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	match action_id:
+		"add_quota_10":
+			report_catch(10)
+		"clear_quota":
+			apply_penalty(shared_quota)
+
+
 @rpc("any_peer", "call_remote", "reliable")
 func report_catch(amount: int) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
