@@ -433,6 +433,7 @@ func reset_for_restart() -> void:
 	if is_instance_valid(shark_node):
 		shark_node.visible = false
 	current_state = State.INACTIVE
+	return_timer.stop()
 	spawn_timer.start(randf_range(30.0, 60.0))
 	_sync_state_to_clients()
 
@@ -494,6 +495,8 @@ func _debug_force_retreat() -> void:
 	if current_state == State.INACTIVE or current_state == State.WAITING:
 		if _get_nearest_player() == null:
 			return
+		spawn_timer.stop()
+		return_timer.stop()
 		_spawn_shark()
 		current_state = State.APPROACHING
 	_trigger_retreat()
@@ -503,6 +506,8 @@ func _debug_force_attack() -> void:
 	if current_state == State.INACTIVE or current_state == State.WAITING:
 		if _get_nearest_player() == null:
 			return
+		spawn_timer.stop()
+		return_timer.stop()
 		_spawn_shark()
 		current_state = State.APPROACHING
 	_trigger_attack()
