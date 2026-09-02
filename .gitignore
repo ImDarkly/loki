@@ -12,3 +12,19 @@ build/
 # Environment variables
 # EOS credentials (downloaded separately, per-machine)
 eos_credentials.cfg
+
+# Scratch / test run output / temporary files
+gut_*.txt
+pr_body.txt
+hello.gd
+hello.gd.uid
+test_quick.gd
+test_quick.gd.uid
+test_load.gd
+test_load.gd.uid
+run_gut_tests.gd
+run_gut_tests.gd.uid
+run_tests.gd
+run_tests.gd.uid
+test_output.txt
+test_results.txt
