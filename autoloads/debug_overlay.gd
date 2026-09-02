@@ -6,6 +6,8 @@ var _systems: Dictionary = {}
 var _prev_states: Dictionary = {}
 var _history: Array[String] = []
 var _focused_index: int = 0
+var _test_force_client: bool = false
+var _test_rpc_called_count: int = 0
 
 var _panel: PanelContainer
 var _title_label: Label
@@ -145,11 +147,24 @@ func _input(event: InputEvent) -> void:
 							var act = actions[idx]
 							if typeof(act) == TYPE_DICTIONARY and act.has("id"):
 								var aid = String(act["id"])
+								var is_client_mode = false
 								if multiplayer.has_multiplayer_peer():
-									_debug_action_rpc.rpc(focused_name, aid)
+									if multiplayer.is_server():
+										if is_instance_valid(node) and node.has_method("debug_action"):
+											node.debug_action(aid)
+									else:
+										is_client_mode = true
+								elif _test_force_client:
+									is_client_mode = true
 								else:
-									if node.has_method("debug_action"):
+									if is_instance_valid(node) and node.has_method("debug_action"):
 										node.debug_action(aid)
+
+								if is_client_mode:
+									if _test_force_client:
+										_test_rpc_called_count += 1
+									else:
+										_debug_action_rpc.rpc(focused_name, aid)
 								get_viewport().set_input_as_handled()
 
 

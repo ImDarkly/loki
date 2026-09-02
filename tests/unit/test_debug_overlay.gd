@@ -216,29 +216,47 @@ func test_no_button_nodes() -> void:
 			stack.append(child)
 
 
-func test_rpc_trigger_sends_action_to_server() -> void:
-	# Set up a fake multiplayer peer
+func test_rpc_trigger_host_calls_local_debug_action() -> void:
 	var peer = ENetMultiplayerPeer.new()
 	peer.create_server(12345)
 	multiplayer.multiplayer_peer = peer
 	
 	var mock_act = MockActionSystem.new()
 	add_child_autofree(mock_act)
-	overlay.register_system("RPC_Sys", mock_act)
-	
-	# The implementation uses .rpc() which we cannot directly spy on easily with GUT.
-	# But we can verify it doesn't call local debug_action when multiplayer is enabled
-	# and instead tries to call the RPC.
+	overlay.register_system("HostRPC_Sys", mock_act)
+	overlay.visible = true
+	overlay._process(0.016)
 	
 	var event_1 := InputEventKey.new()
 	event_1.physical_keycode = KEY_1
 	event_1.pressed = true
 	
-	# Set focus to our system
 	overlay._focused_index = 0
-	
 	overlay._input(event_1)
 	
-	assert_eq(mock_act.action_called, "", "Should not call local debug_action when multiplayer is active")
+	assert_eq(mock_act.action_called, "act_one", "Host with server peer should execute debug_action locally")
 	
 	multiplayer.multiplayer_peer = null
+
+
+func test_rpc_trigger_client_calls_rpc() -> void:
+	overlay._test_force_client = true
+	
+	var mock_act = MockActionSystem.new()
+	add_child_autofree(mock_act)
+	overlay.register_system("ClientRPC_Sys", mock_act)
+	overlay.visible = true
+	overlay._process(0.016)
+	
+	var event_1 := InputEventKey.new()
+	event_1.physical_keycode = KEY_1
+	event_1.pressed = true
+	
+	overlay._focused_index = 0
+	overlay._input(event_1)
+	
+	assert_eq(mock_act.action_called, "", "Client should not execute debug_action locally (should RPC)")
+	assert_eq(overlay._test_rpc_called_count, 1, "Client should trigger RPC branch")
+	
+	overlay._test_force_client = false
+	overlay._test_rpc_called_count = 0
