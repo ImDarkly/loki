@@ -325,3 +325,71 @@ func test_shark_attack_on_bait_consumes_bait_without_despawn() -> void:
 	assert_false(manager.shark_node.visible, "Shark should be hidden after attacking bait")
 	assert_between(manager.return_timer.time_left, 45.0, 90.0, "Return interval should be 45-90 seconds")
 	assert_signal_emitted(bm, "bait_fill_updated")
+
+
+func test_get_debug_state_returns_expected_keys() -> void:
+	var st = manager.get_debug_state()
+	assert_true(st.has("state"))
+	assert_true(st.has("targeting_bait"))
+	assert_true(st.has("shark_visible"))
+	assert_true(st.has("spawn"))
+	assert_true(st.has("spawn_timer_left"))
+	assert_true(st.has("return_timer_left"))
+	assert_true(st.has("shark_pos"))
+	assert_eq(typeof(st["spawn_timer_left"]), TYPE_INT)
+	assert_eq(typeof(st["return_timer_left"]), TYPE_INT)
+
+
+func test_get_debug_actions_returns_four_actions() -> void:
+	var acts = manager.get_debug_actions()
+	assert_eq(acts.size(), 4)
+	var ids = []
+	for act in acts:
+		ids.append(act["id"])
+	assert_true(ids.has("force_spawn"))
+	assert_true(ids.has("force_retreat"))
+	assert_true(ids.has("force_attack"))
+	assert_true(ids.has("reset_inactive"))
+
+
+func test_debug_actions_execution() -> void:
+	manager.debug_action("force_spawn")
+	assert_eq(manager.current_state, 1, "force_spawn should set state to APPROACHING (1)")
+	assert_true(is_instance_valid(manager.shark_node))
+
+	manager.debug_action("force_retreat")
+	assert_eq(manager.current_state, 3, "force_retreat should set state to RETREATING (3)")
+
+	manager.debug_action("force_attack")
+	assert_eq(manager.current_state, 4, "force_attack should set state to WAITING (4)")
+
+	manager.debug_action("reset_inactive")
+	assert_eq(manager.current_state, 0, "reset_inactive should set state to INACTIVE (0)")
+
+
+func test_get_debug_actions_labels() -> void:
+	var acts = manager.get_debug_actions()
+	var labels = {}
+	for act in acts:
+		labels[act["id"]] = act["label"]
+	assert_eq(labels.get("force_spawn"), "Force Spawn")
+	assert_eq(labels.get("force_retreat"), "Force Retreat")
+	assert_eq(labels.get("force_attack"), "Force Attack")
+	assert_eq(labels.get("reset_inactive"), "Reset Inactive")
+
+
+func test_debug_action_client_noop() -> void:
+	var peer := ENetMultiplayerPeer.new()
+	peer.create_client("127.0.0.1", 1)
+	manager.multiplayer.multiplayer_peer = peer
+	manager.current_state = 0
+	manager.debug_action("force_spawn")
+	assert_eq(manager.current_state, 0, "Client should no-op debug_action")
+	manager.multiplayer.multiplayer_peer = null
+
+
+func test_bait_not_synced() -> void:
+	manager._is_targeting_bait = true
+	manager._sync_state_to_clients()
+	assert_true(manager._is_targeting_bait, "Bait targeting state should remain local and not be cleared/synced by state broadcast")
+

@@ -39,10 +39,9 @@ func _resolve_bait_manager() -> SharkBaitManager:
 
 
 func _ready() -> void:
-	if OS.is_debug_build():
-		var dbg = get_node_or_null("/root/DebugOverlay")
-		if dbg:
-			dbg.register_system(name, self)
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	if dbg:
+		dbg.register_system(name, self)
 
 	_bait_manager = _resolve_bait_manager()
 
@@ -451,5 +450,63 @@ func get_debug_state() -> Dictionary:
 		"state": State.keys()[current_state] if current_state < State.size() else str(current_state),
 		"targeting_bait": _is_targeting_bait,
 		"shark_visible": is_instance_valid(shark_node) and shark_node.visible,
-		"spawn": str(spawn_position)
+		"spawn": str(spawn_position),
+		"spawn_timer_left": max(0, int(ceil(spawn_timer.time_left))) if is_instance_valid(spawn_timer) else 0,
+		"return_timer_left": max(0, int(ceil(return_timer.time_left))) if is_instance_valid(return_timer) else 0,
+		"shark_pos": str(shark_node.position) if is_instance_valid(shark_node) else str(Vector3.ZERO)
 	}
+
+
+func get_debug_actions() -> Array[Dictionary]:
+	return [
+		{"id": "force_spawn", "label": "Force Spawn"},
+		{"id": "force_retreat", "label": "Force Retreat"},
+		{"id": "force_attack", "label": "Force Attack"},
+		{"id": "reset_inactive", "label": "Reset Inactive"}
+	]
+
+
+func debug_action(action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	match action_id:
+		"force_spawn":
+			_debug_force_spawn()
+		"force_retreat":
+			_debug_force_retreat()
+		"force_attack":
+			_debug_force_attack()
+		"reset_inactive":
+			_debug_reset_inactive()
+
+
+func _debug_force_spawn() -> void:
+	if _get_nearest_player() == null:
+		return
+	spawn_timer.stop()
+	return_timer.stop()
+	_spawn_shark()
+	current_state = State.APPROACHING
+	_sync_state_to_clients()
+
+
+func _debug_force_retreat() -> void:
+	if current_state == State.INACTIVE or current_state == State.WAITING:
+		if _get_nearest_player() == null:
+			return
+		_spawn_shark()
+		current_state = State.APPROACHING
+	_trigger_retreat()
+
+
+func _debug_force_attack() -> void:
+	if current_state == State.INACTIVE or current_state == State.WAITING:
+		if _get_nearest_player() == null:
+			return
+		_spawn_shark()
+		current_state = State.APPROACHING
+	_trigger_attack()
+
+
+func _debug_reset_inactive() -> void:
+	reset_for_restart()
