@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://systems/shark_bait/shark_bait_manager.tscn" id="4_bait"]
 [ext_resource type="PackedScene" path="res://ui/notification_label.tscn" id="5_notif"]
 [ext_resource type="PackedScene" uid="uid://q81wy3dp7niu" path="res://entities/player/player.tscn" id="6_player"]
+[ext_resource type="PackedScene" path="res://systems/round/round_manager.tscn" id="7_round"]
 
 [sub_resource type="StandardMaterial3D" id="mat_water"]
 albedo_color = Color(0.04, 0.54, 0.56, 1)
@@ -37,6 +38,8 @@ script = ExtResource("1_dev")
 [node name="CoinManager" parent="main" unique_id=1812507126 instance=ExtResource("3_coin")]
 
 [node name="SharkBaitManager" parent="main" unique_id=4167381515 instance=ExtResource("4_bait")]
+
+[node name="RoundManager" parent="main" instance=ExtResource("7_round")]
 
 [node name="NotificationLabel" parent="main" unique_id=2081426045 instance=ExtResource("5_notif")]
 
