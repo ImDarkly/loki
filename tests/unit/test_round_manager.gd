@@ -114,3 +114,52 @@ func test_apply_restart_sets_fishing_active_true() -> void:
 func test_synced_state_stores_fishing_active() -> void:
 	manager._apply_synced_state(true, false, false)
 	assert_false(manager.fishing_active, "fishing_active should match synced value")
+
+
+func test_get_debug_state_returns_expected_keys() -> void:
+	var st = manager.get_debug_state()
+	assert_true(st.has("round_active"))
+	assert_true(st.has("round_success"))
+	assert_true(st.has("fishing_active"))
+	assert_true(st.has("time_left"))
+	assert_eq(typeof(st["time_left"]), TYPE_INT)
+
+
+func test_get_debug_actions_returns_five_actions() -> void:
+	var acts = manager.get_debug_actions()
+	assert_eq(acts.size(), 5)
+	var ids = []
+	for act in acts:
+		ids.append(act["id"])
+	assert_true(ids.has("pause_fishing"))
+	assert_true(ids.has("resume_fishing"))
+	assert_true(ids.has("restart_round"))
+	assert_true(ids.has("add_time_30"))
+	assert_true(ids.has("shave_time_30"))
+
+
+func test_debug_actions_execution() -> void:
+	manager.debug_action("pause_fishing")
+	assert_false(manager.fishing_active)
+	manager.timer.start(100.0)
+	manager.debug_action("resume_fishing")
+	assert_true(manager.fishing_active)
+
+	manager.timer.start(100.0)
+	var t_before = manager.timer.time_left
+	manager.debug_action("add_time_30")
+	assert_true(manager.timer.time_left > t_before)
+
+	var t_after_add = manager.timer.time_left
+	manager.debug_action("shave_time_30")
+	assert_true(manager.timer.time_left < t_after_add)
+
+	manager.debug_action("restart_round")
+	assert_true(manager.round_active)
+	assert_true(manager.fishing_active)
+
+func test_resume_fishing_ignored_when_timer_stopped() -> void:
+	manager.timer.stop()
+	manager.fishing_active = false
+	manager.debug_action("resume_fishing")
+	assert_false(manager.fishing_active, "resume_fishing should not set fishing_active true when timer stopped")

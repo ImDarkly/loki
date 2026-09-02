@@ -15,10 +15,9 @@ var fishing_active: bool = true
 
 
 func _ready() -> void:
-	if OS.is_debug_build():
-		var dbg = get_node_or_null("/root/DebugOverlay")
-		if dbg:
-			dbg.register_system(name, self)
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	if dbg:
+		dbg.register_system(name, self)
 
 	timer.one_shot = true
 	timer.timeout.connect(_on_timer_timeout)
@@ -125,5 +124,47 @@ func get_debug_state() -> Dictionary:
 	return {
 		"round_active": round_active,
 		"round_success": round_success,
-		"fishing_active": fishing_active
+		"fishing_active": fishing_active,
+		"time_left": max(0, int(ceil(timer.time_left))) if is_instance_valid(timer) else 0
 	}
+
+
+func get_debug_actions() -> Array[Dictionary]:
+	return [
+		{"id": "pause_fishing", "label": "Pause Fishing"},
+		{"id": "resume_fishing", "label": "Resume Fishing"},
+		{"id": "restart_round", "label": "Restart Round"},
+		{"id": "add_time_30", "label": "+30s Time"},
+		{"id": "shave_time_30", "label": "-30s Time"}
+	]
+
+
+func debug_action(action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	match action_id:
+		"pause_fishing":
+			fishing_active = false
+			_sync_state_to_clients()
+		"resume_fishing":
+			if is_instance_valid(timer) and not timer.is_stopped():
+				fishing_active = true
+				_sync_state_to_clients()
+		"restart_round":
+			restart_round()
+		"add_time_30":
+			_adjust_timer(30.0)
+		"shave_time_30":
+			_adjust_timer(-30.0)
+
+
+func _adjust_timer(delta: float) -> void:
+	if not is_instance_valid(timer) or timer.is_stopped():
+		return
+	var remaining := timer.time_left + delta
+	if remaining <= 0.0:
+		timer.stop()
+		_on_timer_timeout()
+	else:
+		timer.start(remaining)
+		# time_left is intentionally local-derived; timer runs on server only

@@ -3,5 +3,6 @@
   "include_subdirs": false,
   "prefix": "test_",
   "suffix": ".gd",
-  "log_level": 2
+  "log_level": 2,
+  "should_exit": true
 }

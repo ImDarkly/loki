@@ -1,8 +1,9 @@
 extends Node3D
 
-var _coin_manager: Node3D
+var _coin_manager: CoinManager
 var _bait_manager: Node3D
 var _quota_manager: Node3D
+var _round_manager: Node3D
 var _label: Label
 var _player: Player
 var _last_place_result: String = ""
@@ -14,20 +15,14 @@ func _ready() -> void:
 		_coin_manager = local_main.get_node_or_null("CoinManager") as CoinManager
 		_bait_manager = local_main.get_node_or_null("SharkBaitManager") as Node3D
 		_quota_manager = local_main.get_node_or_null("QuotaManager") as Node3D
+		_round_manager = local_main.get_node_or_null("RoundManager") as Node3D
 
 		if local_main.get_parent() == self:
 			var root := get_tree().root
 			if root.has_node("main"):
 				print("DevSharkBaitFlow: /root/main already exists, keeping local main under DevSharkBaitFlow")
 			else:
-				remove_child(local_main)
-				root.add_child(local_main)
-				if root.has_node("main") and local_main.get_parent() == root:
-					local_main.owner = null
-				else:
-					if local_main.get_parent() == null:
-						add_child(local_main)
-					print("DevSharkBaitFlow: Reparent main to root failed, kept locally")
+				call_deferred("_reparent_main", local_main)
 
 	await get_tree().process_frame
 
@@ -39,6 +34,14 @@ func _ready() -> void:
 
 	if _quota_manager == null:
 		_quota_manager = _find_node_path("QuotaManager") as Node3D
+
+	if _round_manager == null:
+		_round_manager = _find_node_path("RoundManager") as Node3D
+
+	if _round_manager:
+		_round_manager.round_duration = 900.0
+		_round_manager.round_active = true
+		_round_manager.fishing_active = true
 
 	_label = get_node_or_null("HUD/Label") as Label
 	_player = get_node_or_null("Players/Player") as Player
@@ -67,6 +70,20 @@ func _find_node_path(node_name: String) -> Node:
 	if n == null:
 		n = get_tree().root.find_child(node_name, true, false)
 	return n
+
+
+func _reparent_main(local_main: Node) -> void:
+	if not is_instance_valid(local_main):
+		return
+	if local_main.get_parent() == self:
+		remove_child(local_main)
+		get_tree().root.add_child(local_main)
+		if get_tree().root.has_node("main") and local_main.get_parent() == get_tree().root:
+			local_main.owner = null
+		else:
+			if local_main.get_parent() == null:
+				add_child(local_main)
+			print("DevSharkBaitFlow: Reparent main to root failed, kept locally")
 
 
 func _on_bait_placed(pos: Vector3) -> void:
