@@ -141,6 +141,7 @@ func test_get_debug_actions_returns_five_actions() -> void:
 func test_debug_actions_execution() -> void:
 	manager.debug_action("pause_fishing")
 	assert_false(manager.fishing_active)
+	manager.timer.start(100.0)
 	manager.debug_action("resume_fishing")
 	assert_true(manager.fishing_active)
 
@@ -149,9 +150,16 @@ func test_debug_actions_execution() -> void:
 	manager.debug_action("add_time_30")
 	assert_true(manager.timer.time_left > t_before)
 
+	var t_after_add = manager.timer.time_left
 	manager.debug_action("shave_time_30")
-	assert_true(manager.timer.time_left < t_before + 30.0)
+	assert_true(manager.timer.time_left < t_after_add)
 
 	manager.debug_action("restart_round")
 	assert_true(manager.round_active)
 	assert_true(manager.fishing_active)
+
+func test_resume_fishing_ignored_when_timer_stopped() -> void:
+	manager.timer.stop()
+	manager.fishing_active = false
+	manager.debug_action("resume_fishing")
+	assert_false(manager.fishing_active, "resume_fishing should not set fishing_active true when timer stopped")

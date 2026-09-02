@@ -147,8 +147,9 @@ func debug_action(action_id: String) -> void:
 			fishing_active = false
 			_sync_state_to_clients()
 		"resume_fishing":
-			fishing_active = true
-			_sync_state_to_clients()
+			if is_instance_valid(timer) and not timer.is_stopped():
+				fishing_active = true
+				_sync_state_to_clients()
 		"restart_round":
 			restart_round()
 		"add_time_30":
