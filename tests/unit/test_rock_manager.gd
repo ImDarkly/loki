@@ -63,3 +63,48 @@ func test_placement_respects_minimum_spacing() -> void:
 	])
 	assert_false(manager._is_clear_of_other_rocks(Vector3(35, 0, 0)))
 	assert_true(manager._is_clear_of_other_rocks(Vector3(35, 0, 10)))
+
+
+func test_get_debug_state_keys_and_types() -> void:
+	var st = manager.get_debug_state()
+	assert_true(st.has("rock_count"))
+	assert_true(st.has("available"))
+	assert_true(st.has("respawn_timer_left"))
+	assert_true(st.has("cooldowns_active"))
+	assert_eq(typeof(st["rock_count"]), TYPE_INT)
+	assert_eq(typeof(st["available"]), TYPE_INT)
+	assert_eq(typeof(st["respawn_timer_left"]), TYPE_INT)
+	assert_eq(typeof(st["cooldowns_active"]), TYPE_INT)
+
+
+func test_get_debug_actions_ids_and_labels() -> void:
+	var acts = manager.get_debug_actions()
+	assert_eq(acts.size(), 2)
+	var map = {}
+	for act in acts:
+		map[act["id"]] = act["label"]
+	assert_eq(map.get("respawn_all"), "Respawn All")
+	assert_eq(map.get("clear_all"), "Clear All")
+
+
+func test_debug_actions_execution() -> void:
+	assert_true(manager.is_point_available(0))
+	manager.debug_action("clear_all")
+	assert_false(manager.is_point_available(0), "clear_all should make rocks unavailable")
+	manager.debug_action("respawn_all")
+	assert_true(manager.is_point_available(0), "respawn_all should restore rock availability")
+
+
+func test_debug_action_client_noop() -> void:
+	var peer := ENetMultiplayerPeer.new()
+	peer.create_client("127.0.0.1", 1)
+	manager.multiplayer.multiplayer_peer = peer
+	manager.debug_action("clear_all")
+	assert_true(manager.is_point_available(0), "Client should no-op debug_action")
+	manager.multiplayer.multiplayer_peer = null
+
+
+func test_rock_manager_registers_with_debug_overlay() -> void:
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	assert_not_null(dbg, "DebugOverlay autoload missing")
+	assert_true(dbg._systems.has(manager.name), "RockManager should register with DebugOverlay")

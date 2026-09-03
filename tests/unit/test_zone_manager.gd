@@ -8,9 +8,9 @@ var _saved_multiplayer_peer: Object = null
 
 
 func after_each() -> void:
-	if _saved_multiplayer_peer != null:
+	if is_instance_valid(manager):
 		manager.multiplayer.multiplayer_peer = _saved_multiplayer_peer
-		_saved_multiplayer_peer = null
+	_saved_multiplayer_peer = null
 
 
 func before_each() -> void:
@@ -267,6 +267,7 @@ func test_client_peer_never_scares() -> void:
 
 	manager._on_yell_scare_tick()
 	assert_eq(manager.zones[0]["center"], before, "Client must not scare on tick")
+	manager.multiplayer.multiplayer_peer = null
 
 
 func test_sustained_yelling_runs_on_configured_interval() -> void:
@@ -310,6 +311,63 @@ func test_new_yeller_while_another_yelling_fires_immediate_scare() -> void:
 	assert_ne(second_zone_after, second_zone_before, "New yeller's edge must scare its nearby zone")
 	assert_gt(_flat_distance(second_yeller.global_position, second_zone_after), _flat_distance(second_yeller.global_position, second_zone_before))
 	assert_false(manager.yell_scare_timer.is_stopped(), "Timer must keep running while anyone yells")
+
+
+func test_get_debug_state_keys_and_types() -> void:
+	var st = manager.get_debug_state()
+	assert_true(st.has("zone_count"))
+	assert_true(st.has("occupied_zones"))
+	assert_true(st.has("total_occupants"))
+	assert_true(st.has("reshuffle_timer_left"))
+	assert_true(st.has("yell_scare_timer_left"))
+	assert_eq(typeof(st["zone_count"]), TYPE_INT)
+	assert_eq(typeof(st["occupied_zones"]), TYPE_INT)
+	assert_eq(typeof(st["total_occupants"]), TYPE_INT)
+	assert_eq(typeof(st["reshuffle_timer_left"]), TYPE_INT)
+	assert_eq(typeof(st["yell_scare_timer_left"]), TYPE_INT)
+
+
+func test_get_debug_actions_ids_and_labels() -> void:
+	var acts = manager.get_debug_actions()
+	assert_eq(acts.size(), 3)
+	var map = {}
+	for act in acts:
+		map[act["id"]] = act["label"]
+	assert_eq(map.get("reshuffle_zones"), "Reshuffle Zones")
+	assert_eq(map.get("regen_zones"), "Regenerate Zones")
+	assert_eq(map.get("clear_occupancy"), "Clear Occupancy")
+
+
+func test_debug_actions_execution() -> void:
+	manager.enter_zone(0, 101)
+	assert_eq(manager.zone_occupant_counts[0], 1)
+	manager.debug_action("clear_occupancy")
+	assert_eq(manager.zone_occupant_counts[0], 0, "clear_occupancy should reset occupant counts")
+
+	manager.enter_zone(0, 101)
+	assert_eq(manager.zone_occupant_counts[0], 1)
+	manager.debug_action("regen_zones")
+	assert_eq(manager.zone_occupant_counts[0], 0, "regen_zones should reset occupant counts")
+
+	var before = manager.zones[1]["center"]
+	manager.debug_action("reshuffle_zones")
+	assert_ne(manager.zones[1]["center"], before, "reshuffle_zones should move unoccupied zone")
+
+
+func test_debug_action_client_noop() -> void:
+	manager.enter_zone(0, 101)
+	var peer := ENetMultiplayerPeer.new()
+	peer.create_client("127.0.0.1", 1)
+	manager.multiplayer.multiplayer_peer = peer
+	manager.debug_action("clear_occupancy")
+	assert_eq(manager.zone_occupant_counts[0], 1, "Client should no-op debug_action")
+	manager.multiplayer.multiplayer_peer = null
+
+
+func test_zone_manager_registers_with_debug_overlay() -> void:
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	assert_not_null(dbg, "DebugOverlay autoload missing")
+	assert_true(dbg._systems.has(manager.name), "ZoneManager should register with DebugOverlay")
 
 
 func _flat_distance(a: Vector3, b: Vector3) -> float:
