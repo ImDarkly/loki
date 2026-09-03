@@ -144,6 +144,14 @@ state machine or timers, add its `dev_<name>_flow.tscn` in the same slice/PR —
 ### Running tests
 - `C:\Godot\Godot_v4.6.2-stable_win64.exe --headless --path . -s addons/gut/gut_cmdln.gd`
 
+### Debug Overlay Integration
+
+Every system manager (`systems/<name>/<name>_manager.gd`) must implement the Debug Overlay three-method contract:
+- `get_debug_state() -> Dictionary`
+- `get_debug_actions() -> Array[Dictionary]` (`{id, label}`)
+- `debug_action(action_id: String) -> void` (server-gated: `if multiplayer.has_multiplayer_peer() and not multiplayer.is_server(): return`)
+- Automatic registration in `_ready()`: `var dbg = get_node_or_null("/root/DebugOverlay"); if dbg: dbg.register_system(name, self)`
+
 ## Startup Workflow
 
 Trigger: any message that references a GitHub issue, PR, or feature by number, name, or link (e.g. "work on issue #123", "start feature X"). You do not need the issue body pasted in — fetch it yourself.
@@ -161,6 +169,7 @@ Before implementing any task:
 7. If the feature adds a new `systems/<name>/<name>_manager.gd` with its own state machine or
    timers, include a `scenes/dev/dev_<name>_flow.tscn` per the Manual/Dev Testing convention
    above as part of the same slice.
+8. If the feature introduces a new `systems/<name>/<name>_manager.gd`, ensure it implements the Debug Overlay contract (`get_debug_state`, `get_debug_actions`, `debug_action`, and registration) and add its script path to `COVERED` in `tests/unit/test_debug_overlay_coverage.gd`.
 
 If anything is unclear — ambiguous requirements, missing acceptance criteria, conflicting instructions — stop and ask before proceeding. Do not guess and continue.
 
