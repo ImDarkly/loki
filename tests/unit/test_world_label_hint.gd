@@ -42,7 +42,7 @@ func test_label_created_with_correct_properties() -> void:
 	assert_true(label.double_sided)
 	assert_eq(label.font_size, 48)
 	assert_eq(label.outline_size, 12)
-	assert_eq(label.pixel_size, 0.005)
+	assert_almost_eq(label.pixel_size, 0.005, 0.0001)
 	assert_eq(label.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER)
 	assert_eq(label.text, "Test Hint")
 	assert_eq(label.position, Vector3(0, 0.9, 0))

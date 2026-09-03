@@ -36,7 +36,7 @@ func _process(_delta: float) -> void:
 	var a := _compute_alpha(d, FADE_START, FADE_END)
 	_label.modulate.a = a
 	_label.outline_modulate.a = a
-	_label.visible = a > 0.001
+	_label.visible = a > 0.0
 
 
 static func _compute_alpha(distance: float, fade_start: float, fade_end: float) -> float:
