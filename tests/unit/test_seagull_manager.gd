@@ -434,5 +434,5 @@ func test_debug_action_honors_quota_gate() -> void:
 
 func test_seagull_manager_registers_with_debug_overlay() -> void:
 	var dbg = get_node_or_null("/root/DebugOverlay")
-	if dbg:
-		assert_true(dbg._systems.has("SeagullManager"), "SeagullManager should register with DebugOverlay")
+	assert_not_null(dbg, "DebugOverlay autoload missing")
+	assert_true(dbg._systems.has("SeagullManager"), "SeagullManager should register with DebugOverlay")

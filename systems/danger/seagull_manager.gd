@@ -461,6 +461,9 @@ func _debug_force_spawn() -> void:
 		return
 	if not _can_spawn():
 		if current_state != State.WAITING:
+			if is_instance_valid(seagull_node):
+				seagull_node.visible = false
+			roam_timer.stop()
 			current_state = State.WAITING
 		return_timer.start(randf_range(return_interval_min, return_interval_max))
 		_sync_state_to_clients()
