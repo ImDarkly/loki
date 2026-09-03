@@ -344,3 +344,95 @@ func test_round_manager_restart_resets_seagull() -> void:
 	assert_eq(manager.current_state, manager.State.INACTIVE, "RoundManager restart -> INACTIVE")
 	assert_false(manager.seagull_node.visible, "seagull hidden after restart")
 	assert_false(manager.spawn_timer.is_stopped(), "spawn_timer restarted after restart")
+
+
+func test_get_debug_state_returns_expected_keys() -> void:
+	var st = manager.get_debug_state()
+	assert_true(st.has("state"))
+	assert_true(st.has("seagull_visible"))
+	assert_true(st.has("spawn"))
+	assert_true(st.has("spawn_timer_left"))
+	assert_true(st.has("return_timer_left"))
+	assert_true(st.has("roam_timer_left"))
+	assert_true(st.has("seagull_pos"))
+	assert_eq(typeof(st["spawn_timer_left"]), TYPE_INT)
+	assert_eq(typeof(st["return_timer_left"]), TYPE_INT)
+	assert_eq(typeof(st["roam_timer_left"]), TYPE_INT)
+
+
+func test_get_debug_actions_returns_four_actions() -> void:
+	var acts = manager.get_debug_actions()
+	assert_eq(acts.size(), 4)
+	var ids = []
+	for act in acts:
+		ids.append(act["id"])
+	assert_true(ids.has("force_spawn"))
+	assert_true(ids.has("skip_roam"))
+	assert_true(ids.has("force_retreat"))
+	assert_true(ids.has("reset_inactive"))
+
+
+func test_get_debug_actions_labels() -> void:
+	var acts = manager.get_debug_actions()
+	var labels = {}
+	for act in acts:
+		labels[act["id"]] = act["label"]
+	assert_eq(labels.get("force_spawn"), "Force Spawn")
+	assert_eq(labels.get("skip_roam"), "Skip Roam -> Approach")
+	assert_eq(labels.get("force_retreat"), "Force Retreat")
+	assert_eq(labels.get("reset_inactive"), "Reset Inactive")
+
+
+func test_debug_actions_execution() -> void:
+	manager.debug_action("force_spawn")
+	assert_eq(manager.current_state, manager.State.ROAMING, "force_spawn should set state to ROAMING")
+	assert_true(is_instance_valid(manager.seagull_node))
+
+	manager.debug_action("skip_roam")
+	assert_eq(manager.current_state, manager.State.APPROACHING, "skip_roam should advance to APPROACHING")
+
+	manager.debug_action("force_retreat")
+	assert_eq(manager.current_state, manager.State.RETREATING, "force_retreat should set state to RETREATING")
+
+	manager.debug_action("reset_inactive")
+	assert_eq(manager.current_state, manager.State.INACTIVE, "reset_inactive should set state to INACTIVE")
+
+
+func test_debug_action_client_noop() -> void:
+	var peer := ENetMultiplayerPeer.new()
+	peer.create_client("127.0.0.1", 1)
+	manager.multiplayer.multiplayer_peer = peer
+	manager.current_state = manager.State.INACTIVE
+	manager.debug_action("force_spawn")
+	assert_eq(manager.current_state, manager.State.INACTIVE, "Client should no-op debug_action")
+	manager.multiplayer.multiplayer_peer = null
+
+
+func test_debug_action_honors_fishing_active_gate() -> void:
+	var script = GDScript.new()
+	script.source_code = "extends Node3D\nvar fishing_active: bool = false\n"
+	script.reload()
+	var rm = Node3D.new()
+	rm.set_script(script)
+	rm.name = "RoundManager"
+	_parent.add_child(autofree(rm))
+	manager._round_manager = rm
+	manager.current_state = manager.State.INACTIVE
+	manager.debug_action("force_spawn")
+	assert_eq(manager.current_state, manager.State.INACTIVE, "force_spawn should honor fishing_active=false")
+
+
+func test_debug_action_honors_quota_gate() -> void:
+	var quota = autofree(load("res://systems/quota/quota_manager.tscn").instantiate())
+	quota.name = "QuotaManager"
+	_parent.add_child(quota)
+	quota.shared_quota = 0
+	manager.current_state = manager.State.INACTIVE
+	manager.debug_action("force_spawn")
+	assert_eq(manager.current_state, manager.State.WAITING, "force_spawn with zero quota should go to WAITING")
+
+
+func test_seagull_manager_registers_with_debug_overlay() -> void:
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	if dbg:
+		assert_true(dbg._systems.has("SeagullManager"), "SeagullManager should register with DebugOverlay")

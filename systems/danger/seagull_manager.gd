@@ -31,10 +31,9 @@ var _last_fishing_active: bool = true
 
 
 func _ready() -> void:
-	if OS.is_debug_build():
-		var dbg = get_node_or_null("/root/DebugOverlay")
-		if dbg:
-			dbg.register_system(name, self)
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	if dbg:
+		dbg.register_system(name, self)
 
 	_storage_box = get_node_or_null("../StorageBox") as Node3D
 	_round_manager = get_node_or_null("../RoundManager")
@@ -426,5 +425,74 @@ func get_debug_state() -> Dictionary:
 	return {
 		"state": State.keys()[current_state] if current_state < State.size() else str(current_state),
 		"seagull_visible": is_instance_valid(seagull_node) and seagull_node.visible,
-		"spawn": str(spawn_position)
+		"spawn": str(spawn_position),
+		"spawn_timer_left": max(0, int(ceil(spawn_timer.time_left))) if is_instance_valid(spawn_timer) else 0,
+		"return_timer_left": max(0, int(ceil(return_timer.time_left))) if is_instance_valid(return_timer) else 0,
+		"roam_timer_left": max(0, int(ceil(roam_timer.time_left))) if is_instance_valid(roam_timer) else 0,
+		"seagull_pos": str(seagull_node.position) if is_instance_valid(seagull_node) else str(Vector3.ZERO)
 	}
+
+
+func get_debug_actions() -> Array[Dictionary]:
+	return [
+		{"id": "force_spawn", "label": "Force Spawn"},
+		{"id": "skip_roam", "label": "Skip Roam -> Approach"},
+		{"id": "force_retreat", "label": "Force Retreat"},
+		{"id": "reset_inactive", "label": "Reset Inactive"}
+	]
+
+
+func debug_action(action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	match action_id:
+		"force_spawn":
+			_debug_force_spawn()
+		"skip_roam":
+			_debug_skip_roam()
+		"force_retreat":
+			_debug_force_retreat()
+		"reset_inactive":
+			_debug_reset_inactive()
+
+
+func _debug_force_spawn() -> void:
+	if _round_manager and "fishing_active" in _round_manager and not _round_manager.fishing_active:
+		return
+	if not _can_spawn():
+		if current_state != State.WAITING:
+			current_state = State.WAITING
+		return_timer.start(randf_range(return_interval_min, return_interval_max))
+		_sync_state_to_clients()
+		return
+	spawn_timer.stop()
+	return_timer.stop()
+	roam_timer.stop()
+	_spawn_seagull()
+	current_state = State.ROAMING
+	roam_timer.start(randf_range(roam_duration_min, roam_duration_max))
+	_sync_state_to_clients()
+
+
+func _debug_skip_roam() -> void:
+	if current_state != State.ROAMING:
+		return
+	_on_roam_timer_timeout()
+
+
+func _debug_force_retreat() -> void:
+	if current_state == State.INACTIVE or current_state == State.WAITING:
+		if _round_manager and "fishing_active" in _round_manager and not _round_manager.fishing_active:
+			return
+		if not _can_spawn():
+			return
+		spawn_timer.stop()
+		return_timer.stop()
+		roam_timer.stop()
+		_spawn_seagull()
+		current_state = State.ROAMING
+	_trigger_retreat()
+
+
+func _debug_reset_inactive() -> void:
+	reset_for_restart()
