@@ -8,9 +8,9 @@ var _saved_multiplayer_peer: Object = null
 
 
 func after_each() -> void:
-	if _saved_multiplayer_peer != null:
+	if is_instance_valid(manager):
 		manager.multiplayer.multiplayer_peer = _saved_multiplayer_peer
-		_saved_multiplayer_peer = null
+	_saved_multiplayer_peer = null
 
 
 func before_each() -> void:
@@ -267,6 +267,7 @@ func test_client_peer_never_scares() -> void:
 
 	manager._on_yell_scare_tick()
 	assert_eq(manager.zones[0]["center"], before, "Client must not scare on tick")
+	manager.multiplayer.multiplayer_peer = null
 
 
 func test_sustained_yelling_runs_on_configured_interval() -> void:
@@ -342,6 +343,11 @@ func test_debug_actions_execution() -> void:
 	assert_eq(manager.zone_occupant_counts[0], 1)
 	manager.debug_action("clear_occupancy")
 	assert_eq(manager.zone_occupant_counts[0], 0, "clear_occupancy should reset occupant counts")
+
+	manager.enter_zone(0, 101)
+	assert_eq(manager.zone_occupant_counts[0], 1)
+	manager.debug_action("regen_zones")
+	assert_eq(manager.zone_occupant_counts[0], 0, "regen_zones should reset occupant counts")
 
 	var before = manager.zones[1]["center"]
 	manager.debug_action("reshuffle_zones")

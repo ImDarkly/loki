@@ -460,6 +460,7 @@ func _debug_reshuffle_zones() -> void:
 
 func _debug_regen_zones() -> void:
 	_generate_zones()
+	_rebuild_occupancy_state()
 	reshuffle_timer.stop()
 	_start_reshuffle_timer()
 	_sync_state_to_clients()
