@@ -23,6 +23,10 @@ var _previously_yelling: Dictionary = {}
 
 
 func _ready() -> void:
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	if dbg:
+		dbg.register_system(name, self)
+
 	reshuffle_timer.one_shot = true
 	reshuffle_timer.timeout.connect(_on_reshuffle_timer_timeout)
 	yell_scare_timer.timeout.connect(_on_yell_scare_tick)
@@ -410,4 +414,57 @@ func reset_for_restart() -> void:
 	_rebuild_occupancy_state()
 	reshuffle_timer.stop()
 	_start_reshuffle_timer()
+	_sync_state_to_clients()
+
+
+func get_debug_state() -> Dictionary:
+	var occupied_zones_count := 0
+	var total_occ := 0
+	for count in zone_occupant_counts:
+		if count > 0:
+			occupied_zones_count += 1
+		total_occ += count
+	return {
+		"zone_count": zones.size(),
+		"occupied_zones": occupied_zones_count,
+		"total_occupants": total_occ,
+		"reshuffle_timer_left": max(0, int(ceil(reshuffle_timer.time_left))) if is_instance_valid(reshuffle_timer) else 0,
+		"yell_scare_timer_left": max(0, int(ceil(yell_scare_timer.time_left))) if is_instance_valid(yell_scare_timer) else 0
+	}
+
+
+func get_debug_actions() -> Array[Dictionary]:
+	return [
+		{"id": "reshuffle_zones", "label": "Reshuffle Zones"},
+		{"id": "regen_zones", "label": "Regenerate Zones"},
+		{"id": "clear_occupancy", "label": "Clear Occupancy"}
+	]
+
+
+func debug_action(action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	match action_id:
+		"reshuffle_zones":
+			_debug_reshuffle_zones()
+		"regen_zones":
+			_debug_regen_zones()
+		"clear_occupancy":
+			_debug_clear_occupancy()
+
+
+func _debug_reshuffle_zones() -> void:
+	_reshuffle_unoccupied_zones()
+	_sync_state_to_clients()
+
+
+func _debug_regen_zones() -> void:
+	_generate_zones()
+	reshuffle_timer.stop()
+	_start_reshuffle_timer()
+	_sync_state_to_clients()
+
+
+func _debug_clear_occupancy() -> void:
+	_rebuild_occupancy_state()
 	_sync_state_to_clients()

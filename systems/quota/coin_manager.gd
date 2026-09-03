@@ -14,10 +14,9 @@ var shark_bait_owned: bool = false
 
 
 func _ready() -> void:
-	if OS.is_debug_build():
-		var dbg = get_node_or_null("/root/DebugOverlay")
-		if dbg:
-			dbg.register_system(name, self)
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	if dbg:
+		dbg.register_system(name, self)
 
 
 func get_debug_state() -> Dictionary:
@@ -26,6 +25,49 @@ func get_debug_state() -> Dictionary:
 		"fireplace_owned": fireplace_owned,
 		"shark_bait_owned": shark_bait_owned
 	}
+
+
+func get_debug_actions() -> Array[Dictionary]:
+	return [
+		{"id": "add_coins_10", "label": "+10 Coins"},
+		{"id": "remove_coins_10", "label": "-10 Coins"},
+		{"id": "toggle_fireplace", "label": "Toggle Fireplace"},
+		{"id": "toggle_shark_bait", "label": "Toggle Shark Bait"}
+	]
+
+
+func debug_action(action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	match action_id:
+		"add_coins_10":
+			_debug_add_coins_10()
+		"remove_coins_10":
+			_debug_remove_coins_10()
+		"toggle_fireplace":
+			_debug_toggle_fireplace()
+		"toggle_shark_bait":
+			_debug_toggle_shark_bait()
+
+
+func _debug_add_coins_10() -> void:
+	coins += 10
+	_sync_coins.rpc(coins)
+
+
+func _debug_remove_coins_10() -> void:
+	coins = max(0, coins - 10)
+	_sync_coins.rpc(coins)
+
+
+func _debug_toggle_fireplace() -> void:
+	fireplace_owned = not fireplace_owned
+	_sync_fireplace.rpc(fireplace_owned)
+
+
+func _debug_toggle_shark_bait() -> void:
+	shark_bait_owned = not shark_bait_owned
+	_sync_shark_bait.rpc(shark_bait_owned)
 
 
 @rpc("authority", "call_local", "reliable")

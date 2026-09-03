@@ -18,6 +18,10 @@ var _cooldowns: Array[float] = []
 
 
 func _ready() -> void:
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	if dbg:
+		dbg.register_system(name, self)
+
 	respawn_timer.one_shot = false
 	respawn_timer.timeout.connect(_on_respawn_tick)
 
@@ -218,3 +222,52 @@ func _apply_synced_state(positions: Array[Vector3], available: Array[bool]) -> v
 	_cooldowns.resize(rocks.size())
 	_ensure_rock_nodes()
 	_update_rock_visuals()
+
+
+func get_debug_state() -> Dictionary:
+	var available_count := 0
+	var active_cooldowns := 0
+	for r in rocks:
+		if r["available"]:
+			available_count += 1
+	for c in _cooldowns:
+		if c > 0.0:
+			active_cooldowns += 1
+	return {
+		"rock_count": rocks.size(),
+		"available": available_count,
+		"respawn_timer_left": max(0, int(ceil(respawn_timer.time_left))) if is_instance_valid(respawn_timer) else 0,
+		"cooldowns_active": active_cooldowns
+	}
+
+
+func get_debug_actions() -> Array[Dictionary]:
+	return [
+		{"id": "respawn_all", "label": "Respawn All"},
+		{"id": "clear_all", "label": "Clear All"}
+	]
+
+
+func debug_action(action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	match action_id:
+		"respawn_all":
+			_debug_respawn_all()
+		"clear_all":
+			_debug_clear_all()
+
+
+func _debug_respawn_all() -> void:
+	respawn_timer.stop()
+	_generate_rocks()
+	_sync_state_to_clients()
+
+
+func _debug_clear_all() -> void:
+	respawn_timer.stop()
+	for i in range(rocks.size()):
+		rocks[i]["available"] = false
+		_cooldowns[i] = respawn_delay
+	_update_rock_visuals()
+	_sync_state_to_clients()

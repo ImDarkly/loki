@@ -110,3 +110,58 @@ func test_buy_shark_bait_emits_signals() -> void:
 	coin_manager.request_buy_shark_bait()
 	assert_signal_emitted(coin_manager, "coins_updated")
 	assert_signal_emitted(coin_manager, "shark_bait_updated")
+
+
+func test_get_debug_state_keys_and_types() -> void:
+	var st = coin_manager.get_debug_state()
+	assert_true(st.has("coins"))
+	assert_true(st.has("fireplace_owned"))
+	assert_true(st.has("shark_bait_owned"))
+	assert_eq(typeof(st["coins"]), TYPE_INT)
+	assert_eq(typeof(st["fireplace_owned"]), TYPE_BOOL)
+	assert_eq(typeof(st["shark_bait_owned"]), TYPE_BOOL)
+
+
+func test_get_debug_actions_ids_and_labels() -> void:
+	var acts = coin_manager.get_debug_actions()
+	assert_eq(acts.size(), 4)
+	var map = {}
+	for act in acts:
+		map[act["id"]] = act["label"]
+	assert_eq(map.get("add_coins_10"), "+10 Coins")
+	assert_eq(map.get("remove_coins_10"), "-10 Coins")
+	assert_eq(map.get("toggle_fireplace"), "Toggle Fireplace")
+	assert_eq(map.get("toggle_shark_bait"), "Toggle Shark Bait")
+
+
+func test_debug_actions_execution() -> void:
+	coin_manager.coins = 5
+	coin_manager.debug_action("add_coins_10")
+	assert_eq(coin_manager.coins, 15)
+
+	coin_manager.debug_action("remove_coins_10")
+	assert_eq(coin_manager.coins, 5)
+
+	assert_false(coin_manager.is_fireplace_owned())
+	coin_manager.debug_action("toggle_fireplace")
+	assert_true(coin_manager.is_fireplace_owned())
+
+	assert_false(coin_manager.is_shark_bait_owned())
+	coin_manager.debug_action("toggle_shark_bait")
+	assert_true(coin_manager.is_shark_bait_owned())
+
+
+func test_debug_action_client_noop() -> void:
+	coin_manager.coins = 5
+	var peer := ENetMultiplayerPeer.new()
+	peer.create_client("127.0.0.1", 1)
+	coin_manager.multiplayer.multiplayer_peer = peer
+	coin_manager.debug_action("add_coins_10")
+	assert_eq(coin_manager.coins, 5, "Client should no-op debug_action")
+	coin_manager.multiplayer.multiplayer_peer = null
+
+
+func test_coin_manager_registers_with_debug_overlay() -> void:
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	assert_not_null(dbg, "DebugOverlay autoload missing")
+	assert_true(dbg._systems.has(coin_manager.name), "CoinManager should register with DebugOverlay")
