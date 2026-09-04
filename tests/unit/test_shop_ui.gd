@@ -83,7 +83,9 @@ func test_fireplace_buy_button_disabled_when_insufficient_coins() -> void:
 
 
 func test_fireplace_label_shows_name_and_cost() -> void:
-	coin_manager.fireplace_cost = 15
+	var item = shop_ui._get_shop_item(&"fireplace_owned")
+	if item:
+		item.cost = 15
 	shop_ui._update_ui()
 	var text = _get_fireplace_label().text
 	assert_true(text.contains("Fireplace"), "Label should contain fireplace name")

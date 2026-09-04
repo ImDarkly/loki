@@ -1,6 +1,9 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://systems/quota/coin_manager.gd" id="1_script"]
+[ext_resource type="Resource" path="res://systems/quota/items/fireplace.tres" id="2_fireplace"]
+[ext_resource type="Resource" path="res://systems/quota/items/shark_bait.tres" id="3_shark_bait"]
 
 [node name="CoinManager" type="Node3D"]
 script = ExtResource("1_script")
+shop_items = Array[Resource]([ExtResource("2_fireplace"), ExtResource("3_shark_bait")])

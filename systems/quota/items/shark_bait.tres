@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ShopItemData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://systems/quota/shop_item_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+item_name = "Shark Bait"
+cost = 15
+description = "Fill with fish to distract the shark and save your health."
+owned_flag_property = &"shark_bait_owned"

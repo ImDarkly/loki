@@ -55,7 +55,7 @@ func test_sell_all_emits_coins_updated() -> void:
 func test_buy_fireplace_deducts_coins_and_marks_owned() -> void:
 	coin_manager.coins = 20
 	coin_manager.request_buy_fireplace()
-	assert_eq(coin_manager.coins, 5, "Coins should be reduced by fireplace_cost (15)")
+	assert_eq(coin_manager.coins, 5, "Coins should be reduced by fireplace cost (15)")
 	assert_true(coin_manager.is_fireplace_owned(), "Fireplace should be owned after purchase")
 
 
@@ -85,7 +85,7 @@ func test_buy_fireplace_emits_signals() -> void:
 func test_buy_shark_bait_deducts_coins_and_marks_owned() -> void:
 	coin_manager.coins = 20
 	coin_manager.request_buy_shark_bait()
-	assert_eq(coin_manager.coins, 5, "Coins should be reduced by shark_bait_cost (15)")
+	assert_eq(coin_manager.coins, 5, "Coins should be reduced by shark bait cost (15)")
 	assert_true(coin_manager.is_shark_bait_owned(), "Shark Bait should be owned after purchase")
 
 
@@ -110,6 +110,54 @@ func test_buy_shark_bait_emits_signals() -> void:
 	coin_manager.request_buy_shark_bait()
 	assert_signal_emitted(coin_manager, "coins_updated")
 	assert_signal_emitted(coin_manager, "shark_bait_updated")
+
+
+func test_request_buy_item_fireplace() -> void:
+	coin_manager.coins = 20
+	watch_signals(coin_manager)
+	coin_manager.request_buy_item(&"fireplace")
+	assert_eq(coin_manager.coins, 5)
+	assert_true(coin_manager.is_fireplace_owned())
+	assert_signal_emitted(coin_manager, "coins_updated")
+	assert_signal_emitted(coin_manager, "fireplace_updated")
+	assert_signal_not_emitted(coin_manager, "shark_bait_updated")
+
+
+func test_request_buy_item_shark_bait() -> void:
+	coin_manager.coins = 20
+	watch_signals(coin_manager)
+	coin_manager.request_buy_item(&"shark_bait")
+	assert_eq(coin_manager.coins, 5)
+	assert_true(coin_manager.is_shark_bait_owned())
+	assert_signal_emitted(coin_manager, "coins_updated")
+	assert_signal_emitted(coin_manager, "shark_bait_updated")
+	assert_signal_not_emitted(coin_manager, "fireplace_updated")
+
+
+func test_request_buy_item_second_purchase_prevented() -> void:
+	coin_manager.coins = 50
+	coin_manager.request_buy_item(&"fireplace")
+	coin_manager.request_buy_item(&"fireplace")
+	assert_eq(coin_manager.coins, 35, "Coins should only be deducted once for fireplace")
+	coin_manager.request_buy_item(&"shark_bait")
+	coin_manager.request_buy_item(&"shark_bait")
+	assert_eq(coin_manager.coins, 20, "Coins should only be deducted once for shark bait")
+
+
+func test_request_buy_item_insufficient_coins_no_op() -> void:
+	coin_manager.coins = 5
+	coin_manager.request_buy_item(&"fireplace")
+	assert_eq(coin_manager.coins, 5)
+	assert_false(coin_manager.is_fireplace_owned())
+	coin_manager.request_buy_item(&"shark_bait")
+	assert_eq(coin_manager.coins, 5)
+	assert_false(coin_manager.is_shark_bait_owned())
+
+
+func test_request_buy_item_invalid_id() -> void:
+	coin_manager.coins = 50
+	coin_manager.request_buy_item(&"invalid_item")
+	assert_eq(coin_manager.coins, 50)
 
 
 func test_get_debug_state_keys_and_types() -> void:

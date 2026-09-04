@@ -1,5 +1,7 @@
 extends PanelContainer
 
+@export var shop_items: Array[ShopItemData] = []
+
 @onready var fish_label: Label = $MarginContainer/VBoxContainer/FishLabel
 @onready var coin_label: Label = $MarginContainer/VBoxContainer/CoinLabel
 @onready var close_button: Button = $MarginContainer/VBoxContainer/CloseButton
@@ -72,13 +74,27 @@ func _on_sell_all_pressed() -> void:
 func _on_buy_fireplace_pressed() -> void:
 	if not coin_manager:
 		return
-	coin_manager.request_buy_fireplace.rpc()
+	coin_manager.request_buy_item.rpc(&"fireplace")
 
 
 func _on_buy_shark_bait_pressed() -> void:
 	if not coin_manager:
 		return
-	coin_manager.request_buy_shark_bait.rpc()
+	coin_manager.request_buy_item.rpc(&"shark_bait")
+
+
+func _get_shop_item(flag_prop: StringName) -> ShopItemData:
+	for item in shop_items:
+		if item and item.owned_flag_property == flag_prop:
+			return item
+	if coin_manager and "shop_items" in coin_manager:
+		for item in coin_manager.shop_items:
+			if item and item.owned_flag_property == flag_prop:
+				return item
+	var path = "res://systems/quota/items/fireplace.tres" if flag_prop == &"fireplace_owned" else "res://systems/quota/items/shark_bait.tres"
+	if ResourceLoader.exists(path):
+		return load(path) as ShopItemData
+	return null
 
 
 func _update_ui(_val: int = 0) -> void:
@@ -95,8 +111,10 @@ func _update_ui(_val: int = 0) -> void:
 
 
 func _update_fireplace_button(coins: int) -> void:
-	var cost: int = coin_manager.fireplace_cost
-	fireplace_label.text = "Fireplace — " + str(cost) + " coins"
+	var item := _get_shop_item(&"fireplace_owned")
+	var cost: int = item.cost if item else 15
+	var item_name: String = item.item_name if item else "Fireplace"
+	fireplace_label.text = item_name + " — " + str(cost) + " coins"
 
 	if coin_manager.is_fireplace_owned():
 		fireplace_buy_button.text = "Owned"
@@ -110,8 +128,10 @@ func _update_fireplace_button(coins: int) -> void:
 
 
 func _update_shark_bait_button(coins: int) -> void:
-	var cost: int = coin_manager.shark_bait_cost
-	shark_bait_label.text = "Shark Bait — " + str(cost) + " coins"
+	var item := _get_shop_item(&"shark_bait_owned")
+	var cost: int = item.cost if item else 15
+	var item_name: String = item.item_name if item else "Shark Bait"
+	shark_bait_label.text = item_name + " — " + str(cost) + " coins"
 
 	if coin_manager.is_shark_bait_owned():
 		shark_bait_buy_button.text = "Owned"

@@ -5,8 +5,7 @@ signal fireplace_updated()
 signal shark_bait_updated()
 
 @export var coins_per_fish: int = 1
-@export var fireplace_cost: int = 15
-@export var shark_bait_cost: int = 15
+@export var shop_items: Array[ShopItemData] = []
 
 var coins: int = 0
 var fireplace_owned: bool = false
@@ -14,6 +13,14 @@ var shark_bait_owned: bool = false
 
 
 func _ready() -> void:
+	if shop_items.is_empty():
+		var fp = load("res://systems/quota/items/fireplace.tres") as ShopItemData
+		var sb = load("res://systems/quota/items/shark_bait.tres") as ShopItemData
+		if fp:
+			shop_items.append(fp)
+		if sb:
+			shop_items.append(sb)
+
 	var dbg = get_node_or_null("/root/DebugOverlay")
 	if dbg:
 		dbg.register_system(name, self)
@@ -76,20 +83,61 @@ func _sync_coins(value: int) -> void:
 	coins_updated.emit(value)
 
 
+func _find_item(item_id: StringName) -> ShopItemData:
+	var id_str = str(item_id).to_lower().strip_edges()
+	for item in shop_items:
+		if not item:
+			continue
+		var name_str = item.item_name.to_lower().strip_edges().replace(" ", "_")
+		var flag_str = str(item.owned_flag_property).to_lower().strip_edges()
+		var short_flag = flag_str.trim_suffix("_owned")
+		if id_str == name_str or id_str == flag_str or id_str == short_flag or id_str + "_owned" == flag_str:
+			return item
+	return null
+
+
 @rpc("any_peer", "call_local", "reliable")
-func request_buy_fireplace() -> void:
+func request_buy_item(item_id: StringName) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
-	if fireplace_owned or coins < fireplace_cost:
+	var item := _find_item(item_id)
+	if not item:
 		return
-	coins -= fireplace_cost
-	fireplace_owned = true
+	var owned: bool = false
+	match item.owned_flag_property:
+		&"fireplace_owned":
+			owned = fireplace_owned
+		&"shark_bait_owned":
+			owned = shark_bait_owned
+		_:
+			return
+
+	if owned or coins < item.cost:
+		return
+
+	coins -= item.cost
 	_sync_coins.rpc(coins)
-	_sync_fireplace.rpc(true)
+
 	var buyer_id := multiplayer.get_remote_sender_id()
 	if buyer_id == 0:
 		buyer_id = multiplayer.get_unique_id()
-	_notify_fireplace_bought.rpc(buyer_id, _buyer_name(buyer_id))
+
+	match item.owned_flag_property:
+		&"fireplace_owned":
+			fireplace_owned = true
+			_sync_fireplace.rpc(true)
+			_notify_fireplace_bought.rpc(buyer_id, _buyer_name(buyer_id))
+		&"shark_bait_owned":
+			shark_bait_owned = true
+			_sync_shark_bait.rpc(true)
+			_notify_shark_bait_bought.rpc(buyer_id, _buyer_name(buyer_id))
+		_:
+			return
+
+
+@rpc("any_peer", "call_local", "reliable")
+func request_buy_fireplace() -> void:
+	request_buy_item(&"fireplace")
 
 
 @rpc("authority", "call_local", "reliable")
@@ -139,18 +187,7 @@ func is_shark_bait_owned() -> bool:
 
 @rpc("any_peer", "call_local", "reliable")
 func request_buy_shark_bait() -> void:
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		return
-	if shark_bait_owned or coins < shark_bait_cost:
-		return
-	coins -= shark_bait_cost
-	shark_bait_owned = true
-	_sync_coins.rpc(coins)
-	_sync_shark_bait.rpc(true)
-	var buyer_id := multiplayer.get_remote_sender_id()
-	if buyer_id == 0:
-		buyer_id = multiplayer.get_unique_id()
-	_notify_shark_bait_bought.rpc(buyer_id, _buyer_name(buyer_id))
+	request_buy_item(&"shark_bait")
 
 
 @rpc("any_peer", "call_local", "reliable")
