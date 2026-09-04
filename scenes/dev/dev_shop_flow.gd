@@ -24,9 +24,10 @@ func _ready() -> void:
 		# ensure player sees round state if needed
 		pass
 
-	if _coin_manager:
-		_coin_manager.shark_bait_cost = 0
-		_coin_manager.fireplace_cost = 0
+	if _coin_manager and "shop_items" in _coin_manager:
+		for item in _coin_manager.shop_items:
+			if item:
+				item.cost = 0
 
 	if _round_manager:
 		_round_manager.round_duration = 15.0
@@ -57,8 +58,15 @@ func _process(_delta: float) -> void:
 	var fish: int = _quota_manager.shared_quota if "shared_quota" in _quota_manager else 0
 	var bait_owned: bool = _coin_manager.is_shark_bait_owned() if _coin_manager.has_method("is_shark_bait_owned") else false
 	var fire_owned: bool = _coin_manager.is_fireplace_owned() if _coin_manager.has_method("is_fireplace_owned") else false
-	var bait_cost: int = _coin_manager.shark_bait_cost if "shark_bait_cost" in _coin_manager else 0
-	var fire_cost: int = _coin_manager.fireplace_cost if "fireplace_cost" in _coin_manager else 0
+	var bait_cost: int = 15
+	var fire_cost: int = 15
+	if _coin_manager and "shop_items" in _coin_manager:
+		for item in _coin_manager.shop_items:
+			if item:
+				if item.owned_flag_property == &"shark_bait_owned":
+					bait_cost = item.cost
+				elif item.owned_flag_property == &"fireplace_owned":
+					fire_cost = item.cost
 	var timer_left: float = 0.0
 	var fishing: bool = false
 	if _round_manager:
@@ -129,8 +137,10 @@ func _reset_shop() -> void:
 		_coin_manager._sync_coins.rpc(0)
 		_coin_manager._sync_shark_bait.rpc(false)
 		_coin_manager._sync_fireplace.rpc(false)
-		_coin_manager.shark_bait_cost = 0
-		_coin_manager.fireplace_cost = 0
+		if "shop_items" in _coin_manager:
+			for item in _coin_manager.shop_items:
+				if item:
+					item.cost = 0
 	if _quota_manager and "shared_quota" in _quota_manager:
 		_quota_manager.shared_quota = 3
 	if _round_manager:

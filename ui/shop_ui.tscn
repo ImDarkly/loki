@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://ui/shop_ui.gd" id="1_script"]
+[ext_resource type="Resource" path="res://systems/quota/items/fireplace.tres" id="2_fireplace"]
+[ext_resource type="Resource" path="res://systems/quota/items/shark_bait.tres" id="3_shark_bait"]
 
 [node name="ShopUI" type="PanelContainer"]
 process_mode = 3
@@ -16,6 +18,7 @@ offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
+shop_items = Array[Resource]([ExtResource("2_fireplace"), ExtResource("3_shark_bait")])
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2

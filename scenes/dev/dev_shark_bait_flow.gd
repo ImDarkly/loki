@@ -47,7 +47,10 @@ func _ready() -> void:
 	_player = get_node_or_null("Players/Player") as Player
 
 	if _coin_manager:
-		_coin_manager.shark_bait_cost = 0
+		if "shop_items" in _coin_manager:
+			for item in _coin_manager.shop_items:
+				if item and item.owned_flag_property == &"shark_bait_owned":
+					item.cost = 0
 		if _bait_manager and _bait_manager.has_signal("shark_bait_placed"):
 			if not _bait_manager.is_connected("shark_bait_placed", _on_bait_placed):
 				_bait_manager.shark_bait_placed.connect(_on_bait_placed)
@@ -126,7 +129,11 @@ func _process(_delta: float) -> void:
 			bait_fill_cost = _bait_manager.fill_cost
 
 	var coins: int = _coin_manager.coins if "coins" in _coin_manager else 0
-	var cost: int = _coin_manager.shark_bait_cost if "shark_bait_cost" in _coin_manager else 0
+	var cost: int = 15
+	if _coin_manager and "shop_items" in _coin_manager:
+		for item in _coin_manager.shop_items:
+			if item and item.owned_flag_property == &"shark_bait_owned":
+				cost = item.cost
 	var fish: int = 0
 	if _quota_manager and "shared_quota" in _quota_manager:
 		fish = _quota_manager.shared_quota
@@ -341,7 +348,10 @@ func _reset_all() -> void:
 			_coin_manager._sync_coins.rpc(0)
 		if _coin_manager.has_method("_sync_shark_bait"):
 			_coin_manager._sync_shark_bait.rpc(false)
-		_coin_manager.shark_bait_cost = 0
+		if "shop_items" in _coin_manager:
+			for item in _coin_manager.shop_items:
+				if item and item.owned_flag_property == &"shark_bait_owned":
+					item.cost = 0
 	if _quota_manager and "shared_quota" in _quota_manager:
 		_quota_manager.shared_quota = 3
 		if _quota_manager.has_signal("quota_updated"):
