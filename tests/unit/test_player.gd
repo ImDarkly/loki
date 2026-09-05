@@ -502,8 +502,12 @@ func test_clear_holding_shark_bait_shows_rod() -> void:
 
 func test_cast_blocked_while_holding_shark_bait() -> void:
 	player.holding_shark_bait = true
-	var can_cast: bool = not player.is_carrying and not player.holding_rock and not player.holding_shark_bait and player.fishing_mechanic.can_cast()
-	assert_false(can_cast, "cast should be blocked while holding shark bait")
+	var snapshot_state = player.fishing_mechanic.current_state
+	var ev := InputEventAction.new()
+	ev.action = "cast_line"
+	ev.pressed = true
+	player._unhandled_input(ev)
+	assert_eq(player.fishing_mechanic.current_state, snapshot_state, "casting action should not change fishing state while holding shark bait")
 	player.holding_shark_bait = false
 
 

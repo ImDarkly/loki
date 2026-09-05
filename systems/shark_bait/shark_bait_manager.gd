@@ -67,6 +67,8 @@ func request_place_shark_bait(position: Vector3) -> void:
 					break
 	if player == null or not is_instance_valid(player):
 		return
+	if not ("holding_shark_bait" in player) or not player.holding_shark_bait:
+		return
 	var dist := Vector2(player.global_position.x - position.x, player.global_position.z - position.z).length()
 	if dist > 4.0 or dist < 0.0:
 		return
