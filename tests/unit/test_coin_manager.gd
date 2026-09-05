@@ -213,3 +213,30 @@ func test_coin_manager_registers_with_debug_overlay() -> void:
 	var dbg = get_node_or_null("/root/DebugOverlay")
 	assert_not_null(dbg, "DebugOverlay autoload missing")
 	assert_true(dbg._systems.has(coin_manager.name), "CoinManager should register with DebugOverlay")
+
+
+func test_buy_shark_bait_grants_hold_to_buyer() -> void:
+	var peer := ENetMultiplayerPeer.new()
+	peer.create_server(4242)
+	coin_manager.multiplayer.multiplayer_peer = peer
+
+	var main := get_node_or_null("/root/main")
+	var players := Node3D.new()
+	players.name = "Players"
+	main.add_child(players)
+	var spawner := MultiplayerSpawner.new()
+	spawner.name = "MultiplayerSpawner"
+	players.add_child(spawner)
+	var player_scene = load("res://entities/player/player.tscn")
+	var player = player_scene.instantiate()
+	player.name = "Player_1"
+	players.add_child(player)
+	await get_tree().process_frame
+
+	coin_manager.coins = 20
+	coin_manager.request_buy_shark_bait()
+	assert_true(coin_manager.is_shark_bait_owned(), "Shark Bait should be owned")
+	assert_true(player.holding_shark_bait, "Buyer player should be holding shark bait after purchase, skipping spawner at index 0")
+	players.queue_free()
+	coin_manager.multiplayer.multiplayer_peer = null
+	await get_tree().process_frame

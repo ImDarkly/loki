@@ -82,3 +82,19 @@ func test_label_positioned_above_box() -> void:
 func test_label_remains_legible_properties() -> void:
 	var label := _get_label()
 	assert_true(label.double_sided, "Label should be double-sided for any angle")
+
+
+func test_storage_box_has_world_label_hint() -> void:
+	var hint = storage_box.get_node_or_null("WorldLabelHint") as WorldLabelHint
+	assert_not_null(hint, "StorageBox should have WorldLabelHint")
+	assert_eq(hint.label_text, "Storage")
+	var count_label = storage_box.get_node_or_null("CountLabel") as Label3D
+	assert_not_null(count_label, "StorageBox should still have CountLabel coexisting")
+
+
+func test_quota_update_leaves_world_label_hint_unchanged() -> void:
+	var hint = storage_box.get_node_or_null("WorldLabelHint") as WorldLabelHint
+	assert_eq(hint.label_text, "Storage")
+	quota_manager.shared_quota = 5
+	quota_manager.quota_updated.emit(5)
+	assert_eq(hint.label_text, "Storage", "WorldLabelHint text should remain 'Storage' when quota updates")

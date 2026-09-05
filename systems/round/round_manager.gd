@@ -78,6 +78,10 @@ func restart_round() -> void:
 	if sm and sm.has_method("reset_for_restart"):
 		sm.reset_for_restart()
 
+	var sbm := get_node_or_null("/root/main/SharkBaitManager")
+	if sbm and sbm.has_method("reset_for_restart"):
+		sbm.reset_for_restart()
+
 	if multiplayer.has_multiplayer_peer():
 		_apply_restart.rpc()
 

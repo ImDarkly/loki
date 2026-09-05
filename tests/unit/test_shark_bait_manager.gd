@@ -2,8 +2,11 @@ extends GutTest
 
 class MockPlayer extends Node3D:
 	var is_carrying: bool = false
+	var holding_shark_bait: bool = false
 	func _clear_carry() -> void:
 		is_carrying = false
+	func clear_holding_shark_bait() -> void:
+		holding_shark_bait = false
 
 var manager: Node3D
 var coin_manager: Node3D
@@ -44,6 +47,32 @@ func test_place_rejected_without_ownership() -> void:
 	_create_mock_player()
 	manager.request_place_shark_bait(_water_position())
 	assert_false(manager.is_placed, "Should not place without ownership")
+
+
+func test_place_rejected_without_holding() -> void:
+	coin_manager.shark_bait_owned = true
+	var water := _water_position()
+	var player := _create_mock_player(false, false)
+	player.global_position = water - Vector3(2.0, 0, 0)
+	manager.request_place_shark_bait(water)
+	assert_false(manager.is_placed, "Should reject place when player is not holding shark bait")
+
+
+func test_place_rejected_missing_holding_property() -> void:
+	coin_manager.shark_bait_owned = true
+	var water := _water_position()
+	var players := _main.get_node_or_null("Players")
+	if players == null:
+		players = Node3D.new()
+		players.name = "Players"
+		_main.add_child(players)
+	var plain_node := Node3D.new()
+	plain_node.name = "PlainPlayer"
+	autofree(plain_node)
+	players.add_child(plain_node)
+	plain_node.global_position = water - Vector3(2.0, 0, 0)
+	manager.request_place_shark_bait(water)
+	assert_false(manager.is_placed, "Should reject place when player node lacks holding_shark_bait property")
 
 
 func test_place_rejected_inside_island() -> void:
@@ -151,9 +180,29 @@ func test_shark_bait_entity_is_static_body_with_interactable() -> void:
 	assert_eq(bait.collision_layer, 32, "Should be on interactable layer 32")
 
 
+func test_shark_bait_template_has_world_label_hint() -> void:
+	var bait = load("res://entities/shark_bait.tscn").instantiate()
+	add_child_autofree(bait)
+	var hint = bait.get_node_or_null("WorldLabelHint") as WorldLabelHint
+	assert_not_null(hint, "SharkBait template should have WorldLabelHint")
+	assert_eq(hint.label_text, "Shark Bait")
+
+
+func test_shark_bait_label_existence_before_and_after_sync_placed() -> void:
+	assert_false(manager.is_placed)
+	assert_null(manager._bait_instance, "Bait instance should be null before placement")
+	var water := _water_position()
+	manager._sync_placed(water)
+	assert_true(manager.is_placed)
+	assert_not_null(manager._bait_instance, "Bait instance should exist after _sync_placed")
+	var hint = manager._bait_instance.get_node_or_null("WorldLabelHint") as WorldLabelHint
+	assert_not_null(hint, "Instantiated shark bait should have WorldLabelHint")
+	assert_eq(hint.label_text, "Shark Bait")
+
+
 # --- Fill (BAIT-001 Decision 4) ---
 
-func _create_mock_player(carrying: bool = false) -> Node3D:
+func _create_mock_player(carrying: bool = false, holding_bait: bool = true) -> Node3D:
 	var players := _main.get_node_or_null("Players")
 	if players == null:
 		players = Node3D.new()
@@ -162,6 +211,7 @@ func _create_mock_player(carrying: bool = false) -> Node3D:
 	var p := MockPlayer.new()
 	p.name = "MockPlayer"
 	p.is_carrying = carrying
+	p.holding_shark_bait = holding_bait
 	autofree(p)
 	players.add_child(p)
 	if manager and manager.is_placed:

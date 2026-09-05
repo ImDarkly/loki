@@ -59,22 +59,34 @@ func debug_action(action_id: String) -> void:
 
 func _debug_add_coins_10() -> void:
 	coins += 10
-	_sync_coins.rpc(coins)
+	if multiplayer.has_multiplayer_peer():
+		_sync_coins.rpc(coins)
+	else:
+		_sync_coins(coins)
 
 
 func _debug_remove_coins_10() -> void:
 	coins = max(0, coins - 10)
-	_sync_coins.rpc(coins)
+	if multiplayer.has_multiplayer_peer():
+		_sync_coins.rpc(coins)
+	else:
+		_sync_coins(coins)
 
 
 func _debug_toggle_fireplace() -> void:
 	fireplace_owned = not fireplace_owned
-	_sync_fireplace.rpc(fireplace_owned)
+	if multiplayer.has_multiplayer_peer():
+		_sync_fireplace.rpc(fireplace_owned)
+	else:
+		_sync_fireplace(fireplace_owned)
 
 
 func _debug_toggle_shark_bait() -> void:
 	shark_bait_owned = not shark_bait_owned
-	_sync_shark_bait.rpc(shark_bait_owned)
+	if multiplayer.has_multiplayer_peer():
+		_sync_shark_bait.rpc(shark_bait_owned)
+	else:
+		_sync_shark_bait(shark_bait_owned)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -116,7 +128,10 @@ func request_buy_item(item_id: StringName) -> void:
 		return
 
 	coins -= item.cost
-	_sync_coins.rpc(coins)
+	if multiplayer.has_multiplayer_peer():
+		_sync_coins.rpc(coins)
+	else:
+		_sync_coins(coins)
 
 	var buyer_id := multiplayer.get_remote_sender_id()
 	if buyer_id == 0:
@@ -125,12 +140,30 @@ func request_buy_item(item_id: StringName) -> void:
 	match item.owned_flag_property:
 		&"fireplace_owned":
 			fireplace_owned = true
-			_sync_fireplace.rpc(true)
-			_notify_fireplace_bought.rpc(buyer_id, _buyer_name(buyer_id))
+			if multiplayer.has_multiplayer_peer():
+				_sync_fireplace.rpc(true)
+				_notify_fireplace_bought.rpc(buyer_id, _buyer_name(buyer_id))
+			else:
+				_sync_fireplace(true)
+				_notify_fireplace_bought(buyer_id, _buyer_name(buyer_id))
 		&"shark_bait_owned":
 			shark_bait_owned = true
-			_sync_shark_bait.rpc(true)
-			_notify_shark_bait_bought.rpc(buyer_id, _buyer_name(buyer_id))
+			if multiplayer.has_multiplayer_peer():
+				_sync_shark_bait.rpc(true)
+				_notify_shark_bait_bought.rpc(buyer_id, _buyer_name(buyer_id))
+			else:
+				_sync_shark_bait(true)
+				_notify_shark_bait_bought(buyer_id, _buyer_name(buyer_id))
+			var buyer_player := _find_player_by_peer_id(buyer_id)
+			if buyer_player == null and not multiplayer.has_multiplayer_peer():
+				var container := _get_players_container()
+				if container:
+					for child in container.get_children():
+						if child is Player or child.name.begins_with("Player_") or "holding_shark_bait" in child:
+							buyer_player = child
+							break
+			if buyer_player and buyer_player.has_method("start_holding_shark_bait"):
+				buyer_player.start_holding_shark_bait()
 		_:
 			return
 
@@ -185,6 +218,35 @@ func is_shark_bait_owned() -> bool:
 	return shark_bait_owned
 
 
+func _get_players_container() -> Node:
+	var container := get_node_or_null("/root/main/Players")
+	if container != null:
+		return container
+	container = get_node_or_null("../Players")
+	if container != null:
+		return container
+	container = get_node_or_null("../../Players")
+	if container != null:
+		return container
+	return get_tree().root.find_child("Players", true, false)
+
+
+func _find_player_by_peer_id(peer_id: int) -> Node:
+	var players_container := _get_players_container()
+	if players_container == null:
+		return null
+	for child in players_container.get_children():
+		if not (child is Player) and not child.name.begins_with("Player_") and not "holding_shark_bait" in child:
+			continue
+		if child.get_multiplayer_authority() == peer_id:
+			return child
+		if child.name == "Player_%d" % peer_id:
+			return child
+		if not multiplayer.has_multiplayer_peer():
+			return child
+	return null
+
+
 @rpc("any_peer", "call_local", "reliable")
 func request_buy_shark_bait() -> void:
 	request_buy_item(&"shark_bait")
@@ -203,14 +265,20 @@ func request_sell_all() -> void:
 	var earned = fish * coins_per_fish
 	qm.apply_penalty(fish)
 	coins += earned
-	_sync_coins.rpc(coins)
+	if multiplayer.has_multiplayer_peer():
+		_sync_coins.rpc(coins)
+	else:
+		_sync_coins(coins)
 
 
 func add_coins(amount: int) -> void:
 	if amount <= 0 or not multiplayer.is_server():
 		return
 	coins += amount
-	_sync_coins.rpc(coins)
+	if multiplayer.has_multiplayer_peer():
+		_sync_coins.rpc(coins)
+	else:
+		_sync_coins(coins)
 
 
 func get_coins() -> int:
@@ -222,6 +290,9 @@ func spend_coins(amount: int) -> bool:
 		return false
 	if coins >= amount:
 		coins -= amount
-		_sync_coins.rpc(coins)
+		if multiplayer.has_multiplayer_peer():
+			_sync_coins.rpc(coins)
+		else:
+			_sync_coins(coins)
 		return true
 	return false

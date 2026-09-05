@@ -68,19 +68,28 @@ func close_shop() -> void:
 func _on_sell_all_pressed() -> void:
 	if not coin_manager:
 		return
-	coin_manager.request_sell_all.rpc()
+	if multiplayer.has_multiplayer_peer():
+		coin_manager.request_sell_all.rpc()
+	else:
+		coin_manager.request_sell_all()
 
 
 func _on_buy_fireplace_pressed() -> void:
 	if not coin_manager:
 		return
-	coin_manager.request_buy_item.rpc(&"fireplace")
+	if multiplayer.has_multiplayer_peer():
+		coin_manager.request_buy_item.rpc(&"fireplace")
+	else:
+		coin_manager.request_buy_item(&"fireplace")
 
 
 func _on_buy_shark_bait_pressed() -> void:
 	if not coin_manager:
 		return
-	coin_manager.request_buy_item.rpc(&"shark_bait")
+	if multiplayer.has_multiplayer_peer():
+		coin_manager.request_buy_item.rpc(&"shark_bait")
+	else:
+		coin_manager.request_buy_item(&"shark_bait")
 
 
 func _get_shop_item(flag_prop: StringName) -> ShopItemData:

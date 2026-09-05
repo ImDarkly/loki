@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://entities/storage_box.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="2_comp"]
+[ext_resource type="Script" uid="uid://ckvleksul2bmt" path="res://systems/hints/world_label_hint.gd" id="3_label"]
 
 [sub_resource type="BoxShape3D" id="box_shape"]
 size = Vector3(0.8, 0.6, 0.8)
@@ -38,3 +39,8 @@ text = "0 fish in storage"
 horizontal_alignment = 1
 modulate = Color(1, 1, 1, 1)
 outline_modulate = Color(0, 0, 0, 1)
+
+[node name="WorldLabelHint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+script = ExtResource("3_label")
+label_text = "Storage"

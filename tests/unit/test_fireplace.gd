@@ -112,3 +112,9 @@ func test_interact_assigns_seat_and_snaps_position() -> void:
 	var seat_pos = (player.assigned_fireplace_seat as Node3D).global_position
 	assert_eq(player.global_position, seat_pos, "Player position should snap to the seat position")
 	player.free()
+
+
+func test_fireplace_has_world_label_hint() -> void:
+	var hint = fireplace.get_node_or_null("WorldLabelHint") as WorldLabelHint
+	assert_not_null(hint, "Fireplace should have WorldLabelHint")
+	assert_eq(hint.label_text, "Fireplace")
