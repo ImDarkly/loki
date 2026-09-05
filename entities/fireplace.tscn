@@ -1,7 +1,8 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://entities/fireplace.gd" id="1_fp"]
 [ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="2_ic"]
+[ext_resource type="Script" uid="uid://ckvleksul2bmt" path="res://systems/hints/world_label_hint.gd" id="3_label"]
 
 [sub_resource type="CylinderShape3D" id="shape"]
 radius = 1.1
@@ -147,3 +148,8 @@ transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -1.8, 
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.125, 0)
 mesh = SubResource("mesh_seat")
 material_override = SubResource("mat_log")
+
+[node name="WorldLabelHint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+script = ExtResource("3_label")
+label_text = "Fireplace"

@@ -169,9 +169,11 @@ func test_holding_rock_starts_false() -> void:
 
 func test_pickup_rock_shows_held_rock_remote() -> void:
 	assert_false(player.holding_rock, "holding_rock should be false initially")
+	player.holding_rock = true
 	player._show_held_rock_remote()
 	assert_false(player._rod_pivot.visible, "rod should be hidden when showing held rock")
 	assert_not_null(player._held_rock_mesh, "_held_rock_mesh should exist after _show_held_rock_remote")
+	player.holding_rock = false
 
 
 func test_pickup_rock_hide_shows_rod() -> void:
@@ -476,3 +478,56 @@ func test_restart_clears_sitting() -> void:
 	player._sitting_heal.set_sitting(true)
 	player.reset_for_restart()
 	assert_false(player._sitting_heal.is_sitting, "Restart should stand the player up")
+
+
+func test_holding_shark_bait_starts_false() -> void:
+	assert_false(player.holding_shark_bait, "holding_shark_bait should start false")
+	assert_null(player._held_bait_mesh, "held_bait_mesh should start null")
+
+
+func test_start_holding_shark_bait_shows_mesh_and_hides_rod() -> void:
+	player.start_holding_shark_bait()
+	assert_true(player.holding_shark_bait, "holding_shark_bait should be true")
+	assert_not_null(player._held_bait_mesh, "held_bait_mesh should exist")
+	assert_false(player._rod_pivot.visible, "rod should be hidden when holding shark bait")
+
+
+func test_clear_holding_shark_bait_shows_rod() -> void:
+	player.start_holding_shark_bait()
+	player.clear_holding_shark_bait()
+	assert_false(player.holding_shark_bait, "holding_shark_bait should be false after clear")
+	assert_null(player._held_bait_mesh, "held_bait_mesh should be null after clear")
+	assert_true(player._rod_pivot.visible, "rod should be visible after clear")
+
+
+func test_cast_blocked_while_holding_shark_bait() -> void:
+	player.holding_shark_bait = true
+	var snapshot_state = player.fishing_mechanic.current_state
+	var ev := InputEventAction.new()
+	ev.action = "cast_line"
+	ev.pressed = true
+	player._unhandled_input(ev)
+	assert_eq(player.fishing_mechanic.current_state, snapshot_state, "casting action should not change fishing state while holding shark bait")
+	player.holding_shark_bait = false
+
+
+func test_pickup_rock_blocked_while_holding_shark_bait() -> void:
+	player.holding_shark_bait = true
+	assert_false(player._try_pickup_rock(), "pickup rock should be blocked while holding shark bait")
+	player.holding_shark_bait = false
+
+
+func test_reset_for_restart_clears_holding_shark_bait() -> void:
+	player.start_holding_shark_bait()
+	player.reset_for_restart()
+	assert_false(player.holding_shark_bait, "holding_shark_bait should be false after restart")
+	assert_null(player._held_bait_mesh, "held_bait_mesh should be null after restart")
+	assert_true(player._rod_pivot.visible, "rod should be visible after restart")
+
+
+func test_damage_clears_holding_shark_bait() -> void:
+	player.start_holding_shark_bait()
+	var hp := player.get_node("HealthComponent") as HealthComponent
+	hp.take_damage(1)
+	assert_false(player.holding_shark_bait, "taking damage should clear holding shark bait")
+	assert_null(player._held_bait_mesh, "held_bait_mesh should be null after damage")
