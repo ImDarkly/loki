@@ -14,8 +14,9 @@
 **What you see:** Top HUD shows `Owned / Cost / Coins / Fish | Placed / Pos / Dist to center / inside? | BaitVisible / BaitPos / PlayerPos / Fwd | Last`. Red torus = island boundary (`ISLAND_RADIUS`), brown box = island (`20×20`), blue box = water (`120×120`), red box appears at placed water pos.
 
 **Controls:**
-- **C** — Buy Shark Bait (`request_buy_shark_bait()` — cost `0` in dev, sets owned, broadcasts `_sync_shark_bait`)
-- **P** — Place at camera 8m ahead (`request_place_shark_bait(target)` — snaps `y=0`; auto-pushes out to `ISLAND_RADIUS+5` if you aim inside)
+- **C** — Buy Shark Bait (`request_buy_shark_bait()` — cost `0` in dev, sets owned, grants hold to buyer)
+- **Right-Click** — Place held Shark Bait 3m ahead at water (`_try_place_shark_bait()`)
+- **P** — Place via dev shortcut
 - **I** — Try place at island center (`MAP_CENTER + (ISLAND_RADIUS-0.5)`) — should be **rejected** ✓
 - **O** — Toggle `shark_bait_owned` (`_sync_shark_bait` + signal)
 - **R** — Reset (manually clears `is_placed`/`placed_position`/instance/fill, coins 0, owned `false`, fish 3)

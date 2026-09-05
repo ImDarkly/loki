@@ -159,8 +159,13 @@ func _process(_delta: float) -> void:
 		dist_to_center = Vector2(placed_pos.x - MapConfig.MAP_CENTER.x, placed_pos.z - MapConfig.MAP_CENTER.z).length()
 	var would_be_inside := MapConfig.is_within_radius(player_pos + cam_forward * 3.0, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS)
 
-	_label.text = "Owned:%s Cost:%d Coins:%d Fish:%d | Placed:%s Fill:%d/%d %s Dist:%.1f (inside? %s)\nBaitVisible:%s BaitPos:(%.1f, %.1f, %.1f) | Player:(%.1f, %.1f, %.1f) Fwd:(%.1f, %.1f)\nLast: %s\n[C] Buy bait (0 cost)  [P] Place at camera 3m  [I] Try center (reject)  [O] Toggle owned  [R] Reset  [B] +5 coins  [G] +5 fish  [H] 1x/2x  [F] Deposit 1 fish (dev fill bar)" % [
+	var holding_bait: bool = false
+	if _player and "holding_shark_bait" in _player:
+		holding_bait = _player.holding_shark_bait
+
+	_label.text = "Owned:%s Cost:%d Coins:%d Fish:%d HoldingBait:%s | Placed:%s Fill:%d/%d %s Dist:%.1f (inside? %s)\nBaitVisible:%s BaitPos:(%.1f, %.1f, %.1f) | Player:(%.1f, %.1f, %.1f) Fwd:(%.1f, %.1f)\nLast: %s\n[C] Buy bait (grants hold)  [Right-Click] Place bait  [P] Place via dev  [I] Try center (reject)  [O] Toggle owned  [R] Reset  [B] +5 coins  [G] +5 fish  [H] 1x/2x  [F] Deposit 1 fish" % [
 		"yes" if owned else "no", cost, coins, fish,
+		"yes" if holding_bait else "no",
 		"yes" if is_placed else "no",
 		bait_fill, bait_fill_cost,
 		"(%.1f, %.1f)" % [placed_pos.x, placed_pos.z] if is_placed else "(none)",

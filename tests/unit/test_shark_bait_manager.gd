@@ -151,6 +151,26 @@ func test_shark_bait_entity_is_static_body_with_interactable() -> void:
 	assert_eq(bait.collision_layer, 32, "Should be on interactable layer 32")
 
 
+func test_shark_bait_template_has_world_label_hint() -> void:
+	var bait = load("res://entities/shark_bait.tscn").instantiate()
+	add_child_autofree(bait)
+	var hint = bait.get_node_or_null("WorldLabelHint") as WorldLabelHint
+	assert_not_null(hint, "SharkBait template should have WorldLabelHint")
+	assert_eq(hint.label_text, "Shark Bait")
+
+
+func test_shark_bait_label_existence_before_and_after_sync_placed() -> void:
+	assert_false(manager.is_placed)
+	assert_null(manager._bait_instance, "Bait instance should be null before placement")
+	var water := _water_position()
+	manager._sync_placed(water)
+	assert_true(manager.is_placed)
+	assert_not_null(manager._bait_instance, "Bait instance should exist after _sync_placed")
+	var hint = manager._bait_instance.get_node_or_null("WorldLabelHint") as WorldLabelHint
+	assert_not_null(hint, "Instantiated shark bait should have WorldLabelHint")
+	assert_eq(hint.label_text, "Shark Bait")
+
+
 # --- Fill (BAIT-001 Decision 4) ---
 
 func _create_mock_player(carrying: bool = false) -> Node3D:

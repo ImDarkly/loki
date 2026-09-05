@@ -60,8 +60,11 @@ func request_place_shark_bait(position: Vector3) -> void:
 		player = _find_carrying_player_fallback()
 	if player == null and not multiplayer.has_multiplayer_peer():
 		var container := _get_players_container()
-		if container and container.get_child_count() > 0:
-			player = container.get_child(0)
+		if container:
+			for child in container.get_children():
+				if child is Player or child.name.begins_with("Player_") or "is_carrying" in child or "holding_shark_bait" in child:
+					player = child
+					break
 	if player == null or not is_instance_valid(player):
 		return
 	var dist := Vector2(player.global_position.x - position.x, player.global_position.z - position.z).length()
@@ -69,7 +72,14 @@ func request_place_shark_bait(position: Vector3) -> void:
 		return
 	placed_position = Vector3(position.x, 0, position.z)
 	is_placed = true
-	_sync_placed.rpc(placed_position)
+	if multiplayer.has_multiplayer_peer():
+		_sync_placed.rpc(placed_position)
+	else:
+		_sync_placed(placed_position)
+	if player and player.has_method("clear_holding_shark_bait"):
+		player.clear_holding_shark_bait()
+	elif player and "holding_shark_bait" in player:
+		player.holding_shark_bait = false
 
 
 @rpc("authority", "call_local", "reliable")
@@ -103,7 +113,10 @@ func request_deposit_shark_bait() -> void:
 		if dist > 4.0:
 			return
 	bait_fill_count += 1
-	_sync_fill.rpc(bait_fill_count)
+	if multiplayer.has_multiplayer_peer():
+		_sync_fill.rpc(bait_fill_count)
+	else:
+		_sync_fill(bait_fill_count)
 	if player.has_method("_clear_carry"):
 		player._clear_carry()
 	elif "is_carrying" in player:
@@ -120,7 +133,37 @@ func consume_by_shark() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	bait_fill_count = 0
-	_sync_fill.rpc(0)
+	if multiplayer.has_multiplayer_peer():
+		_sync_fill.rpc(0)
+	else:
+		_sync_fill(0)
+
+
+func reset_for_restart() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	is_placed = false
+	placed_position = Vector3.ZERO
+	bait_fill_count = 0
+	if is_instance_valid(_bait_instance):
+		_bait_instance.queue_free()
+		_bait_instance = null
+	bait_fill_updated.emit(bait_fill_count, fill_cost)
+	if multiplayer.has_multiplayer_peer():
+		_sync_reset.rpc()
+	else:
+		_sync_reset()
+
+
+@rpc("authority", "call_local", "reliable")
+func _sync_reset() -> void:
+	is_placed = false
+	placed_position = Vector3.ZERO
+	bait_fill_count = 0
+	if is_instance_valid(_bait_instance):
+		_bait_instance.queue_free()
+		_bait_instance = null
+	bait_fill_updated.emit(bait_fill_count, fill_cost)
 
 
 func _get_players_container() -> Node:
@@ -141,9 +184,13 @@ func _find_player_by_sender_id(sender_id: int) -> Node:
 	if players_container == null:
 		return null
 	for child in players_container.get_children():
+		if not (child is Player) and not child.name.begins_with("Player_") and not ("is_carrying" in child or "holding_shark_bait" in child):
+			continue
 		if child.get_multiplayer_authority() == sender_id:
 			return child
 		if child.name == "Player_%d" % sender_id:
+			return child
+		if not multiplayer.has_multiplayer_peer():
 			return child
 	return null
 
@@ -153,7 +200,11 @@ func _find_carrying_player_fallback() -> Node:
 	if players_container == null:
 		return null
 	for child in players_container.get_children():
+		if not (child is Player) and not child.name.begins_with("Player_") and not ("is_carrying" in child or "holding_shark_bait" in child):
+			continue
 		if "is_carrying" in child and child.is_carrying:
+			return child
+		if not multiplayer.has_multiplayer_peer():
 			return child
 	return null
 

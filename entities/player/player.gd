@@ -80,8 +80,10 @@ var _rod_pivot: Node3D = null
 
 var is_carrying: bool = false
 var holding_rock: bool = false
+var holding_shark_bait: bool = false
 var _held_fish: Node3D = null
-var _held_rock_mesh: Node3D = null
+var _held_rock_mesh: MeshInstance3D = null
+var _held_bait_mesh: MeshInstance3D = null
 var _ray_hit_box: bool = false
 var _ray_rock: bool = false
 var _interact_prompt: CanvasLayer = null
@@ -139,6 +141,21 @@ func _ready() -> void:
 	var sm := get_node_or_null("/root/main/SeagullManager")
 	if sm:
 		_seagull_manager_ref = sm
+
+	if multiplayer.has_multiplayer_peer():
+		multiplayer.peer_connected.connect(_on_peer_connected)
+
+
+func _exit_tree() -> void:
+	if multiplayer.peer_connected.is_connected(_on_peer_connected):
+		multiplayer.peer_connected.disconnect(_on_peer_connected)
+
+
+func _on_peer_connected(id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	if holding_shark_bait:
+		sync_holding_bait.rpc_id(id, true)
 
 
 func _setup_interact_prompt() -> void:
@@ -357,7 +374,7 @@ func _update_prompt_visibility(interactable = null) -> void:
 
 
 func _update_rock_raycast() -> void:
-	if is_carrying or holding_rock:
+	if is_carrying or holding_rock or holding_shark_bait:
 		if _ray_rock:
 			_ray_rock = false
 			_update_rock_prompt_visibility()
@@ -393,7 +410,7 @@ func _update_rock_prompt_visibility() -> void:
 
 
 func _try_pickup_rock() -> bool:
-	if is_carrying:
+	if is_carrying or holding_rock or holding_shark_bait:
 		return false
 	if not _rock_manager_ref:
 		return false
@@ -471,6 +488,23 @@ func _throw_rock() -> void:
 		sync_holding_rock.rpc(false)
 
 
+func _try_place_shark_bait() -> void:
+	if not holding_shark_bait:
+		return
+	var origin := camera.global_position
+	var dir := -camera.global_transform.basis.z
+	var target := origin + dir * 3.0
+	target.y = 0.0
+	var shark_bait_manager := get_node_or_null("/root/main/SharkBaitManager")
+	if not shark_bait_manager:
+		shark_bait_manager = get_node_or_null("../SharkBaitManager")
+	if shark_bait_manager and shark_bait_manager.has_method("request_place_shark_bait"):
+		if multiplayer.has_multiplayer_peer():
+			shark_bait_manager.request_place_shark_bait.rpc(target)
+		else:
+			shark_bait_manager.request_place_shark_bait(target)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if player_state == PlayerState.SPECTATE:
 		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -493,6 +527,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if holding_rock:
 			_throw_rock()
+		elif holding_shark_bait:
+			return
 		elif not is_carrying and _try_pickup_rock():
 			pass
 		elif not is_carrying and fishing_mechanic.can_cast():
@@ -510,29 +546,33 @@ func _unhandled_input(event: InputEvent) -> void:
 				target.z = global_position.z + offset.y
 			fishing_mechanic.cast(target, flight_time)
 
-	if event.is_action_pressed("interact") and _ray_hit_box:
-		var space_state := get_world_3d().direct_space_state
-		var origin := camera.global_position
-		var dir := -camera.global_transform.basis.z
-		var params := PhysicsRayQueryParameters3D.new()
-		params.from = origin
-		params.to = origin + dir * interact_range
-		params.collision_mask = INTERACTABLE_LAYER
-		var result := space_state.intersect_ray(params)
-		
-		if result and result.collider:
-			var interactable = result.collider.get_node_or_null("InteractableComponent")
-			if interactable and interactable.is_enabled:
-				interactable.interacted.emit(self)
-				if is_carrying and result.collider.is_in_group("storage_box"):
-					deposit_carried_fish()
-				elif is_carrying and result.collider.is_in_group("shark_bait"):
-					var shark_bait_manager := get_node_or_null("/root/main/SharkBaitManager")
-					if shark_bait_manager and shark_bait_manager.has_method("request_deposit_shark_bait"):
-						if multiplayer.has_multiplayer_peer():
-							shark_bait_manager.request_deposit_shark_bait.rpc()
-						else:
-							shark_bait_manager.request_deposit_shark_bait()
+	if event.is_action_pressed("interact"):
+		if holding_shark_bait:
+			_try_place_shark_bait()
+			return
+		if _ray_hit_box:
+			var space_state := get_world_3d().direct_space_state
+			var origin := camera.global_position
+			var dir := -camera.global_transform.basis.z
+			var params := PhysicsRayQueryParameters3D.new()
+			params.from = origin
+			params.to = origin + dir * interact_range
+			params.collision_mask = INTERACTABLE_LAYER
+			var result := space_state.intersect_ray(params)
+			
+			if result and result.collider:
+				var interactable = result.collider.get_node_or_null("InteractableComponent")
+				if interactable and interactable.is_enabled:
+					interactable.interacted.emit(self)
+					if is_carrying and result.collider.is_in_group("storage_box"):
+						deposit_carried_fish()
+					elif is_carrying and result.collider.is_in_group("shark_bait"):
+						var shark_bait_manager := get_node_or_null("/root/main/SharkBaitManager")
+						if shark_bait_manager and shark_bait_manager.has_method("request_deposit_shark_bait"):
+							if multiplayer.has_multiplayer_peer():
+								shark_bait_manager.request_deposit_shark_bait.rpc()
+							else:
+								shark_bait_manager.request_deposit_shark_bait()
 
 
 func _physics_process(delta: float) -> void:
@@ -925,6 +965,8 @@ func _on_shop_toggled(is_open: bool) -> void:
 func _on_health_changed(old: int, new: int) -> void:
 	if is_carrying and new < old:
 		drop_carried_fish()
+	if holding_shark_bait and new < old:
+		clear_holding_shark_bait()
 
 
 func start_carrying() -> void:
@@ -959,6 +1001,24 @@ func _clear_carry() -> void:
 	_update_prompt_visibility()
 
 
+func start_holding_shark_bait() -> void:
+	holding_shark_bait = true
+	_show_held_bait_remote()
+	if multiplayer.has_multiplayer_peer():
+		sync_holding_bait.rpc(true)
+	_update_rock_prompt_visibility()
+	_update_prompt_visibility()
+
+
+func clear_holding_shark_bait() -> void:
+	holding_shark_bait = false
+	_hide_held_bait_remote()
+	if multiplayer.has_multiplayer_peer():
+		sync_holding_bait.rpc(false)
+	_update_rock_prompt_visibility()
+	_update_prompt_visibility()
+
+
 func toggle_sitting() -> void:
 	if _sitting_heal:
 		_sitting_heal.toggle_sitting()
@@ -970,6 +1030,8 @@ func reset_for_restart() -> void:
 	if holding_rock:
 		holding_rock = false
 		_hide_held_rock_remote()
+	if holding_shark_bait:
+		clear_holding_shark_bait()
 	if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
 		assigned_fireplace.release_seat_for_player(self)
 	if _sitting_heal:
@@ -997,6 +1059,21 @@ func sync_holding_rock(val: bool) -> void:
 	_update_rock_prompt_visibility()
 
 
+@rpc("any_peer", "reliable", "call_local")
+func sync_holding_bait(val: bool) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id != 0 and sender_id != 1 and sender_id != get_multiplayer_authority():
+			return
+	holding_shark_bait = val
+	if val:
+		_show_held_bait_remote()
+	else:
+		_hide_held_bait_remote()
+	_update_rock_prompt_visibility()
+	_update_prompt_visibility()
+
+
 @rpc("any_peer", "reliable", "call_remote")
 func sync_carrying(val: bool) -> void:
 	is_carrying = val
@@ -1008,10 +1085,15 @@ func sync_carrying(val: bool) -> void:
 	_update_rock_prompt_visibility()
 
 
+func _update_rod_visibility() -> void:
+	if _rod_pivot:
+		_rod_pivot.visible = not is_carrying and not holding_rock and not holding_shark_bait
+
+
 func _show_held_fish_remote() -> void:
 	if is_instance_valid(_held_fish):
 		return
-	_rod_pivot.visible = false
+	_update_rod_visibility()
 	_held_fish = MeshInstance3D.new()
 	var fish_mesh := BoxMesh.new()
 	fish_mesh.size = Vector3(0.3, 0.1, 0.5)
@@ -1028,13 +1110,13 @@ func _hide_held_fish_remote() -> void:
 	if is_instance_valid(_held_fish):
 		_held_fish.queue_free()
 		_held_fish = null
-	_rod_pivot.visible = true
+	_update_rod_visibility()
 
 
 func _show_held_rock_remote() -> void:
 	if is_instance_valid(_held_rock_mesh):
 		return
-	_rod_pivot.visible = false
+	_update_rod_visibility()
 	_held_rock_mesh = MeshInstance3D.new()
 	var rock_mesh := BoxMesh.new()
 	rock_mesh.size = Vector3(0.25, 0.15, 0.25)
@@ -1051,7 +1133,30 @@ func _hide_held_rock_remote() -> void:
 	if is_instance_valid(_held_rock_mesh):
 		_held_rock_mesh.queue_free()
 		_held_rock_mesh = null
-	_rod_pivot.visible = true
+	_update_rod_visibility()
+
+
+func _show_held_bait_remote() -> void:
+	if is_instance_valid(_held_bait_mesh):
+		return
+	_update_rod_visibility()
+	_held_bait_mesh = MeshInstance3D.new()
+	var bait_mesh := BoxMesh.new()
+	bait_mesh.size = Vector3(0.3, 0.15, 0.25)
+	_held_bait_mesh.mesh = bait_mesh
+	var bait_mat := StandardMaterial3D.new()
+	bait_mat.albedo_color = Color(0.9, 0.2, 0.2)
+	bait_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_held_bait_mesh.material_override = bait_mat
+	_held_bait_mesh.position = Vector3(0, -0.1, -0.5)
+	head.add_child(_held_bait_mesh)
+
+
+func _hide_held_bait_remote() -> void:
+	if is_instance_valid(_held_bait_mesh):
+		_held_bait_mesh.queue_free()
+		_held_bait_mesh = null
+	_update_rod_visibility()
 
 
 @rpc("authority", "unreliable", "call_remote")
