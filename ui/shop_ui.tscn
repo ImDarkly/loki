@@ -1,8 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://ui/shop_ui.gd" id="1_script"]
-[ext_resource type="Resource" path="res://systems/quota/items/fireplace.tres" id="2_fireplace"]
-[ext_resource type="Resource" path="res://systems/quota/items/shark_bait.tres" id="3_shark_bait"]
 
 [node name="ShopUI" type="PanelContainer"]
 process_mode = 3
@@ -18,7 +16,6 @@ offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
-shop_items = Array[Resource]([ExtResource("2_fireplace"), ExtResource("3_shark_bait")])
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
@@ -48,28 +45,6 @@ text = "Coins: 0"
 layout_mode = 2
 text = "Sell All"
 
-[node name="FireplaceRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="ShopItemsContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="FireplaceLabel" type="Label" parent="MarginContainer/VBoxContainer/FireplaceRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Fireplace"
-
-[node name="FireplaceBuyButton" type="Button" parent="MarginContainer/VBoxContainer/FireplaceRow"]
-layout_mode = 2
-text = "Buy"
-
-[node name="SharkBaitRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="SharkBaitLabel" type="Label" parent="MarginContainer/VBoxContainer/SharkBaitRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Shark Bait"
-
-[node name="SharkBaitBuyButton" type="Button" parent="MarginContainer/VBoxContainer/SharkBaitRow"]
-layout_mode = 2
-text = "Buy"
+theme_override_constants/separation = 10

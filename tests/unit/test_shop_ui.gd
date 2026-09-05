@@ -42,12 +42,45 @@ func _get_fish_label() -> Label:
 	return shop_ui.get_node("MarginContainer/VBoxContainer/FishLabel") as Label
 
 
+func _get_shop_row(flag: StringName) -> VBoxContainer:
+	return shop_ui.get_node_or_null("MarginContainer/VBoxContainer/ShopItemsContainer/ShopRow_" + str(flag)) as VBoxContainer
+
+
+func _get_row_buy_button(flag: StringName) -> Button:
+	var row := _get_shop_row(flag)
+	if row == null:
+		return null
+	return row.get_node_or_null("TopRow/BuyButton") as Button
+
+
+func _get_row_title_label(flag: StringName) -> Label:
+	var row := _get_shop_row(flag)
+	if row == null:
+		return null
+	return row.get_node_or_null("TopRow/TitleLabel") as Label
+
+
+func _get_row_desc_label(flag: StringName) -> Label:
+	var row := _get_shop_row(flag)
+	if row == null:
+		return null
+	return row.get_node_or_null("DescLabel") as Label
+
+
 func _get_fireplace_buy_button() -> Button:
-	return shop_ui.get_node("MarginContainer/VBoxContainer/FireplaceRow/FireplaceBuyButton") as Button
+	return _get_row_buy_button(&"fireplace_owned")
 
 
 func _get_fireplace_label() -> Label:
-	return shop_ui.get_node("MarginContainer/VBoxContainer/FireplaceRow/FireplaceLabel") as Label
+	return _get_row_title_label(&"fireplace_owned")
+
+
+func _set_owned(flag: StringName, owned: bool) -> void:
+	match flag:
+		&"fireplace_owned":
+			coin_manager.fireplace_owned = owned
+		&"shark_bait_owned":
+			coin_manager.shark_bait_owned = owned
 
 
 func test_shop_ui_has_no_upgrade_rows() -> void:
@@ -55,6 +88,58 @@ func test_shop_ui_has_no_upgrade_rows() -> void:
 		"MaxHealthRow should not exist")
 	assert_null(shop_ui.get_node_or_null("MarginContainer/VBoxContainer/RodSpeedRow"),
 		"RodSpeedRow should not exist")
+
+
+func test_hardcoded_rows_removed() -> void:
+	assert_null(shop_ui.get_node_or_null("MarginContainer/VBoxContainer/FireplaceRow"),
+		"FireplaceRow should not exist")
+	assert_null(shop_ui.get_node_or_null("MarginContainer/VBoxContainer/SharkBaitRow"),
+		"SharkBaitRow should not exist")
+
+
+func test_shop_has_one_row_per_shop_item() -> void:
+	var container := shop_ui.get_node("MarginContainer/VBoxContainer/ShopItemsContainer") as VBoxContainer
+	assert_eq(container.get_child_count(), coin_manager.shop_items.size())
+	for item in coin_manager.shop_items:
+		assert_not_null(_get_shop_row(item.owned_flag_property),
+			"Missing row for " + str(item.owned_flag_property))
+
+
+func test_each_row_has_inline_description() -> void:
+	for item in coin_manager.shop_items:
+		var desc := _get_row_desc_label(item.owned_flag_property)
+		assert_not_null(desc, "Missing desc for " + str(item.owned_flag_property))
+		assert_eq(desc.text, item.description)
+		assert_true(desc.visible)
+
+
+func test_row_descriptions_match_prd_copy() -> void:
+	assert_eq(_get_row_desc_label(&"fireplace_owned").text, "Sit here to heal over time.")
+	assert_eq(_get_row_desc_label(&"shark_bait_owned").text,
+		"Fill with fish to distract the shark and save your health.")
+
+
+func test_buy_button_state_matrix() -> void:
+	var flags: Array[StringName] = [&"fireplace_owned", &"shark_bait_owned"]
+	for flag in flags:
+		_set_owned(flag, true)
+		coin_manager.coins = 20
+		shop_ui._update_ui()
+		assert_eq(_get_row_buy_button(flag).text, "Owned")
+		assert_true(_get_row_buy_button(flag).disabled)
+
+		_set_owned(flag, false)
+		coin_manager.coins = 999
+		shop_ui._update_ui()
+		assert_eq(_get_row_buy_button(flag).text, "Buy")
+		assert_false(_get_row_buy_button(flag).disabled)
+
+		_set_owned(flag, false)
+		coin_manager.coins = 0
+		shop_ui._update_ui()
+		assert_true(_get_row_buy_button(flag).disabled)
+		assert_ne(_get_row_buy_button(flag).text, "Buy")
+		assert_ne(_get_row_buy_button(flag).text, "Owned")
 
 
 func test_fireplace_buy_button_shows_buy_when_affordable() -> void:
