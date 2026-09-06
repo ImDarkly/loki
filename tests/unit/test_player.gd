@@ -341,11 +341,13 @@ func test_fall_drops_carried_fish() -> void:
 
 
 func test_report_validates_position() -> void:
+	player.global_position = Vector3(0, -5.0, 0)
 	player.report_fell_off_island(Vector3(0, -5.0, 0))
 	var hp := player.get_node("HealthComponent") as HealthComponent
 	assert_eq(hp.current_health, 0, "Report from below threshold should damage")
 
 	hp.reset_to_max()
+	player.global_position = Vector3(0, 0, 0)
 	player.report_fell_off_island(Vector3(0, 0, 0))
 	assert_eq(hp.current_health, hp.max_health, "Report from above threshold should be ignored")
 
@@ -407,6 +409,7 @@ func test_fall_off_island_peer_branch_round_trip() -> void:
 	client_copy.player_state = Player.PlayerState.ALIVE
 	client_copy._fell_off_island_reported = false
 	client_copy.global_position = Vector3(0, -5.0, 0)
+	server_copy.global_position = Vector3(0, -5.0, 0)
 
 	client_copy._check_fell_off_island()
 

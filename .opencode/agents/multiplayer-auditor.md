@@ -20,8 +20,9 @@ check:
    (or the equivalent used elsewhere in the same file) before mutating shared
    state?
 2. **RPC annotation correctness**:
-   - Server→client broadcast: `@rpc("authority", "call_local", "reliable")`,
-     named `_sync_*` or `_apply_synced_state`.
+    - Server→client broadcast: `@rpc("authority", "reliable", "call_remote")` by default
+      (use `call_local` only when the host must also execute the RPC locally),
+      named `_sync_*` or `_apply_synced_state`.
    - Client→server request: `@rpc("any_peer", "reliable"/"unreliable", "call_remote")`.
    - Does the annotation actually match the direction the function is used in
      (grep for `.rpc(`, `.rpc_id(` call sites)?

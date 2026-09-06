@@ -39,10 +39,11 @@ Standard flow for a feature or bugfix request:
 6. Delegate to **test-agent** to write tests, run the suite, and report
    results.
 7. If tests fail, `reviewer` sent it back, or the auditor flagged a blocking
-   issue, loop back to **implementer** with the specific failure — **max 3
-   fix attempts total across all three gates combined**. If still failing
-   after that, stop and hand the failure details to the user rather than
-   continuing to retry.
+   issue, loop back to **implementer** with the specific failure and restart
+   at step 4 (`reviewer` → `multiplayer-auditor` if applicable → `test-agent`)
+   before handoff — **max 3 fix attempts total across all three gates combined**.
+   If still failing after that, stop and hand the failure details to the user
+   rather than continuing to retry.
 
 **Stop here.** Do not commit, push, open a PR, or otherwise finalize the
 change. Once tests pass and any audits are clear, hand control back to the

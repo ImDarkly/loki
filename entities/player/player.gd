@@ -928,22 +928,19 @@ func _check_fell_off_island() -> void:
 
 
 # authority, not any_peer: blocks one peer remotely killing another player's node.
+# _fell_position is untrusted hint for telemetry only; authoritative check uses global_position.y
 @rpc("authority", "reliable", "call_remote")
-func report_fell_off_island(fell_position: Vector3) -> void:
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		return
-	if fell_position.y >= FALL_DEATH_Y:
-		return
-	if _health_component:
-		_health_component.take_damage(_health_component.max_health)
+func report_fell_off_island(_fell_position: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server(): return
+	if global_position.y >= FALL_DEATH_Y: return
+	if _health_component: _health_component.take_damage(_health_component.max_health)
 
 
+# _fell_position is untrusted hint for telemetry only; authoritative check uses global_position.y
 @rpc("authority", "reliable", "call_remote")
-func report_entered_water(fell_position: Vector3) -> void:
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		return
-	if fell_position.y >= WATER_SURFACE_Y or fell_position.y < FALL_DEATH_Y:
-		return
+func report_entered_water(_fell_position: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server(): return
+	if global_position.y >= WATER_SURFACE_Y or global_position.y < FALL_DEATH_Y: return
 	_enter_floating()
 
 
