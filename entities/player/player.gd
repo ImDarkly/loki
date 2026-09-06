@@ -1291,8 +1291,9 @@ func _sync_flight_start(pos: Vector3) -> void:
 @rpc("any_peer", "reliable", "call_remote")
 func _sync_player_state(state: int) -> void:
 	if multiplayer.has_multiplayer_peer():
-		var sender_id := multiplayer.get_remote_sender_id()
-		if sender_id != 0 and sender_id != 1 and sender_id != get_multiplayer_authority():
+		if multiplayer.is_server():
+			return
+		if multiplayer.get_remote_sender_id() != 1:
 			return
 	if state == PlayerState.FLOATING:
 		_enter_floating()
