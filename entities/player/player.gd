@@ -28,6 +28,9 @@ class_name Player extends CharacterBody3D
 @export var spawn_index: int = 0
 @export var launch_speed: float = 15.0
 @export var max_cast_range: float = 20.0
+@export var float_drift_speed: float = 1.0
+@export var float_bob_amplitude: float = 0.12
+@export var float_bob_frequency: float = 0.9
 
 
 @onready var head: Node3D = $Head
@@ -62,7 +65,7 @@ var _bounce_vel: float = 0.0
 var _hand_bounce: float = 0.0
 var is_yelling: bool = false
 
-enum PlayerState { ALIVE, SPECTATE }
+enum PlayerState { ALIVE, FLOATING, SPECTATE }
 
 var player_state: PlayerState = PlayerState.ALIVE
 var _spectate_yaw: float = 0.0
@@ -93,11 +96,15 @@ var _danger_manager_ref: Node = null
 var _seagull_manager_ref: Node = null
 var _is_shop_open: bool = false
 var _fell_off_island_reported: bool = false
+var _entered_water_reported: bool = false
+var _float_time: float = 0.0
+var _float_base_y: float = -0.5
 @export var interact_range: float = 3.0
 @export var rock_pickup_range: float = 3.0
 
 const INTERACTABLE_LAYER: int = 1 << 5
 const FALL_DEATH_Y: float = -3.0
+const WATER_SURFACE_Y: float = -0.5
 
 
 func _ready() -> void:
@@ -517,6 +524,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			_cycle_spectate_target()
 		return
 
+	if player_state == PlayerState.FLOATING:
+		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			rotate_y(-event.relative.x * mouse_sensitivity)
+			head.rotate_x(-event.relative.y * mouse_sensitivity)
+			head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
+		return
+
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		head.rotate_x(-event.relative.y * mouse_sensitivity)
@@ -590,15 +604,22 @@ func _physics_process(delta: float) -> void:
 		_sync_tick += 1
 		if _sync_tick >= 2:
 			_sync_tick = 0
-			rpc("_sync_transform", global_position, rotation, head.rotation)
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_transform", global_position, rotation, head.rotation)
 		var fs: int = fishing_mechanic.current_state
 		if fs != _last_fish_state:
 			_last_fish_state = fs
-			rpc("_sync_fishing_state", fs)
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_fishing_state", fs)
 		var ct: Vector3 = fishing_mechanic.cast_target_position
 		if ct != _last_cast_target:
 			_last_cast_target = ct
-			rpc("_sync_cast_target", ct)
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_cast_target", ct)
+		return
+
+	if player_state == PlayerState.FLOATING:
+		_process_floating(delta)
 		return
 
 	if _sitting_heal and _sitting_heal.is_sitting:
@@ -669,27 +690,32 @@ func _physics_process(delta: float) -> void:
 	_sync_tick += 1
 	if _sync_tick >= 2:
 		_sync_tick = 0
-		rpc("_sync_transform", global_position, rotation, head.rotation)
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_transform", global_position, rotation, head.rotation)
 
 	var fs: int = fishing_mechanic.current_state
 	if fs != _last_fish_state:
 		_last_fish_state = fs
-		rpc("_sync_fishing_state", fs)
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_fishing_state", fs)
 
 	var ct: Vector3 = fishing_mechanic.cast_target_position
 	if ct != _last_cast_target:
 		_last_cast_target = ct
-		rpc("_sync_cast_target", ct)
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_cast_target", ct)
 
 	var fd: float = fishing_mechanic._current_flight_duration
 	if fd != _last_flight_duration:
 		_last_flight_duration = fd
-		rpc("_sync_flight_duration", fd)
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_flight_duration", fd)
 
 	var fsp: Vector3 = fishing_mechanic._flight_start_position
 	if fsp != _last_flight_start:
 		_last_flight_start = fsp
-		rpc("_sync_flight_start", fsp)
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_flight_start", fsp)
 
 
 func _process_sitting(delta: float) -> void:
@@ -744,16 +770,24 @@ func _process_fight(delta: float) -> void:
 	_sync_tick += 1
 	if _sync_tick >= 2:
 		_sync_tick = 0
-		rpc("_sync_transform", global_position, rotation, head.rotation)
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_transform", global_position, rotation, head.rotation)
 
 	var fs: int = fishing_mechanic.current_state
 	if fs != _last_fish_state:
 		_last_fish_state = fs
-		rpc("_sync_fishing_state", fs)
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_fishing_state", fs)
+
+
+func _is_local_authority() -> bool:
+	if not multiplayer.has_multiplayer_peer():
+		return true
+	return get_multiplayer_authority() == multiplayer.get_unique_id()
 
 
 func _enter_spectate() -> void:
-	if get_multiplayer_authority() != multiplayer.get_unique_id():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server() and not _is_local_authority():
 		return
 	if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
 		assigned_fireplace.release_seat_for_player(self)
@@ -766,7 +800,10 @@ func _enter_spectate() -> void:
 	_spectate_pitch = 0.0
 	_spectate_target = _find_spectate_target()
 	is_yelling = false
-	sync_yelling.rpc(false)
+	if multiplayer.has_multiplayer_peer():
+		sync_yelling.rpc(false)
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		_sync_player_state.rpc(PlayerState.SPECTATE)
 
 
 func _update_spectate_camera(delta: float) -> void:
@@ -826,7 +863,7 @@ func _on_restart() -> void:
 	_spectate_target = null
 	# Reposition to a spawn: without it, a fall-death in the ocean would instantly re-trigger the fall check.
 	_respawn_at_spawn()
-	if get_multiplayer_authority() != multiplayer.get_unique_id():
+	if not _is_local_authority():
 		return
 	player_state = PlayerState.ALIVE
 	_spectate_yaw = 0.0
@@ -869,32 +906,89 @@ func _respawn_at_spawn() -> void:
 func _check_fell_off_island() -> void:
 	if player_state != PlayerState.ALIVE:
 		return
-	if multiplayer.has_multiplayer_peer():
-		if get_multiplayer_authority() != multiplayer.get_unique_id():
-			return
-	if _fell_off_island_reported:
+	if not _is_local_authority():
 		return
 	if global_position.y < FALL_DEATH_Y:
+		if _fell_off_island_reported:
+			return
 		_fell_off_island_reported = true
 		if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 			report_fell_off_island.rpc(global_position)
 		else:
 			report_fell_off_island(global_position)
+	elif global_position.y < WATER_SURFACE_Y:
+		if _entered_water_reported:
+			return
+		_entered_water_reported = true
+		if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+			report_entered_water.rpc(global_position)
+		else:
+			report_entered_water(global_position)
+		_enter_floating()
 
 
 # authority, not any_peer: blocks one peer remotely killing another player's node.
+# _fell_position is untrusted hint for telemetry only; authoritative check uses global_position.y
 @rpc("authority", "reliable", "call_remote")
-func report_fell_off_island(fell_position: Vector3) -> void:
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+func report_fell_off_island(_fell_position: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server(): return
+	if global_position.y >= FALL_DEATH_Y: return
+	if _health_component: _health_component.take_damage(_health_component.max_health)
+
+
+# _fell_position is untrusted hint for telemetry only; authoritative check uses global_position.y
+@rpc("authority", "reliable", "call_remote")
+func report_entered_water(_fell_position: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server(): return
+	if global_position.y >= WATER_SURFACE_Y or global_position.y < FALL_DEATH_Y: return
+	_enter_floating()
+
+
+func _enter_floating() -> void:
+	if player_state != PlayerState.ALIVE:
 		return
-	if fell_position.y >= FALL_DEATH_Y:
-		return
-	if _health_component:
-		_health_component.take_damage(_health_component.max_health)
+	_entered_water_reported = true
+	drop_carried_fish()
+	holding_rock = false
+	_hide_held_rock_remote()
+	if multiplayer.has_multiplayer_peer():
+		sync_holding_rock.rpc(false)
+	clear_holding_shark_bait()
+	fishing_mechanic.reset_for_restart()
+	player_state = PlayerState.FLOATING
+	_float_time = 0.0
+	_float_base_y = WATER_SURFACE_Y
+	velocity.y = 0.0
+	global_position.y = WATER_SURFACE_Y
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		_sync_player_state.rpc(PlayerState.FLOATING)
+
+
+func _process_floating(delta: float) -> void:
+	_float_time += delta
+	var flat_pos := Vector2(global_position.x, global_position.z)
+	var center_2d := Vector2(MapConfig.MAP_CENTER.x, MapConfig.MAP_CENTER.z)
+	var dir := (flat_pos - center_2d)
+	if dir.length() < 0.001:
+		dir = Vector2(1.0, 0.0)
+	else:
+		dir = dir.normalized()
+	var drift := dir * float_drift_speed
+	velocity.x = drift.x
+	velocity.z = drift.y
+	velocity.y = 0.0
+	global_position.y = _float_base_y + sin(_float_time * TAU * float_bob_frequency) * float_bob_amplitude
+	move_and_slide()
+
+	_sync_tick += 1
+	if _sync_tick >= 2:
+		_sync_tick = 0
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_transform", global_position, rotation, head.rotation)
 
 
 func _apply_player_visibility() -> void:
-	if get_multiplayer_authority() == multiplayer.get_unique_id():
+	if _is_local_authority():
 		_enable_player()
 	else:
 		_disable_player()
@@ -1037,6 +1131,11 @@ func reset_for_restart() -> void:
 	if _sitting_heal:
 		_sitting_heal.reset()
 	_fell_off_island_reported = false
+	_entered_water_reported = false
+	_float_time = 0.0
+	player_state = PlayerState.ALIVE
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		_sync_player_state.rpc(PlayerState.ALIVE)
 
 
 func _on_yelling_state_changed(is_yelling: bool) -> void:
@@ -1184,3 +1283,21 @@ func _sync_flight_duration(dur: float) -> void:
 @rpc("authority", "reliable", "call_remote")
 func _sync_flight_start(pos: Vector3) -> void:
 	fishing_mechanic._flight_start_position = pos
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _sync_player_state(state: int) -> void:
+	if multiplayer.has_multiplayer_peer():
+		if multiplayer.is_server():
+			return
+		if multiplayer.get_remote_sender_id() != 1:
+			return
+	if state == PlayerState.FLOATING:
+		_enter_floating()
+	elif state == PlayerState.ALIVE:
+		player_state = PlayerState.ALIVE
+		_entered_water_reported = false
+		_fell_off_island_reported = false
+		_float_time = 0.0
+	elif state == PlayerState.SPECTATE:
+		player_state = PlayerState.SPECTATE

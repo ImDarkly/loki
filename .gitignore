@@ -28,3 +28,15 @@ run_tests.gd
 run_tests.gd.uid
 test_output.txt
 test_results.txt
+
+# Local artifacts (logs / ad-hoc runners)
+*.log
+version.txt
+run_all_tests.gd
+run_all_tests.gd.uid
+run_gut.gd
+run_gut.gd.uid
+test_ping.gd
+test_ping.gd.uid
+test_out.txt
+test_run.log
