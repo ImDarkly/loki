@@ -97,6 +97,7 @@ var _seagull_manager_ref: Node = null
 var _is_shop_open: bool = false
 var _fell_off_island_reported: bool = false
 var _entered_water_reported: bool = false
+var _water_report_retry: int = 0
 var _float_time: float = 0.0
 var _float_base_y: float = -0.5
 @export var interact_range: float = 3.0
@@ -129,7 +130,9 @@ func _ready() -> void:
 	fishing_mechanic.escape_launch.connect(_on_escape_launch)
 	fishing_mechanic.escape_telegraph_changed.connect(_on_escape_telegraph_changed)
 	
-	get_node("/root/game_manager").shop_toggled.connect(_on_shop_toggled)
+	var gm := get_node_or_null("/root/game_manager")
+	if gm:
+		gm.shop_toggled.connect(_on_shop_toggled)
 
 	_setup_interact_prompt()
 
@@ -918,13 +921,20 @@ func _check_fell_off_island() -> void:
 			report_fell_off_island(global_position)
 	elif global_position.y < WATER_SURFACE_Y:
 		if _entered_water_reported:
-			return
-		_entered_water_reported = true
-		if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-			report_entered_water.rpc(global_position)
+			_water_report_retry += 1
+			if _water_report_retry < 15:
+				return
+			_water_report_retry = 0
+		else:
+			_entered_water_reported = true
+		if multiplayer.has_multiplayer_peer():
+			if not multiplayer.is_server():
+				report_entered_water.rpc(global_position)
+			else:
+				report_entered_water(global_position)
 		else:
 			report_entered_water(global_position)
-		_enter_floating()
+			_enter_floating()
 
 
 # authority, not any_peer: blocks one peer remotely killing another player's node.
@@ -951,7 +961,7 @@ func _enter_floating() -> void:
 	drop_carried_fish()
 	holding_rock = false
 	_hide_held_rock_remote()
-	if multiplayer.has_multiplayer_peer():
+	if multiplayer.has_multiplayer_peer() and _is_local_authority():
 		sync_holding_rock.rpc(false)
 	clear_holding_shark_bait()
 	fishing_mechanic.reset_for_restart()
@@ -1132,6 +1142,7 @@ func reset_for_restart() -> void:
 		_sitting_heal.reset()
 	_fell_off_island_reported = false
 	_entered_water_reported = false
+	_water_report_retry = 0
 	_float_time = 0.0
 	player_state = PlayerState.ALIVE
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
@@ -1293,10 +1304,12 @@ func _sync_player_state(state: int) -> void:
 		if multiplayer.get_remote_sender_id() != 1:
 			return
 	if state == PlayerState.FLOATING:
+		_water_report_retry = 0
 		_enter_floating()
 	elif state == PlayerState.ALIVE:
 		player_state = PlayerState.ALIVE
 		_entered_water_reported = false
+		_water_report_retry = 0
 		_fell_off_island_reported = false
 		_float_time = 0.0
 	elif state == PlayerState.SPECTATE:
