@@ -569,3 +569,256 @@ func test_reset_for_restart_resets_floating_state() -> void:
 
 	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Restart should reset player from FLOATING to ALIVE")
 
+
+func test_fall_stale_server_still_kills() -> void:
+	var server_peer := ENetMultiplayerPeer.new()
+	var client_peer := ENetMultiplayerPeer.new()
+	var chosen_port := -1
+	for port in [37882, 37883, 37884, 37885, 37886]:
+		if server_peer.create_server(port, 2) == OK:
+			chosen_port = port
+			break
+		server_peer = ENetMultiplayerPeer.new()
+	assert_ne(chosen_port, -1, "should bind an ENet server port")
+	client_peer.create_client("127.0.0.1", chosen_port)
+
+	var server_root := Node3D.new()
+	server_root.name = "ServerRoot"
+	add_child(server_root)
+	var client_root := Node3D.new()
+	client_root.name = "ClientRoot"
+	add_child(client_root)
+
+	var server_mp := SceneMultiplayer.new()
+	server_mp.multiplayer_peer = server_peer
+	var client_mp := SceneMultiplayer.new()
+	client_mp.multiplayer_peer = client_peer
+	get_tree().set_multiplayer(server_mp, server_root.get_path())
+	get_tree().set_multiplayer(client_mp, client_root.get_path())
+
+	var server_players := Node3D.new()
+	server_players.name = "Players"
+	server_root.add_child(server_players)
+	var client_players := Node3D.new()
+	client_players.name = "Players"
+	client_root.add_child(client_players)
+
+	var frames := 0
+	while frames < 120 and (client_mp.get_unique_id() == 1 or server_mp.get_peers().is_empty()):
+		await get_tree().process_frame
+		frames += 1
+
+	var client_id := client_mp.get_unique_id()
+	var server_copy := await _build_player("Player_%d" % client_id, server_players)
+	var client_copy := await _build_player("Player_%d" % client_id, client_players)
+
+	client_copy.player_state = Player.PlayerState.ALIVE
+	client_copy._fell_off_island_reported = false
+	client_copy.global_position = Vector3(0, -5.0, 0)
+	server_copy.global_position = Vector3(0, 0, 0)
+
+	client_copy._check_fell_off_island()
+
+	var server_hp := server_copy.get_node("HealthComponent") as HealthComponent
+	var client_hp := client_copy.get_node("HealthComponent") as HealthComponent
+	frames = 0
+	while frames < 120 and server_hp.current_health > 0:
+		await get_tree().process_frame
+		frames += 1
+
+	assert_eq(server_hp.current_health, 0, "stale server should kill player when client reports fall")
+	assert_eq(client_copy.player_state, Player.PlayerState.SPECTATE, "client should enter spectate")
+
+	server_peer.close()
+	client_peer.close()
+	get_tree().set_multiplayer(null, server_root.get_path())
+	get_tree().set_multiplayer(null, client_root.get_path())
+	server_root.queue_free()
+	client_root.queue_free()
+
+
+func test_water_stale_server_still_enters_floating() -> void:
+	var server_peer := ENetMultiplayerPeer.new()
+	var client_peer := ENetMultiplayerPeer.new()
+	var chosen_port := -1
+	for port in [37887, 37888, 37889, 37890, 37891]:
+		if server_peer.create_server(port, 2) == OK:
+			chosen_port = port
+			break
+		server_peer = ENetMultiplayerPeer.new()
+	assert_ne(chosen_port, -1, "should bind an ENet server port")
+	client_peer.create_client("127.0.0.1", chosen_port)
+
+	var server_root := Node3D.new()
+	server_root.name = "ServerRoot"
+	add_child(server_root)
+	var client_root := Node3D.new()
+	client_root.name = "ClientRoot"
+	add_child(client_root)
+
+	var server_mp := SceneMultiplayer.new()
+	server_mp.multiplayer_peer = server_peer
+	var client_mp := SceneMultiplayer.new()
+	client_mp.multiplayer_peer = client_peer
+	get_tree().set_multiplayer(server_mp, server_root.get_path())
+	get_tree().set_multiplayer(client_mp, client_root.get_path())
+
+	var server_players := Node3D.new()
+	server_players.name = "Players"
+	server_root.add_child(server_players)
+	var client_players := Node3D.new()
+	client_players.name = "Players"
+	client_root.add_child(client_players)
+
+	var frames := 0
+	while frames < 120 and (client_mp.get_unique_id() == 1 or server_mp.get_peers().is_empty()):
+		await get_tree().process_frame
+		frames += 1
+
+	var client_id := client_mp.get_unique_id()
+	var server_copy := await _build_player("Player_%d" % client_id, server_players)
+	var client_copy := await _build_player("Player_%d" % client_id, client_players)
+
+	client_copy.player_state = Player.PlayerState.ALIVE
+	client_copy._entered_water_reported = false
+	client_copy.global_position = Vector3(0, -1.0, 0)
+	server_copy.global_position = Vector3(0, 0, 0)
+
+	client_copy._check_fell_off_island()
+
+	frames = 0
+	while frames < 120 and client_copy.player_state != Player.PlayerState.FLOATING:
+		await get_tree().process_frame
+		frames += 1
+
+	assert_eq(client_copy.player_state, Player.PlayerState.FLOATING, "stale server should enter floating when client reports water entry")
+	assert_eq(server_copy.player_state, Player.PlayerState.FLOATING, "server state should converge to floating")
+
+	server_peer.close()
+	client_peer.close()
+	get_tree().set_multiplayer(null, server_root.get_path())
+	get_tree().set_multiplayer(null, client_root.get_path())
+	server_root.queue_free()
+	client_root.queue_free()
+
+
+func test_enter_water_peer_round_trip() -> void:
+	var server_peer := ENetMultiplayerPeer.new()
+	var client_peer := ENetMultiplayerPeer.new()
+	var chosen_port := -1
+	for port in [37892, 37893, 37894, 37895, 37896]:
+		if server_peer.create_server(port, 2) == OK:
+			chosen_port = port
+			break
+		server_peer = ENetMultiplayerPeer.new()
+	assert_ne(chosen_port, -1, "should bind an ENet server port")
+	client_peer.create_client("127.0.0.1", chosen_port)
+
+	var server_root := Node3D.new()
+	server_root.name = "ServerRoot"
+	add_child(server_root)
+	var client_root := Node3D.new()
+	client_root.name = "ClientRoot"
+	add_child(client_root)
+
+	var server_mp := SceneMultiplayer.new()
+	server_mp.multiplayer_peer = server_peer
+	var client_mp := SceneMultiplayer.new()
+	client_mp.multiplayer_peer = client_peer
+	get_tree().set_multiplayer(server_mp, server_root.get_path())
+	get_tree().set_multiplayer(client_mp, client_root.get_path())
+
+	var server_players := Node3D.new()
+	server_players.name = "Players"
+	server_root.add_child(server_players)
+	var client_players := Node3D.new()
+	client_players.name = "Players"
+	client_root.add_child(client_players)
+
+	var frames := 0
+	while frames < 120 and (client_mp.get_unique_id() == 1 or server_mp.get_peers().is_empty()):
+		await get_tree().process_frame
+		frames += 1
+
+	var client_id := client_mp.get_unique_id()
+	var server_copy := await _build_player("Player_%d" % client_id, server_players)
+	var client_copy := await _build_player("Player_%d" % client_id, client_players)
+
+	client_copy.player_state = Player.PlayerState.ALIVE
+	client_copy._entered_water_reported = false
+	client_copy.global_position = Vector3(0, -1.0, 0)
+	server_copy.global_position = Vector3(0, -1.0, 0)
+
+	client_copy._check_fell_off_island()
+
+	frames = 0
+	while frames < 120 and (client_copy.player_state != Player.PlayerState.FLOATING or server_copy.player_state != Player.PlayerState.FLOATING):
+		await get_tree().process_frame
+		frames += 1
+
+	assert_eq(client_copy.player_state, Player.PlayerState.FLOATING, "client should enter floating via server round trip")
+	assert_eq(server_copy.player_state, Player.PlayerState.FLOATING, "server should enter floating via peer round trip")
+
+	server_peer.close()
+	client_peer.close()
+	get_tree().set_multiplayer(null, server_root.get_path())
+	get_tree().set_multiplayer(null, client_root.get_path())
+	server_root.queue_free()
+	client_root.queue_free()
+
+
+func test_report_entered_water_validation() -> void:
+	player.global_position = Vector3(0, -1.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+	player.report_entered_water(Vector3(0, -1.0, 0))
+	assert_eq(player.player_state, Player.PlayerState.FLOATING, "Report from water surface should enter floating")
+
+	player.player_state = Player.PlayerState.ALIVE
+	player.global_position = Vector3(0, 0, 0)
+	player.report_entered_water(Vector3(0, 0, 0))
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Report from above water should be ignored")
+
+	player.player_state = Player.PlayerState.ALIVE
+	player.global_position = Vector3(0, -5.0, 0)
+	player.report_entered_water(Vector3(0, -5.0, 0))
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Report from below fall death should be ignored")
+
+
+func test_water_report_retry_throttle() -> void:
+	player.global_position = Vector3(0, -1.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+	player._entered_water_reported = true
+	player._water_report_retry = 0
+
+	for i in range(10):
+		player._check_fell_off_island()
+	assert_eq(player._water_report_retry, 10, "water report retry should increment")
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "should remain alive while throttled")
+
+	for i in range(5):
+		player._check_fell_off_island()
+	assert_eq(player.player_state, Player.PlayerState.FLOATING, "should enter floating once retry reaches threshold")
+
+
+func test_floating_player_remains_valid_shark_target() -> void:
+	player.queue_free()
+	var players_container := Node3D.new()
+	players_container.name = "Players"
+	add_child(players_container)
+
+	player = await _build_player("Player_1", players_container)
+	player.global_position = Vector3(0, -1.0, 0)
+	player.player_state = Player.PlayerState.FLOATING
+	var hp: HealthComponent = player.get_node("HealthComponent") as HealthComponent
+	hp.current_health = hp.max_health
+
+	assert_true(hp.is_alive(), "Floating player health component should be alive")
+
+	var danger_scene: PackedScene = load("res://systems/danger/danger_manager.tscn")
+	var danger_mgr: Node3D = autofree(danger_scene.instantiate())
+	add_child(danger_mgr)
+	await get_tree().process_frame
+
+	var nearest: Node3D = danger_mgr._get_nearest_player()
+	assert_eq(nearest, player, "Floating player should be a valid nearest player target for danger manager / shark")
+
