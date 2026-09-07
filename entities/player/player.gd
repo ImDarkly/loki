@@ -937,7 +937,7 @@ func _check_fell_off_island() -> void:
 
 
 # authority, not any_peer: blocks one peer remotely killing another player's node.
-# _fell_position is untrusted hint for telemetry only; authoritative check uses global_position.y
+# _fell_position is owner hint (trusted when server transform is stale; RPC is authority-gated to owner only)
 @rpc("authority", "reliable", "call_remote")
 func report_fell_off_island(_fell_position: Vector3) -> void:
 	_apply_fall_death(_fell_position)
@@ -946,13 +946,17 @@ func report_fell_off_island(_fell_position: Vector3) -> void:
 func _apply_fall_death(_fell_position: Vector3) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
-	if global_position.y >= FALL_DEATH_Y:
+	var server_below := global_position.y < FALL_DEATH_Y
+	var client_below := _fell_position.y < FALL_DEATH_Y
+	if not (server_below or client_below):
+		return
+	if player_state != PlayerState.ALIVE:
 		return
 	if _health_component:
 		_health_component.take_damage(_health_component.max_health)
 
 
-# _fell_position is untrusted hint for telemetry only; authoritative check uses global_position.y
+# _fell_position is owner hint (trusted when server transform is stale; RPC is authority-gated to owner only)
 @rpc("authority", "reliable", "call_remote")
 func report_entered_water(_fell_position: Vector3) -> void:
 	_apply_enter_water(_fell_position)
@@ -961,7 +965,11 @@ func report_entered_water(_fell_position: Vector3) -> void:
 func _apply_enter_water(_fell_position: Vector3) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
-	if global_position.y >= WATER_SURFACE_Y or global_position.y < FALL_DEATH_Y:
+	var server_in_water := global_position.y < WATER_SURFACE_Y and global_position.y >= FALL_DEATH_Y
+	var client_in_water := _fell_position.y < WATER_SURFACE_Y and _fell_position.y >= FALL_DEATH_Y
+	if not (server_in_water or client_in_water):
+		return
+	if player_state != PlayerState.ALIVE:
 		return
 	_enter_floating()
 
