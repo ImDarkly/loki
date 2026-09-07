@@ -570,6 +570,14 @@ func test_reset_for_restart_resets_floating_state() -> void:
 	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Restart should reset player from FLOATING to ALIVE")
 
 
+func test_client_floating_increments_float_time() -> void:
+	player.player_state = Player.PlayerState.FLOATING
+	player._float_time = 0.0
+	var old_time := player._float_time
+	player._process_floating(1.0)
+	assert_gt(player._float_time, old_time, "_float_time should increment in _process_floating for animation/visuals")
+
+
 func test_fall_stale_server_still_kills() -> void:
 	var server_peer := ENetMultiplayerPeer.new()
 	var client_peer := ENetMultiplayerPeer.new()
@@ -821,4 +829,107 @@ func test_floating_player_remains_valid_shark_target() -> void:
 
 	var nearest: Node3D = danger_mgr._get_nearest_player()
 	assert_eq(nearest, player, "Floating player should be a valid nearest player target for danger manager / shark")
+
+
+func test_floating_stays_floating_before_timeout() -> void:
+	player.player_state = Player.PlayerState.FLOATING
+	player.float_timeout = 30.0
+	player._float_time = 10.0
+	var hp := player.get_node("HealthComponent") as HealthComponent
+	hp.current_health = hp.max_health
+
+	player._process_floating(1.0)
+	assert_eq(player.player_state, Player.PlayerState.FLOATING, "Should remain FLOATING before timeout")
+	assert_eq(hp.current_health, hp.max_health, "Should take no damage before timeout")
+
+
+func test_floating_kills_after_timeout_on_server() -> void:
+	player.player_state = Player.PlayerState.FLOATING
+	player.float_timeout = 1.0
+	player._float_time = 1.0
+	var hp := player.get_node("HealthComponent") as HealthComponent
+	hp.current_health = hp.max_health
+
+	player._process_floating(0.016)
+	assert_eq(hp.current_health, 0, "Should take max damage and die after timeout on server/no-peer")
+
+
+func test_float_timeout_export_tunable() -> void:
+	assert_true("float_timeout" in player, "float_timeout export should exist")
+	player.float_timeout = 15.0
+	assert_eq(player.float_timeout, 15.0, "float_timeout should be tunable")
+
+
+func test_client_does_not_self_kill_on_timeout() -> void:
+	var server_peer := ENetMultiplayerPeer.new()
+	var client_peer := ENetMultiplayerPeer.new()
+	var chosen_port := -1
+	for port in [37897, 37898, 37899, 37900, 37901]:
+		if server_peer.create_server(port, 2) == OK:
+			chosen_port = port
+			break
+		server_peer = ENetMultiplayerPeer.new()
+	assert_ne(chosen_port, -1, "should bind an ENet server port")
+	client_peer.create_client("127.0.0.1", chosen_port)
+
+	var server_root := Node3D.new()
+	server_root.name = "ServerRoot"
+	add_child(server_root)
+	var client_root := Node3D.new()
+	client_root.name = "ClientRoot"
+	add_child(client_root)
+
+	var server_mp := SceneMultiplayer.new()
+	server_mp.multiplayer_peer = server_peer
+	var client_mp := SceneMultiplayer.new()
+	client_mp.multiplayer_peer = client_peer
+	get_tree().set_multiplayer(server_mp, server_root.get_path())
+	get_tree().set_multiplayer(client_mp, client_root.get_path())
+
+	var server_players := Node3D.new()
+	server_players.name = "Players"
+	server_root.add_child(server_players)
+	var client_players := Node3D.new()
+	client_players.name = "Players"
+	client_root.add_child(client_players)
+
+	var frames := 0
+	while frames < 120 and (client_mp.get_unique_id() == 1 or server_mp.get_peers().is_empty()):
+		await get_tree().process_frame
+		frames += 1
+
+	var client_id := client_mp.get_unique_id()
+	var client_copy := await _build_player("Player_%d" % client_id, client_players)
+
+	client_copy.player_state = Player.PlayerState.FLOATING
+	client_copy.float_timeout = 1.0
+	client_copy._float_time = 2.0
+	var hp := client_copy.get_node("HealthComponent") as HealthComponent
+	hp.current_health = hp.max_health
+
+	client_copy._process_floating(0.016)
+
+	assert_eq(hp.current_health, hp.max_health, "Client should not self-kill on float timeout")
+
+	server_peer.close()
+	client_peer.close()
+	get_tree().set_multiplayer(null, server_root.get_path())
+	get_tree().set_multiplayer(null, client_root.get_path())
+	server_root.queue_free()
+	client_root.queue_free()
+
+
+func test_restart_cancels_timer_and_restores_alive() -> void:
+	player.player_state = Player.PlayerState.FLOATING
+	player._float_time = 15.0
+	player.reset_for_restart()
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Restart should restore player to ALIVE")
+	assert_eq(player._float_time, 0.0, "Restart should cancel/reset float timer (_float_time = 0)")
+
+
+func test_physics_keep_for_floating_remote() -> void:
+	player.player_state = Player.PlayerState.FLOATING
+	player._disable_player()
+	assert_true(player.is_physics_processing(), "Physics process should remain enabled for FLOATING remote/disabled player")
+
 

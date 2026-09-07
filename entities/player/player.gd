@@ -31,6 +31,7 @@ class_name Player extends CharacterBody3D
 @export var float_drift_speed: float = 1.0
 @export var float_bob_amplitude: float = 0.12
 @export var float_bob_frequency: float = 0.9
+@export var float_timeout: float = 30.0
 
 
 @onready var head: Node3D = $Head
@@ -990,12 +991,18 @@ func _enter_floating() -> void:
 	_float_base_y = WATER_SURFACE_Y
 	velocity.y = 0.0
 	global_position.y = WATER_SURFACE_Y
+	set_physics_process(true)
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_sync_player_state.rpc(PlayerState.FLOATING)
 
 
 func _process_floating(delta: float) -> void:
 	_float_time += delta
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+		if _float_time >= float_timeout:
+			if _health_component:
+				_health_component.take_damage(_health_component.max_health)
+			return
 	var flat_pos := Vector2(global_position.x, global_position.z)
 	var center_2d := Vector2(MapConfig.MAP_CENTER.x, MapConfig.MAP_CENTER.z)
 	var dir := (flat_pos - center_2d)
@@ -1052,7 +1059,8 @@ func _enable_player() -> void:
 func _disable_player() -> void:
 	camera.current = false
 	set_process(false)
-	set_physics_process(false)
+	var keep_physics := player_state == PlayerState.FLOATING
+	set_physics_process(keep_physics)
 	set_process_unhandled_input(false)
 	if mic_level_bar != null:
 		mic_level_bar.visible = false
@@ -1167,6 +1175,8 @@ func reset_for_restart() -> void:
 	player_state = PlayerState.ALIVE
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_sync_player_state.rpc(PlayerState.ALIVE)
+	if not _is_local_authority():
+		set_physics_process(false)
 
 
 func _on_yelling_state_changed(is_yelling: bool) -> void:
