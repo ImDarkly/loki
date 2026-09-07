@@ -341,11 +341,13 @@ func test_fall_drops_carried_fish() -> void:
 
 
 func test_report_validates_position() -> void:
+	player.global_position = Vector3(0, -5.0, 0)
 	player.report_fell_off_island(Vector3(0, -5.0, 0))
 	var hp := player.get_node("HealthComponent") as HealthComponent
 	assert_eq(hp.current_health, 0, "Report from below threshold should damage")
 
 	hp.reset_to_max()
+	player.global_position = Vector3(0, 0, 0)
 	player.report_fell_off_island(Vector3(0, 0, 0))
 	assert_eq(hp.current_health, hp.max_health, "Report from above threshold should be ignored")
 
@@ -407,6 +409,7 @@ func test_fall_off_island_peer_branch_round_trip() -> void:
 	client_copy.player_state = Player.PlayerState.ALIVE
 	client_copy._fell_off_island_reported = false
 	client_copy.global_position = Vector3(0, -5.0, 0)
+	server_copy.global_position = Vector3(0, -5.0, 0)
 
 	client_copy._check_fell_off_island()
 
@@ -531,3 +534,38 @@ func test_damage_clears_holding_shark_bait() -> void:
 	hp.take_damage(1)
 	assert_false(player.holding_shark_bait, "taking damage should clear holding shark bait")
 	assert_null(player._held_bait_mesh, "held_bait_mesh should be null after damage")
+
+
+func test_water_surface_enters_floating() -> void:
+	player.global_position = Vector3(0, -1.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "player should start ALIVE")
+	player._check_fell_off_island()
+
+	assert_eq(player.player_state, Player.PlayerState.FLOATING, "Crossing water surface should enter FLOATING state")
+	var hp := player.get_node("HealthComponent") as HealthComponent
+	assert_eq(hp.current_health, hp.max_health, "Water surface entry should not deplete health")
+
+
+func test_entering_floating_drops_carried_fish_and_rock() -> void:
+	player.start_carrying()
+	player.holding_rock = true
+	player.global_position = Vector3(0, -1.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+
+	player._check_fell_off_island()
+
+	assert_eq(player.player_state, Player.PlayerState.FLOATING)
+	assert_false(player.is_carrying, "Carried fish should be dropped on entering floating")
+	assert_false(player.holding_rock, "Held rock should be dropped on entering floating")
+
+
+func test_reset_for_restart_resets_floating_state() -> void:
+	player.global_position = Vector3(0, -1.0, 0)
+	player.player_state = Player.PlayerState.FLOATING
+
+	player.reset_for_restart()
+
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Restart should reset player from FLOATING to ALIVE")
+

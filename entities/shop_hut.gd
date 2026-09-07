@@ -1,7 +1,7 @@
 extends StaticBody3D
 
 @onready var interactable_component = $InteractableComponent
-@onready var round_manager = get_node("/root/main/RoundManager")
+@onready var round_manager = get_node_or_null("/root/main/RoundManager")
 
 func _ready() -> void:
 	interactable_component.interacted.connect(_on_interact)
@@ -11,6 +11,8 @@ func _process(_delta: float) -> void:
 	_update_prompt()
 
 func _update_prompt() -> void:
+	if round_manager == null:
+		return
 	if round_manager.fishing_active:
 		interactable_component.prompt_text = "Shop opens after fishing ends"
 		interactable_component.prompt_color = Color.RED
@@ -21,6 +23,8 @@ func _update_prompt() -> void:
 		interactable_component.is_enabled = true
 
 func _on_interact(player: Player) -> void:
+	if round_manager == null:
+		return
 	if round_manager.fishing_active or player.player_state == Player.PlayerState.SPECTATE:
 		return
 	
