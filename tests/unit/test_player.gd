@@ -899,6 +899,8 @@ func test_client_does_not_self_kill_on_timeout() -> void:
 		frames += 1
 
 	var client_id := client_mp.get_unique_id()
+	var server_copy := await _build_player("Player_%d" % client_id, server_players)
+	assert_not_null(server_copy, "server copy should exist for RPC path resolution")
 	var client_copy := await _build_player("Player_%d" % client_id, client_players)
 
 	client_copy.player_state = Player.PlayerState.FLOATING

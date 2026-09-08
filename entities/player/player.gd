@@ -1020,7 +1020,7 @@ func _process_floating(delta: float) -> void:
 	_sync_tick += 1
 	if _sync_tick >= 2:
 		_sync_tick = 0
-		if multiplayer.has_multiplayer_peer():
+		if multiplayer.has_multiplayer_peer() and _is_local_authority():
 			rpc("_sync_transform", global_position, rotation, head.rotation)
 
 
