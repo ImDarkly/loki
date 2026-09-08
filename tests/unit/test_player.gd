@@ -935,3 +935,34 @@ func test_physics_keep_for_floating_remote() -> void:
 	assert_true(player.is_physics_processing(), "Physics process should remain enabled for FLOATING remote/disabled player")
 
 
+func test_above_water_no_op_at_y_minus_0_4() -> void:
+	player.global_position = Vector3(0, -0.4, 0)
+	player.player_state = Player.PlayerState.ALIVE
+	player._check_fell_off_island()
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "y = -0.4 is above water surface, should be no-op")
+	assert_false(player._entered_water_reported, "entered water reported flag should stay false")
+
+
+func test_deep_fall_kills_at_y_minus_5() -> void:
+	player.global_position = Vector3(0, -5.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+	player._check_fell_off_island()
+	assert_eq(player.player_state, Player.PlayerState.SPECTATE, "y = -5.0 should trigger death and spectate")
+	var hp := player.get_node("HealthComponent") as HealthComponent
+	assert_eq(hp.current_health, 0, "Health should be 0 on deep fall")
+
+
+func test_spoof_rejection_water_and_fall() -> void:
+	player.global_position = Vector3(0, 0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+	player.report_entered_water(Vector3(0, -1.0, 0))
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Reported water entry when server is at y=0 should be rejected")
+
+	player.global_position = Vector3(0, -1.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+	player.report_fell_off_island(Vector3(0, 0, 0))
+	var hp := player.get_node("HealthComponent") as HealthComponent
+	assert_eq(hp.current_health, hp.max_health, "Reported fall off island when server is at y=-1 should be rejected")
+
+
+
