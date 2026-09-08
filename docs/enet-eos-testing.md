@@ -16,7 +16,7 @@ needs login/lobby/cloud and can't run headless.
 - Full handshake (`tests/unit/test_player.gd:365-435`, 5 tests, ports
   37877-37881 and 37897-37901, bounded 120-frame loops) is only needed
   for RPC round-trip asserts.
-- Simple client-noop tests use bare `ENet.create_client` with no
+- Simple client-noop tests instantiate `ENetMultiplayerPeer` and call `peer.create_client(...)` with no
   handshake (`test_quota_manager.gd:40`, `test_danger_manager.gd:382`,
   etc.).
 
