@@ -322,6 +322,13 @@ func _process(delta: float) -> void:
 		_update_spectate_camera(delta)
 		return
 
+	if player_state == PlayerState.FLOATING:
+		_ray_hit_box = false
+		_ray_rock = false
+		_update_prompt_visibility()
+		_update_rock_prompt_visibility()
+		return
+
 	is_yelling = _voice_chat.is_yelling if _voice_chat != null else false
 
 	var speed := Vector2(velocity.x, velocity.z).length()
@@ -986,6 +993,8 @@ func _enter_floating() -> void:
 		sync_holding_rock.rpc(false)
 	clear_holding_shark_bait()
 	fishing_mechanic.reset_for_restart()
+	if _sitting_heal:
+		_sitting_heal.reset()
 	player_state = PlayerState.FLOATING
 	_float_time = 0.0
 	_float_base_y = WATER_SURFACE_Y
@@ -1152,6 +1161,8 @@ func clear_holding_shark_bait() -> void:
 
 
 func toggle_sitting() -> void:
+	if player_state == PlayerState.FLOATING and _sitting_heal and not _sitting_heal.is_sitting:
+		return
 	if _sitting_heal:
 		_sitting_heal.toggle_sitting()
 
