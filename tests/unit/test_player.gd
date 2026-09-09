@@ -955,14 +955,13 @@ func test_deep_fall_kills_at_y_minus_5() -> void:
 func test_spoof_rejection_water_and_fall() -> void:
 	player.global_position = Vector3(0, 0, 0)
 	player.player_state = Player.PlayerState.ALIVE
-	player.report_entered_water(Vector3(0, -1.0, 0))
-	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Reported water entry when server is at y=0 should be rejected")
-
+	player.report_entered_water(Vector3(0, -5.0, 0))
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "spoofed water entry with server y=0 above WATER_SURFACE_Y and client y=-5 below FALL_DEATH_Y should be rejected (both outside WATER_SURFACE_Y/FALL_DEATH_Y water band)")
 	player.global_position = Vector3(0, -1.0, 0)
 	player.player_state = Player.PlayerState.ALIVE
 	player.report_fell_off_island(Vector3(0, 0, 0))
 	var hp := player.get_node("HealthComponent") as HealthComponent
-	assert_eq(hp.current_health, hp.max_health, "Reported fall off island when server is at y=-1 should be rejected")
+	assert_eq(hp.current_health, hp.max_health, "spoofed fall with server y=-1 and client y=0, both above FALL_DEATH_Y, should be rejected")
 
 
 
