@@ -31,6 +31,9 @@ func set_sitting(sitting: bool) -> void:
 		return
 	if is_sitting == sitting:
 		return
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		request_set_sitting.rpc_id(1, sitting)
+		return
 	is_sitting = sitting
 	if sitting:
 		_recompute_tick_interval()
@@ -38,8 +41,35 @@ func set_sitting(sitting: bool) -> void:
 		_sync_sitting.rpc(is_sitting, _tick_interval)
 
 
-@rpc("any_peer", "unreliable", "call_remote")
+@rpc("any_peer", "reliable", "call_remote")
+func request_set_sitting(sitting: bool) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	var auth := 1
+	var p := get_parent()
+	if p and p.has_method("get_multiplayer_authority"):
+		auth = p.get_multiplayer_authority()
+	if sender != 0 and sender != 1 and sender != auth:
+		return
+	if p is Player and p.player_state == Player.PlayerState.FLOATING and sitting:
+		return
+	if is_sitting == sitting:
+		return
+	is_sitting = sitting
+	if sitting:
+		_recompute_tick_interval()
+	if multiplayer.has_multiplayer_peer():
+		_sync_sitting.rpc(is_sitting, _tick_interval)
+
+
+@rpc("authority", "reliable", "call_remote")
 func _sync_sitting(sitting: bool, tick_interval: float = 0.0) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		return
+	var p := get_parent()
+	if p is Player and p.player_state == Player.PlayerState.FLOATING and sitting:
+		return
 	is_sitting = sitting
 	if sitting and tick_interval > 0.0:
 		_tick_interval = tick_interval

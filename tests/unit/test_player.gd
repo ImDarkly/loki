@@ -966,14 +966,17 @@ func test_spoof_rejection_water_and_fall() -> void:
 
 func test_sitting_blocked_while_floating() -> void:
 	player.player_state = Player.PlayerState.FLOATING
-	player.toggle_sitting()
+	player._sitting_heal.set_sitting(true)
 	assert_false(player._sitting_heal.is_sitting, "Sitting should be blocked while floating")
+	player.toggle_sitting()
+	assert_false(player._sitting_heal.is_sitting, "Toggle sitting should be blocked while floating")
 
 
 func test_process_early_return_when_floating() -> void:
 	player.player_state = Player.PlayerState.FLOATING
+	player._bounce_pos = 1.5
 	player._process(0.016)
-	assert_eq(player.player_state, Player.PlayerState.FLOATING, "Process should return early without altering state when floating")
+	assert_eq(player._bounce_pos, 1.5, "Process should return early without updating bounce position when floating")
 
 
 
