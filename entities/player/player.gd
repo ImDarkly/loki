@@ -322,6 +322,9 @@ func _process(delta: float) -> void:
 		_update_spectate_camera(delta)
 		return
 
+	if player_state == PlayerState.FLOATING:
+		return
+
 	is_yelling = _voice_chat.is_yelling if _voice_chat != null else false
 
 	var speed := Vector2(velocity.x, velocity.z).length()
@@ -1152,6 +1155,8 @@ func clear_holding_shark_bait() -> void:
 
 
 func toggle_sitting() -> void:
+	if player_state == PlayerState.FLOATING:
+		return
 	if _sitting_heal:
 		_sitting_heal.toggle_sitting()
 

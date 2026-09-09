@@ -26,6 +26,9 @@ func toggle_sitting() -> void:
 
 
 func set_sitting(sitting: bool) -> void:
+	var p := get_parent()
+	if p is Player and p.player_state == Player.PlayerState.FLOATING and sitting:
+		return
 	if is_sitting == sitting:
 		return
 	is_sitting = sitting
