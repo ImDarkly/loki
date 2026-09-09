@@ -1002,7 +1002,7 @@ func _enter_floating() -> void:
 	global_position.y = WATER_SURFACE_Y
 	set_physics_process(true)
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		_sync_player_state.rpc(PlayerState.FLOATING)
+		_sync_floating_state.rpc()
 
 
 func _process_floating(delta: float) -> void:
@@ -1335,6 +1335,16 @@ func _sync_flight_duration(dur: float) -> void:
 @rpc("authority", "reliable", "call_remote")
 func _sync_flight_start(pos: Vector3) -> void:
 	fishing_mechanic._flight_start_position = pos
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _sync_floating_state() -> void:
+	if multiplayer.has_multiplayer_peer():
+		if multiplayer.is_server():
+			return
+		if multiplayer.get_remote_sender_id() != 1:
+			return
+	_enter_floating()
 
 
 @rpc("any_peer", "reliable", "call_remote")

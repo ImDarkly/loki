@@ -979,4 +979,133 @@ func test_process_early_return_when_floating() -> void:
 	assert_eq(player._bounce_pos, 1.5, "Process should return early without updating bounce position when floating")
 
 
+func test_sync_floating_state_exists() -> void:
+	assert_true(player.has_method("_sync_floating_state"), "_sync_floating_state method should exist")
+
+
+func test_sync_floating_state_no_peer() -> void:
+	get_tree().get_multiplayer().multiplayer_peer = null
+	player.player_state = Player.PlayerState.ALIVE
+	player._sync_floating_state()
+	assert_eq(player.player_state, Player.PlayerState.FLOATING, "_sync_floating_state should enter FLOATING state in single-player no-peer path")
+
+
+func test_sync_floating_state_peer_round_trip() -> void:
+	var server_peer := ENetMultiplayerPeer.new()
+	var client_peer := ENetMultiplayerPeer.new()
+	var chosen_port := -1
+	for port in [37902, 37903, 37904, 37905, 37906]:
+		if server_peer.create_server(port, 2) == OK:
+			chosen_port = port
+			break
+		server_peer = ENetMultiplayerPeer.new()
+	assert_ne(chosen_port, -1, "should bind an ENet server port")
+	client_peer.create_client("127.0.0.1", chosen_port)
+
+	var server_root := Node3D.new()
+	server_root.name = "ServerRoot"
+	add_child(server_root)
+	var client_root := Node3D.new()
+	client_root.name = "ClientRoot"
+	add_child(client_root)
+
+	var server_mp := SceneMultiplayer.new()
+	server_mp.multiplayer_peer = server_peer
+	var client_mp := SceneMultiplayer.new()
+	client_mp.multiplayer_peer = client_peer
+	get_tree().set_multiplayer(server_mp, server_root.get_path())
+	get_tree().set_multiplayer(client_mp, client_root.get_path())
+
+	var server_players := Node3D.new()
+	server_players.name = "Players"
+	server_root.add_child(server_players)
+	var client_players := Node3D.new()
+	client_players.name = "Players"
+	client_root.add_child(client_players)
+
+	var frames := 0
+	while frames < 120 and (client_mp.get_unique_id() == 1 or server_mp.get_peers().is_empty()):
+		await get_tree().process_frame
+		frames += 1
+
+	var client_id := client_mp.get_unique_id()
+	var server_copy := await _build_player("Player_%d" % client_id, server_players)
+	var client_copy := await _build_player("Player_%d" % client_id, client_players)
+
+	server_copy.player_state = Player.PlayerState.ALIVE
+	client_copy.player_state = Player.PlayerState.ALIVE
+
+	server_copy._enter_floating()
+
+	frames = 0
+	while frames < 120 and client_copy.player_state != Player.PlayerState.FLOATING:
+		await get_tree().process_frame
+		frames += 1
+
+	assert_eq(client_copy.player_state, Player.PlayerState.FLOATING, "client copy should converge to FLOATING via _sync_floating_state")
+
+	server_peer.close()
+	client_peer.close()
+	get_tree().set_multiplayer(null, server_root.get_path())
+	get_tree().set_multiplayer(null, client_root.get_path())
+	server_root.queue_free()
+	client_root.queue_free()
+
+
+func test_sync_floating_state_spoof_rejection() -> void:
+	var server_peer := ENetMultiplayerPeer.new()
+	var client_peer := ENetMultiplayerPeer.new()
+	var chosen_port := -1
+	for port in [37907, 37908, 37909, 37910, 37911]:
+		if server_peer.create_server(port, 2) == OK:
+			chosen_port = port
+			break
+		server_peer = ENetMultiplayerPeer.new()
+	assert_ne(chosen_port, -1, "should bind an ENet server port")
+	client_peer.create_client("127.0.0.1", chosen_port)
+
+	var server_root := Node3D.new()
+	server_root.name = "ServerRoot"
+	add_child(server_root)
+	var client_root := Node3D.new()
+	client_root.name = "ClientRoot"
+	add_child(client_root)
+
+	var server_mp := SceneMultiplayer.new()
+	server_mp.multiplayer_peer = server_peer
+	var client_mp := SceneMultiplayer.new()
+	client_mp.multiplayer_peer = client_peer
+	get_tree().set_multiplayer(server_mp, server_root.get_path())
+	get_tree().set_multiplayer(client_mp, client_root.get_path())
+
+	var server_players := Node3D.new()
+	server_players.name = "Players"
+	server_root.add_child(server_players)
+	var client_players := Node3D.new()
+	client_players.name = "Players"
+	client_root.add_child(client_players)
+
+	var frames := 0
+	while frames < 120 and (client_mp.get_unique_id() == 1 or server_mp.get_peers().is_empty()):
+		await get_tree().process_frame
+		frames += 1
+
+	var client_id := client_mp.get_unique_id()
+	var server_copy := await _build_player("Player_%d" % client_id, server_players)
+	var client_copy := await _build_player("Player_%d" % client_id, client_players)
+
+	server_copy.player_state = Player.PlayerState.ALIVE
+	client_copy.player_state = Player.PlayerState.ALIVE
+
+	client_copy._sync_floating_state()
+	assert_eq(client_copy.player_state, Player.PlayerState.ALIVE, "_sync_floating_state should reject direct call when multiplayer active and sender is not 1")
+
+	server_peer.close()
+	client_peer.close()
+	get_tree().set_multiplayer(null, server_root.get_path())
+	get_tree().set_multiplayer(null, client_root.get_path())
+	server_root.queue_free()
+	client_root.queue_free()
+
+
 

@@ -54,6 +54,12 @@ func test_debug_actions_client_noop_coverage() -> void:
 		var inst = script.new()
 		if is_instance_valid(inst):
 			autofree(inst)
+			for t_name in ["Timer", "SpawnTimer", "ReturnTimer", "RoamTimer", "RespawnTimer", "ReshuffleTimer", "YellScareTimer"]:
+				var tmr = Timer.new()
+				tmr.name = t_name
+				inst.add_child(tmr)
+			add_child(inst)
+
 			if inst.has_method("get_debug_actions") and inst.has_method("get_debug_state") and inst.has_method("debug_action"):
 				var acts = inst.get_debug_actions()
 				if not acts.is_empty():
