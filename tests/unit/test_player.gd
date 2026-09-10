@@ -1108,4 +1108,94 @@ func test_sync_floating_state_spoof_rejection() -> void:
 	client_root.queue_free()
 
 
+func test_water_surface_edge_at_y_minus_0_5() -> void:
+	player.global_position = Vector3(0, -0.5, 0)
+	player.player_state = Player.PlayerState.ALIVE
+	player._check_fell_off_island()
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "y = -0.5 exact surface boundary remains ALIVE")
+	player.global_position = Vector3(0, -0.51, 0)
+	player._check_fell_off_island()
+	assert_eq(player.player_state, Player.PlayerState.FLOATING, "y = -0.51 below water surface enters FLOATING")
+
+
+func test_joint_triple_drop_on_entering_floating() -> void:
+	player.start_carrying()
+	player.holding_rock = true
+	player._show_held_rock_remote()
+	player.start_holding_shark_bait()
+	player._sitting_heal.set_sitting(true)
+	player.global_position = Vector3(0, -1.0, 0)
+	player.player_state = Player.PlayerState.ALIVE
+
+	player._check_fell_off_island()
+
+	assert_eq(player.player_state, Player.PlayerState.FLOATING)
+	assert_false(player.is_carrying, "Carried fish should be dropped")
+	assert_false(player.holding_rock, "Held rock should be dropped")
+	assert_false(player.holding_shark_bait, "Held shark bait should be cleared")
+	assert_false(player._sitting_heal.is_sitting, "Sitting should be reset")
+	assert_null(player._held_fish, "held_fish should be null")
+	assert_null(player._held_rock_mesh, "_held_rock_mesh should be null")
+	assert_null(player._held_bait_mesh, "_held_bait_mesh should be null")
+	assert_true(player._rod_pivot.visible, "rod should be visible")
+
+
+func test_strict_input_lock_when_floating() -> void:
+	player.player_state = Player.PlayerState.FLOATING
+	player.global_position = Vector3(0, -0.5, 0)
+	player.velocity = Vector3(0, 0, 0)
+
+	var ev_action := InputEventAction.new()
+	ev_action.action = "move_forward"
+	ev_action.pressed = true
+	player._unhandled_input(ev_action)
+
+	var jump_action := InputEventAction.new()
+	jump_action.action = "jump"
+	jump_action.pressed = true
+	player._unhandled_input(jump_action)
+
+	player._physics_process(0.016)
+	assert_eq(player.velocity.y, 0.0, "Vertical velocity should remain zero while floating")
+
+	var initial_head_rot := player.head.rotation.x
+	var motion := InputEventMouseMotion.new()
+	motion.relative = Vector2(10, 10)
+	# In headless mode MOUSE_MODE_CAPTURED cannot be enforced, so test the floating rotation logic when condition is met or test input locking of gameplay actions
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		player._unhandled_input(motion)
+		assert_ne(player.head.rotation.x, initial_head_rot, "Mouse look should rotate head while floating")
+	else:
+		assert_eq(player.velocity.x, 0.0, "Input lock ensures no movement velocity while floating")
+
+
+func test_float_drift_outward_and_bob_sinusoid() -> void:
+	player.player_state = Player.PlayerState.FLOATING
+	player.global_position = Vector3(5, -0.5, 5)
+	player._float_time = 0.0
+	player._float_base_y = -0.5
+
+	player._process_floating(0.5)
+
+	assert_gt(player._float_time, 0.0, "_float_time should advance")
+	assert_true(abs(player.global_position.y - (-0.5)) <= player.float_bob_amplitude + 0.01, "y should bob around base y")
+	assert_true(player.velocity.x != 0.0 or player.velocity.z != 0.0, "should drift outward")
+
+
+func test_restart_clears_flags_camera_and_physics() -> void:
+	player.player_state = Player.PlayerState.FLOATING
+	player._float_time = 12.0
+	player._entered_water_reported = true
+	player.camera.current = false
+	player.spectate_cam_camera.current = true
+
+	player._on_restart()
+
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Restart should restore state to ALIVE")
+	assert_eq(player._float_time, 0.0, "Restart should reset _float_time")
+	assert_false(player._entered_water_reported, "Restart should reset entered water reported")
+	assert_true(player.camera.current, "Player camera should be current after restart")
+	assert_false(player.spectate_cam_camera.current, "Spectate camera should not be current after restart")
+
+
 
