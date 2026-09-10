@@ -1198,4 +1198,100 @@ func test_restart_clears_flags_camera_and_physics() -> void:
 	assert_false(player.spectate_cam_camera.current, "Spectate camera should not be current after restart")
 
 
+func test_apply_slap_sets_state_and_timer() -> void:
+	assert_false(player.is_slapped, "is_slapped should start false")
+	player.apply_slap(3.5)
+	assert_true(player.is_slapped, "is_slapped should be true after apply_slap")
+	assert_eq(player._slap_time_left, 3.5, "_slap_time_left should be set")
+
+
+func test_apply_slap_clamps_duration() -> void:
+	player.apply_slap(1.0)
+	assert_eq(player._slap_time_left, 3.0, "duration below 3.0 should clamp to 3.0")
+	player.apply_slap(10.0)
+	assert_eq(player._slap_time_left, 5.0, "duration above 5.0 should clamp to 5.0")
+
+
+func test_re_entrant_slap_resets_timer() -> void:
+	player.apply_slap(4.0)
+	player._process_slapped(1.0)
+	assert_eq(player._slap_time_left, 3.0, "time left decreases")
+	player.apply_slap(5.0)
+	assert_eq(player._slap_time_left, 5.0, "re-entrant apply_slap resets timer")
+
+
+func test_slap_clears_after_duration() -> void:
+	player.apply_slap(3.0)
+	player._process_slapped(3.1)
+	assert_false(player.is_slapped, "is_slapped should clear when duration expires")
+	assert_eq(player._slap_time_left, 0.0, "_slap_time_left should be 0.0")
+
+
+func test_slap_input_lock_movement_and_physics() -> void:
+	player.apply_slap(3.5)
+	player.velocity = Vector3(5.0, 2.0, 5.0)
+	player._physics_process(0.016)
+	assert_eq(player.velocity.x, 0.0, "Horizontal velocity x should be locked to 0 while slapped")
+	assert_eq(player.velocity.z, 0.0, "Horizontal velocity z should be locked to 0 while slapped")
+
+
+func test_restart_clears_slap() -> void:
+	player.apply_slap(3.5)
+	player.reset_for_restart()
+	assert_false(player.is_slapped, "Restart should clear slap")
+
+
+func test_enter_floating_clears_slap() -> void:
+	player.apply_slap(3.5)
+	player._enter_floating()
+	assert_false(player.is_slapped, "Entering floating should clear slap")
+
+
+func test_toggle_sitting_blocked_while_slapped() -> void:
+	player.apply_slap(3.5)
+	player.toggle_sitting()
+	assert_false(player._sitting_heal.is_sitting, "Sitting should be blocked while slapped")
+
+
+func test_apply_slap_non_alive_ignored() -> void:
+	player.player_state = Player.PlayerState.SPECTATE
+	player.apply_slap(3.5)
+	assert_false(player.is_slapped, "apply_slap should be ignored when not ALIVE")
+
+
+func test_slap_duration_export_tunable() -> void:
+	assert_true("slap_duration" in player, "slap_duration export should exist")
+	player.slap_duration = 4.0
+	assert_eq(player.slap_duration, 4.0, "slap_duration should be tunable")
+
+
+func test_slap_does_not_drop_fish() -> void:
+	player.start_carrying()
+	assert_true(player.is_carrying, "Player should be carrying fish")
+	player.apply_slap(3.5)
+	assert_true(player.is_carrying, "Slap should not drop carried fish")
+
+
+func test_slap_allows_mouse_look() -> void:
+	player.apply_slap(3.5)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	var initial_yaw := player.rotation.y
+	var motion := InputEventMouseMotion.new()
+	motion.relative = Vector2(50, 20)
+	player._unhandled_input(motion)
+	assert_ne(player.rotation.y, initial_yaw, "Mouse look should rotate player yaw while slapped")
+
+
+func test_slap_blocks_cast_and_interact() -> void:
+	player.apply_slap(3.5)
+	var snapshot_state = player.fishing_mechanic.current_state
+	var ev := InputEventAction.new()
+	ev.action = "cast_line"
+	ev.pressed = true
+	player._unhandled_input(ev)
+	assert_eq(player.fishing_mechanic.current_state, snapshot_state, "Casting should be blocked while slapped")
+
+
+
+
 

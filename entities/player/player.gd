@@ -32,6 +32,7 @@ class_name Player extends CharacterBody3D
 @export var float_bob_amplitude: float = 0.12
 @export var float_bob_frequency: float = 0.9
 @export var float_timeout: float = 30.0
+@export_range(3.0, 5.0) var slap_duration: float = 3.5
 
 
 @onready var head: Node3D = $Head
@@ -83,6 +84,8 @@ var _pull_spike_timer: float = 0.0
 var _rod_pivot: Node3D = null
 
 var is_carrying: bool = false
+var is_slapped: bool = false
+var _slap_time_left: float = 0.0
 var holding_rock: bool = false
 var holding_shark_bait: bool = false
 var _held_fish: Node3D = null
@@ -542,6 +545,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 		return
 
+	if is_slapped:
+		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			rotate_y(-event.relative.x * mouse_sensitivity)
+			head.rotate_x(-event.relative.y * mouse_sensitivity)
+			head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
+		return
+
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		head.rotate_x(-event.relative.y * mouse_sensitivity)
@@ -631,6 +641,10 @@ func _physics_process(delta: float) -> void:
 
 	if player_state == PlayerState.FLOATING:
 		_process_floating(delta)
+		return
+
+	if is_slapped:
+		_process_slapped(delta)
 		return
 
 	if _sitting_heal and _sitting_heal.is_sitting:
@@ -800,6 +814,8 @@ func _is_local_authority() -> bool:
 func _enter_spectate() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server() and not _is_local_authority():
 		return
+	if is_slapped:
+		_clear_slap()
 	if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
 		assigned_fireplace.release_seat_for_player(self)
 	if _sitting_heal:
@@ -985,6 +1001,8 @@ func _apply_enter_water(_fell_position: Vector3) -> void:
 func _enter_floating() -> void:
 	if player_state != PlayerState.ALIVE:
 		return
+	if is_slapped:
+		_clear_slap()
 	_entered_water_reported = true
 	drop_carried_fish()
 	holding_rock = false
@@ -1030,6 +1048,43 @@ func _process_floating(delta: float) -> void:
 	if _sync_tick >= 2:
 		_sync_tick = 0
 		if multiplayer.has_multiplayer_peer() and _is_local_authority():
+			rpc("_sync_transform", global_position, rotation, head.rotation)
+
+
+func apply_slap(duration: float = -1.0) -> void:
+	if player_state != PlayerState.ALIVE:
+		return
+	is_slapped = true
+	var dur := duration if duration > 0.0 else slap_duration
+	_slap_time_left = clamp(dur, 3.0, 5.0)
+
+
+func _clear_slap() -> void:
+	is_slapped = false
+	_slap_time_left = 0.0
+	_update_prompt_visibility()
+	_update_rock_prompt_visibility()
+
+
+func _process_slapped(delta: float) -> void:
+	_slap_time_left -= delta
+	if _slap_time_left <= 0.0:
+		_clear_slap()
+		return
+	velocity.x = 0.0
+	velocity.z = 0.0
+	if not is_on_floor():
+		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
+		velocity.y -= _gravity * mult * delta
+	else:
+		velocity.y = 0.0
+	move_and_slide()
+	_check_fell_off_island()
+
+	_sync_tick += 1
+	if _sync_tick >= 2:
+		_sync_tick = 0
+		if multiplayer.has_multiplayer_peer():
 			rpc("_sync_transform", global_position, rotation, head.rotation)
 
 
@@ -1161,6 +1216,8 @@ func clear_holding_shark_bait() -> void:
 
 
 func toggle_sitting() -> void:
+	if is_slapped:
+		return
 	if player_state == PlayerState.FLOATING and _sitting_heal and not _sitting_heal.is_sitting:
 		return
 	if _sitting_heal:
@@ -1168,6 +1225,8 @@ func toggle_sitting() -> void:
 
 
 func reset_for_restart() -> void:
+	if is_slapped:
+		_clear_slap()
 	if is_carrying:
 		_clear_carry()
 	if holding_rock:
