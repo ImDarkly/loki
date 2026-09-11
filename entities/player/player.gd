@@ -1127,6 +1127,37 @@ func request_slap(target_id: int) -> void:
 		return
 	if target.player_state != PlayerState.ALIVE or target.is_slapped:
 		return
+	if multiplayer.has_multiplayer_peer():
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id == 0:
+			sender_id = multiplayer.get_unique_id()
+		var attacker := _find_player_by_id(sender_id)
+		if attacker == null or not is_instance_valid(attacker):
+			return
+		if attacker != self:
+			return
+		if attacker == target:
+			return
+		if attacker.player_state != PlayerState.ALIVE or attacker.is_slapped:
+			return
+		if not attacker.is_carrying or attacker.holding_rock or attacker.holding_shark_bait:
+			return
+		if attacker._slap_cooldown_left > 0.01:
+			return
+		var dist := attacker.global_position.distance_to(target.global_position)
+		if dist > attacker.slap_range + 1.0:
+			return
+		var to_target := target.global_position - attacker.global_position
+		to_target.y = 0
+		if to_target.length() > 0.001:
+			to_target = to_target.normalized()
+			var forward := -attacker.global_transform.basis.z
+			forward.y = 0
+			if forward.length() > 0.001:
+				forward = forward.normalized()
+				if forward.dot(to_target) < 0.0:
+					return
+		attacker._slap_cooldown_left = attacker.slap_cooldown
 	target.apply_slap()
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		target._sync_apply_slap.rpc()
