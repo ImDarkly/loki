@@ -1208,18 +1208,36 @@ func test_apply_slap_sets_state_and_timer() -> void:
 func test_apply_slap_clamps_duration() -> void:
 	player.apply_slap(1.0)
 	assert_eq(player._slap_time_left, 3.0, "duration below 3.0 should clamp to 3.0")
+	player.reset_for_restart()
 	player.apply_slap(10.0)
 	assert_eq(player._slap_time_left, 5.0, "duration above 5.0 should clamp to 5.0")
 
 
-func test_re_entrant_slap_resets_timer() -> void:
+func test_slap_against_floating_target_is_noop() -> void:
+	player.player_state = Player.PlayerState.FLOATING
+	player.apply_slap(3.5)
+	assert_false(player.is_slapped, "Slap against floating target should be no-op")
+
+
+func test_slap_against_already_slapped_is_noop_does_not_extend() -> void:
+	player.apply_slap(3.0)
+	assert_true(player.is_slapped, "should be slapped")
+	var initial_time := player._slap_time_left
+	var initial_token := player._slap_token
+	player.apply_slap(5.0)
+	assert_eq(player._slap_time_left, initial_time, "Slap time left should not change on second apply_slap")
+	assert_eq(player._slap_token, initial_token, "Slap token should not change on second apply_slap")
+
+
+func test_re_entrant_slap_does_not_extend() -> void:
 	player.set_physics_process(false)
-	player.global_position = Vector3(0, 5.0, 0)
 	player.apply_slap(4.0)
 	player._process_slapped(1.0)
-	assert_eq(player._slap_time_left, 3.0, "time left decreases")
+	var expected_time := player._slap_time_left
+	var initial_token := player._slap_token
 	player.apply_slap(5.0)
-	assert_eq(player._slap_time_left, 5.0, "re-entrant apply_slap resets timer")
+	assert_eq(player._slap_time_left, expected_time, "re-entrant apply_slap should not extend or reset timer")
+	assert_eq(player._slap_token, initial_token, "token should not increment")
 
 
 func test_slap_clears_after_duration() -> void:
