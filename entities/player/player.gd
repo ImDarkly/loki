@@ -1093,6 +1093,7 @@ func _try_fish_slap() -> bool:
 	var target := _get_slap_target()
 	if not target or not is_instance_valid(target):
 		return false
+	# Plain ALIVE check per PRD
 	if target.player_state != PlayerState.ALIVE or target.is_slapped:
 		return false
 	_slap_cooldown_left = slap_cooldown
@@ -1125,6 +1126,7 @@ func request_slap(target_id: int) -> void:
 	var target := _find_player_by_id(target_id)
 	if not target or not is_instance_valid(target):
 		return
+	# Plain ALIVE check per PRD
 	if target.player_state != PlayerState.ALIVE or target.is_slapped:
 		return
 	if multiplayer.has_multiplayer_peer():
@@ -1173,7 +1175,8 @@ func _sync_apply_slap() -> void:
 
 
 func apply_slap(duration: float = -1.0) -> void:
-	if player_state != PlayerState.ALIVE:
+	# Plain ALIVE check per PRD; ensure no-op if already slapped
+	if player_state != PlayerState.ALIVE or is_slapped:
 		return
 	is_slapped = true
 	var dur := duration if duration > 0.0 else slap_duration
