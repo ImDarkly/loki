@@ -1145,7 +1145,7 @@ func request_slap(target_id: int) -> void:
 		if attacker._slap_cooldown_left > 0.01:
 			return
 		var dist := attacker.global_position.distance_to(target.global_position)
-		if dist > attacker.slap_range + 1.0:
+		if dist > attacker.slap_range:
 			return
 		var to_target := target.global_position - attacker.global_position
 		to_target.y = 0
@@ -1415,6 +1415,10 @@ func sync_holding_bait(val: bool) -> void:
 
 @rpc("any_peer", "reliable", "call_remote")
 func sync_carrying(val: bool) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id != 0 and sender_id != get_multiplayer_authority():
+			return
 	is_carrying = val
 	if val:
 		_show_held_fish_remote()
