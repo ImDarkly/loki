@@ -33,6 +33,8 @@ class_name Player extends CharacterBody3D
 @export var float_bob_frequency: float = 0.9
 @export var float_timeout: float = 30.0
 @export_range(3.0, 5.0) var slap_duration: float = 3.5
+@export var slap_range: float = 2.0
+@export var slap_cooldown: float = 1.0
 
 
 @onready var head: Node3D = $Head
@@ -86,6 +88,8 @@ var _rod_pivot: Node3D = null
 var is_carrying: bool = false
 var is_slapped: bool = false
 var _slap_time_left: float = 0.0
+var _slap_token: int = 0
+var _slap_cooldown_left: float = 0.0
 var holding_rock: bool = false
 var holding_shark_bait: bool = false
 var _held_fish: Node3D = null
@@ -107,6 +111,7 @@ var _float_base_y: float = -0.5
 @export var interact_range: float = 3.0
 @export var rock_pickup_range: float = 3.0
 
+const PLAYERS_LAYER = 1 << 1
 const INTERACTABLE_LAYER: int = 1 << 5
 const FALL_DEATH_Y: float = -3.0
 const WATER_SURFACE_Y: float = -0.5
@@ -560,6 +565,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("cast_line"):
 		if _sitting_heal and _sitting_heal.is_sitting:
 			return
+		if is_carrying and not holding_rock and not holding_shark_bait:
+			if _slap_cooldown_left <= 0.0:
+				if _try_fish_slap():
+					get_viewport().set_input_as_handled()
+				return
 		if holding_rock:
 			_throw_rock()
 		elif holding_shark_bait:
@@ -611,6 +621,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _slap_cooldown_left > 0.0:
+		_slap_cooldown_left -= delta
+
 	if player_state == PlayerState.SPECTATE:
 		if global_position.y <= FALL_DEATH_Y:
 			velocity = Vector3.ZERO
@@ -1051,15 +1064,131 @@ func _process_floating(delta: float) -> void:
 			rpc("_sync_transform", global_position, rotation, head.rotation)
 
 
+func _get_slap_target() -> Player:
+	var space_state := get_world_3d().direct_space_state
+	if space_state == null:
+		return null
+	var origin := camera.global_position
+	var dir := -camera.global_transform.basis.z
+	var params := PhysicsRayQueryParameters3D.new()
+	params.from = origin
+	params.to = origin + dir * slap_range
+	params.collision_mask = PLAYERS_LAYER
+	params.exclude = [get_rid()]
+	var result := space_state.intersect_ray(params)
+	if not result or not result.has("collider"):
+		return null
+	var collider := result.collider as Node3D
+	var current: Node = collider
+	while current != null:
+		if current is Player:
+			var player := current as Player
+			if player != self:
+				return player
+		current = current.get_parent()
+	return null
+
+
+func _try_fish_slap() -> bool:
+	var target := _get_slap_target()
+	if not target or not is_instance_valid(target):
+		return false
+	if target.player_state != PlayerState.ALIVE or target.is_slapped:
+		return false
+	_slap_cooldown_left = slap_cooldown
+	var target_id := target._parse_owner_id()
+	if multiplayer.has_multiplayer_peer():
+		request_slap.rpc(target_id)
+	else:
+		request_slap(target_id)
+	return true
+
+
+func _find_player_by_id(id: int) -> Player:
+	var container := _players_container if is_instance_valid(_players_container) else get_node_or_null("/root/main/Players")
+	if container:
+		var player := container.get_node_or_null("Player_%d" % id) as Player
+		if player:
+			return player
+		for child in container.get_children():
+			if child is Player and child._parse_owner_id() == id:
+				return child as Player
+	if name == "Player_%d" % id and self is Player:
+		return self
+	return null
+
+
+@rpc("any_peer", "reliable", "call_local")
+func request_slap(target_id: int) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	var target := _find_player_by_id(target_id)
+	if not target or not is_instance_valid(target):
+		return
+	if target.player_state != PlayerState.ALIVE or target.is_slapped:
+		return
+	if multiplayer.has_multiplayer_peer():
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id == 0:
+			sender_id = multiplayer.get_unique_id()
+		var attacker := _find_player_by_id(sender_id)
+		if attacker == null or not is_instance_valid(attacker):
+			return
+		if attacker != self:
+			return
+		if attacker == target:
+			return
+		if attacker.player_state != PlayerState.ALIVE or attacker.is_slapped:
+			return
+		if not attacker.is_carrying or attacker.holding_rock or attacker.holding_shark_bait:
+			return
+		if attacker._slap_cooldown_left > 0.01:
+			return
+		var dist := attacker.global_position.distance_to(target.global_position)
+		if dist > attacker.slap_range:
+			return
+		var to_target := target.global_position - attacker.global_position
+		to_target.y = 0
+		if to_target.length() > 0.001:
+			to_target = to_target.normalized()
+			var forward := -attacker.global_transform.basis.z
+			forward.y = 0
+			if forward.length() > 0.001:
+				forward = forward.normalized()
+				if forward.dot(to_target) < 0.0:
+					return
+		attacker._slap_cooldown_left = attacker.slap_cooldown
+	target.apply_slap()
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		target._sync_apply_slap.rpc()
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _sync_apply_slap() -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id != 0 and sender_id != 1:
+			return
+	apply_slap()
+
+
 func apply_slap(duration: float = -1.0) -> void:
 	if player_state != PlayerState.ALIVE:
 		return
 	is_slapped = true
 	var dur := duration if duration > 0.0 else slap_duration
 	_slap_time_left = clamp(dur, 3.0, 5.0)
+	_slap_token += 1
+	var token := _slap_token
+	await get_tree().create_timer(_slap_time_left).timeout
+	if token == _slap_token and is_slapped:
+		_clear_slap()
 
 
 func _clear_slap() -> void:
+	if not is_slapped:
+		return
+	_slap_token += 1
 	is_slapped = false
 	_slap_time_left = 0.0
 	_update_prompt_visibility()
@@ -1084,7 +1213,7 @@ func _process_slapped(delta: float) -> void:
 	_sync_tick += 1
 	if _sync_tick >= 2:
 		_sync_tick = 0
-		if multiplayer.has_multiplayer_peer():
+		if multiplayer.has_multiplayer_peer() and _is_local_authority():
 			rpc("_sync_transform", global_position, rotation, head.rotation)
 
 
@@ -1286,6 +1415,10 @@ func sync_holding_bait(val: bool) -> void:
 
 @rpc("any_peer", "reliable", "call_remote")
 func sync_carrying(val: bool) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id != 0 and sender_id != get_multiplayer_authority():
+			return
 	is_carrying = val
 	if val:
 		_show_held_fish_remote()
