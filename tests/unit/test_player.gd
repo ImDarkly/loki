@@ -1348,7 +1348,8 @@ func test_apply_slap_self_clears_without_physics() -> void:
 
 func test_sync_apply_slap_direct_call() -> void:
 	assert_false(player.is_slapped, "is_slapped should start false")
-	player._sync_apply_slap()
+	if player._slap_component and is_instance_valid(player._slap_component):
+		player._slap_component._sync_apply_slap()
 	assert_true(player.is_slapped, "_sync_apply_slap direct call should apply slap state")
 
 
