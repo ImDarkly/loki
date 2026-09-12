@@ -32,9 +32,6 @@ class_name Player extends CharacterBody3D
 @export var float_bob_amplitude: float = 0.12
 @export var float_bob_frequency: float = 0.9
 @export var float_timeout: float = 30.0
-@export_range(3.0, 5.0) var slap_duration: float = 3.5
-@export var slap_range: float = 2.0
-@export var slap_cooldown: float = 1.0
 
 
 @onready var head: Node3D = $Head
@@ -51,6 +48,7 @@ class_name Player extends CharacterBody3D
 @onready var _players_container: Node = get_node_or_null("/root/main/Players")
 @onready var _health_component: HealthComponent = $HealthComponent
 @onready var _sitting_heal: SittingHealComponent = $SittingHeal
+@onready var _slap_component: SlapComponent = $SlapComponent
 
 var assigned_fireplace: Node3D = null
 var assigned_fireplace_seat: Node3D = null
@@ -86,10 +84,51 @@ var _pull_spike_timer: float = 0.0
 var _rod_pivot: Node3D = null
 
 var is_carrying: bool = false
-var is_slapped: bool = false
-var _slap_time_left: float = 0.0
-var _slap_token: int = 0
-var _slap_cooldown_left: float = 0.0
+var is_slapped: bool:
+	get:
+		return _slap_component.is_slapped if _slap_component else false
+
+var _slap_time_left: float:
+	get:
+		return _slap_component._slap_time_left if _slap_component else 0.0
+	set(val):
+		if _slap_component:
+			_slap_component._slap_time_left = val
+
+var _slap_token: int:
+	get:
+		return _slap_component._slap_token if _slap_component else 0
+	set(val):
+		if _slap_component:
+			_slap_component._slap_token = val
+
+var _slap_cooldown_left: float:
+	get:
+		return _slap_component._slap_cooldown_left if _slap_component else 0.0
+	set(val):
+		if _slap_component:
+			_slap_component._slap_cooldown_left = val
+
+var slap_duration: float:
+	get:
+		return _slap_component.slap_duration if _slap_component else 3.5
+	set(val):
+		if _slap_component:
+			_slap_component.slap_duration = val
+
+var slap_range: float:
+	get:
+		return _slap_component.slap_range if _slap_component else 2.0
+	set(val):
+		if _slap_component:
+			_slap_component.slap_range = val
+
+var slap_cooldown: float:
+	get:
+		return _slap_component.slap_cooldown if _slap_component else 1.0
+	set(val):
+		if _slap_component:
+			_slap_component.slap_cooldown = val
 var holding_rock: bool = false
 var holding_shark_bait: bool = false
 var _held_fish: Node3D = null
@@ -132,6 +171,9 @@ func _ready() -> void:
 	_cam_home = Vector3.ZERO
 
 	_apply_player_visibility()
+
+	if _slap_component:
+		_slap_component.setup(self, camera, _players_container)
 
 	_health_component.died.connect(_enter_spectate)
 	_health_component.health_changed.connect(_on_health_changed)
@@ -1065,159 +1107,31 @@ func _process_floating(delta: float) -> void:
 
 
 func _get_slap_target() -> Player:
-	var space_state := get_world_3d().direct_space_state
-	if space_state == null:
-		return null
-	var origin := camera.global_position
-	var dir := -camera.global_transform.basis.z
-	var params := PhysicsRayQueryParameters3D.new()
-	params.from = origin
-	params.to = origin + dir * slap_range
-	params.collision_mask = PLAYERS_LAYER
-	params.exclude = [get_rid()]
-	var result := space_state.intersect_ray(params)
-	if not result or not result.has("collider"):
-		return null
-	var collider := result.collider as Node3D
-	var current: Node = collider
-	while current != null:
-		if current is Player:
-			var player := current as Player
-			if player != self:
-				return player
-		current = current.get_parent()
-	return null
+	return _slap_component._get_slap_target() if _slap_component else null
 
 
 func _try_fish_slap() -> bool:
-	var target := _get_slap_target()
-	if not target or not is_instance_valid(target):
-		return false
-	# Plain ALIVE check per PRD
-	if target.player_state != PlayerState.ALIVE or target.is_slapped:
-		return false
-	_slap_cooldown_left = slap_cooldown
-	var target_id := target._parse_owner_id()
-	if multiplayer.has_multiplayer_peer():
-		request_slap.rpc(target_id)
-	else:
-		request_slap(target_id)
-	return true
+	return _slap_component._try_fish_slap() if _slap_component else false
 
 
 func _find_player_by_id(id: int) -> Player:
-	var container := _players_container if is_instance_valid(_players_container) else get_node_or_null("/root/main/Players")
-	if container:
-		var player := container.get_node_or_null("Player_%d" % id) as Player
-		if player:
-			return player
-		for child in container.get_children():
-			if child is Player and child._parse_owner_id() == id:
-				return child as Player
-	if name == "Player_%d" % id and self is Player:
-		return self
-	return null
+	return _slap_component._find_player_by_id(id) if _slap_component else null
 
-
-@rpc("any_peer", "reliable", "call_local")
-func request_slap(target_id: int) -> void:
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		return
-	var target := _find_player_by_id(target_id)
-	if not target or not is_instance_valid(target):
-		return
-	# Plain ALIVE check per PRD
-	if target.player_state != PlayerState.ALIVE or target.is_slapped:
-		return
-	if multiplayer.has_multiplayer_peer():
-		var sender_id := multiplayer.get_remote_sender_id()
-		if sender_id == 0:
-			sender_id = multiplayer.get_unique_id()
-		var attacker := _find_player_by_id(sender_id)
-		if attacker == null or not is_instance_valid(attacker):
-			return
-		if attacker != self:
-			return
-		if attacker == target:
-			return
-		if attacker.player_state != PlayerState.ALIVE or attacker.is_slapped:
-			return
-		if not attacker.is_carrying or attacker.holding_rock or attacker.holding_shark_bait:
-			return
-		if attacker._slap_cooldown_left > 0.01:
-			return
-		var dist := attacker.global_position.distance_to(target.global_position)
-		if dist > attacker.slap_range:
-			return
-		var to_target := target.global_position - attacker.global_position
-		to_target.y = 0
-		if to_target.length() > 0.001:
-			to_target = to_target.normalized()
-			var forward := -attacker.global_transform.basis.z
-			forward.y = 0
-			if forward.length() > 0.001:
-				forward = forward.normalized()
-				if forward.dot(to_target) < 0.0:
-					return
-		attacker._slap_cooldown_left = attacker.slap_cooldown
-	target.apply_slap()
-	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		target._sync_apply_slap.rpc()
-
-
-@rpc("any_peer", "reliable", "call_remote")
-func _sync_apply_slap() -> void:
-	if multiplayer.has_multiplayer_peer():
-		var sender_id := multiplayer.get_remote_sender_id()
-		if sender_id != 0 and sender_id != 1:
-			return
-	apply_slap()
 
 
 func apply_slap(duration: float = -1.0) -> void:
-	# Plain ALIVE check per PRD; ensure no-op if already slapped
-	if player_state != PlayerState.ALIVE or is_slapped:
-		return
-	is_slapped = true
-	var dur := duration if duration > 0.0 else slap_duration
-	_slap_time_left = clamp(dur, 3.0, 5.0)
-	_slap_token += 1
-	var token := _slap_token
-	await get_tree().create_timer(_slap_time_left).timeout
-	if token == _slap_token and is_slapped:
-		_clear_slap()
+	if _slap_component:
+		_slap_component.apply_slap(duration)
 
 
 func _clear_slap() -> void:
-	if not is_slapped:
-		return
-	_slap_token += 1
-	is_slapped = false
-	_slap_time_left = 0.0
-	_update_prompt_visibility()
-	_update_rock_prompt_visibility()
+	if _slap_component:
+		_slap_component._clear_slap()
 
 
 func _process_slapped(delta: float) -> void:
-	_slap_time_left -= delta
-	if _slap_time_left <= 0.0:
-		_clear_slap()
-		return
-	velocity.x = 0.0
-	velocity.z = 0.0
-	if not is_on_floor():
-		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
-		velocity.y -= _gravity * mult * delta
-	else:
-		velocity.y = 0.0
-	move_and_slide()
-	_check_fell_off_island()
-
-	_sync_tick += 1
-	if _sync_tick >= 2:
-		_sync_tick = 0
-		if multiplayer.has_multiplayer_peer() and _is_local_authority():
-			rpc("_sync_transform", global_position, rotation, head.rotation)
+	if _slap_component:
+		_slap_component._process_slapped(delta)
 
 
 func _apply_player_visibility() -> void:
