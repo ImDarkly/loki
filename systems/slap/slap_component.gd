@@ -118,7 +118,6 @@ func _try_fish_slap() -> bool:
 		if multiplayer.is_server():
 			request_slap(target_id)
 		else:
-			_slap_cooldown_left = slap_cooldown
 			request_slap.rpc_id(1, target_id)
 	else:
 		request_slap(target_id)
@@ -208,17 +207,29 @@ func request_slap(target_id: int) -> void:
 	_slap_cooldown_left = slap_cooldown
 	target.apply_slap()
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var ack_id := multiplayer.get_remote_sender_id()
+		if ack_id != 0 and ack_id != 1:
+			_sync_slap_cooldown.rpc_id(ack_id)
 		if target._slap_component and is_instance_valid(target._slap_component):
 			target._slap_component._sync_apply_slap.rpc()
 
 
-@rpc("authority", "reliable", "call_remote")
+@rpc("any_peer", "reliable", "call_local")
 func _sync_apply_slap() -> void:
 	if multiplayer.has_multiplayer_peer():
 		var sender_id := multiplayer.get_remote_sender_id()
 		if sender_id != 0 and sender_id != 1:
 			return
 	apply_slap()
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _sync_slap_cooldown() -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id != 0 and sender_id != 1:
+			return
+	_slap_cooldown_left = slap_cooldown
 
 
 func apply_slap(duration: float = -1.0) -> void:
