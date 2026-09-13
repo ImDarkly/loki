@@ -27,7 +27,7 @@ func _ready() -> void:
 	if (not _camera or not is_instance_valid(_camera)) and _player and is_instance_valid(_player) and "camera" in _player and is_instance_valid(_player.camera):
 		_camera = _player.camera
 	if not _players_container or not is_instance_valid(_players_container):
-		_players_container = get_node_or_null("/root/main/Players")
+		_players_container = _get_players_container()
 	var dbg = get_node_or_null("/root/DebugOverlay")
 	if dbg:
 		var sys_name := name
@@ -113,20 +113,38 @@ func _try_fish_slap() -> bool:
 		return false
 	if target.player_state != Player.PlayerState.ALIVE or target.is_slapped:
 		return false
-	_slap_cooldown_left = slap_cooldown
 	var target_id := target._parse_owner_id()
 	if multiplayer.has_multiplayer_peer():
 		if multiplayer.is_server():
 			request_slap(target_id)
 		else:
+			_slap_cooldown_left = slap_cooldown
 			request_slap.rpc_id(1, target_id)
 	else:
 		request_slap(target_id)
 	return true
 
 
+func _get_players_container() -> Node:
+	if _players_container and is_instance_valid(_players_container):
+		return _players_container
+	var container := get_node_or_null("/root/main/Players")
+	if container != null:
+		return container
+	container = get_node_or_null("../Players")
+	if container != null:
+		return container
+	container = get_node_or_null("../../Players")
+	if container != null:
+		return container
+	var tree := get_tree()
+	if tree and tree.root:
+		return tree.root.find_child("Players", true, false)
+	return null
+
+
 func _find_player_by_id(id: int) -> Player:
-	var container := _players_container if is_instance_valid(_players_container) else get_node_or_null("/root/main/Players")
+	var container := _get_players_container()
 	if container and is_instance_valid(container):
 		var player := container.get_node_or_null("Player_%d" % id) as Player
 		if player and is_instance_valid(player):
@@ -152,38 +170,42 @@ func request_slap(target_id: int) -> void:
 		return
 	if target.player_state != Player.PlayerState.ALIVE or target.is_slapped:
 		return
+	var attacker: Player = null
 	if multiplayer.has_multiplayer_peer():
 		var sender_id := multiplayer.get_remote_sender_id()
 		if sender_id == 0:
 			sender_id = multiplayer.get_unique_id()
-		var attacker := _find_player_by_id(sender_id)
-		if attacker == null or not is_instance_valid(attacker):
-			return
-		var p := _player if is_instance_valid(_player) else null
-		if attacker != p:
-			return
-		if attacker == target:
-			return
-		if attacker.player_state != Player.PlayerState.ALIVE or attacker.is_slapped:
-			return
-		if not attacker.is_carrying or attacker.holding_rock or attacker.holding_shark_bait:
-			return
-		if attacker._slap_cooldown_left > 0.01:
-			return
-		var dist := attacker.global_position.distance_to(target.global_position)
-		if dist > slap_range:
-			return
-		var to_target := target.global_position - attacker.global_position
-		to_target.y = 0
-		if to_target.length() > 0.001:
-			to_target = to_target.normalized()
-			var forward := -attacker.global_transform.basis.z
-			forward.y = 0
-			if forward.length() > 0.001:
-				forward = forward.normalized()
-				if forward.dot(to_target) < 0.0:
-					return
-		_slap_cooldown_left = slap_cooldown
+		attacker = _find_player_by_id(sender_id)
+	else:
+		attacker = _player if is_instance_valid(_player) else ((get_parent() as Player) if get_parent() is Player else null)
+
+	if attacker == null or not is_instance_valid(attacker):
+		return
+	var p := _player if is_instance_valid(_player) else null
+	if p and attacker != p:
+		return
+	if attacker == target:
+		return
+	if attacker.player_state != Player.PlayerState.ALIVE or attacker.is_slapped:
+		return
+	if not attacker.is_carrying or attacker.holding_rock or attacker.holding_shark_bait:
+		return
+	if attacker._slap_cooldown_left > 0.01:
+		return
+	var dist := attacker.global_position.distance_to(target.global_position)
+	if dist > slap_range:
+		return
+	var to_target := target.global_position - attacker.global_position
+	to_target.y = 0
+	if to_target.length() > 0.001:
+		to_target = to_target.normalized()
+		var forward := -attacker.global_transform.basis.z
+		forward.y = 0
+		if forward.length() > 0.001:
+			forward = forward.normalized()
+			if forward.dot(to_target) < 0.0:
+				return
+	_slap_cooldown_left = slap_cooldown
 	target.apply_slap()
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		if target._slap_component and is_instance_valid(target._slap_component):
