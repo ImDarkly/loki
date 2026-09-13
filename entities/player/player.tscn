@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://systems/health/health_label.gd" id="6_lm3n1"]
 [ext_resource type="PackedScene" path="res://systems/health/health_component.tscn" id="7_ok2f6"]
 [ext_resource type="Script" path="res://systems/health/sitting_heal_component.gd" id="8_sit"]
+[ext_resource type="Script" path="res://systems/slap/slap_component.gd" id="9_slap"]
 
 [node name="Player" type="CharacterBody3D" unique_id=997464534]
 collision_layer = 2
@@ -38,6 +39,9 @@ far = 1000.0
 
 [node name="SittingHeal" type="Node" parent="."]
 script = ExtResource("8_sit")
+
+[node name="SlapComponent" type="Node" parent="."]
+script = ExtResource("9_slap")
 
 [node name="SpectateCamera" type="Node3D" parent="."]
 top_level = true
