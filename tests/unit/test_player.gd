@@ -52,6 +52,10 @@ func _build_player(node_name: String = "", parent: Node = null) -> Player:
 	sitting_heal.name = "SittingHeal"
 	player_node.add_child(sitting_heal)
 
+	var slap_component := SlapComponent.new()
+	slap_component.name = "SlapComponent"
+	player_node.add_child(slap_component)
+
 	var spectate_camera := Node3D.new()
 	spectate_camera.name = "SpectateCamera"
 	player_node.add_child(spectate_camera)
@@ -1232,7 +1236,7 @@ func test_slap_against_already_slapped_is_noop_does_not_extend() -> void:
 func test_re_entrant_slap_does_not_extend() -> void:
 	player.set_physics_process(false)
 	player.apply_slap(4.0)
-	player._process_slapped(1.0)
+	player._slap_component._process(1.0)
 	var expected_time := player._slap_time_left
 	var initial_token := player._slap_token
 	player.apply_slap(5.0)
@@ -1243,7 +1247,7 @@ func test_re_entrant_slap_does_not_extend() -> void:
 func test_slap_clears_after_duration() -> void:
 	player.set_physics_process(false)
 	player.apply_slap(3.0)
-	player._process_slapped(3.1)
+	player._slap_component._process(3.1)
 	assert_false(player.is_slapped, "is_slapped should clear when duration expires")
 	assert_eq(player._slap_time_left, 0.0, "_slap_time_left should be 0.0")
 
@@ -1329,8 +1333,8 @@ func test_fish_slap_trigger_aim_cooldown_and_retention() -> void:
 
 	player._slap_cooldown_left = 1.0
 	player.global_position = Vector3(0, 1.0, 0)
-	player._physics_process(0.4)
-	assert_almost_eq(player._slap_cooldown_left, 0.6, 0.001, "Slap cooldown should decrement in physics process")
+	player._slap_component._process(0.4)
+	assert_almost_eq(player._slap_cooldown_left, 0.6, 0.001, "Slap cooldown should decrement")
 
 	var triggered := player._try_fish_slap()
 	assert_false(triggered, "Should return false when no target in raycast range")

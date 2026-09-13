@@ -28,18 +28,55 @@ func _ready() -> void:
 		_camera = _player.camera
 	if not _players_container or not is_instance_valid(_players_container):
 		_players_container = get_node_or_null("/root/main/Players")
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	if dbg:
+		var sys_name := name
+		if _player and is_instance_valid(_player):
+			sys_name = "SlapComponent_" + _player.name
+		elif get_parent() is Player and is_instance_valid(get_parent()):
+			sys_name = "SlapComponent_" + get_parent().name
+		dbg.register_system(sys_name, self)
 
 
-func _physics_process(delta: float) -> void:
+func _process(delta: float) -> void:
+	tick(delta)
+	if is_slapped:
+		_slap_time_left -= delta
+		if _slap_time_left <= 0.0:
+			_clear_slap()
+
+
+func tick(delta: float) -> void:
 	if _slap_cooldown_left > 0.0:
 		_slap_cooldown_left -= delta
-	if is_slapped:
-		_process_slapped(delta)
+
+
+func _draw_debug_ray(from: Vector3, to: Vector3, hit: bool) -> void:
+	var tree := get_tree()
+	if not tree or not tree.current_scene:
+		return
+	var mi := MeshInstance3D.new()
+	var mesh := ImmediateMesh.new()
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+	mesh.surface_add_vertex(from)
+	mesh.surface_add_vertex(to)
+	mesh.surface_end()
+	mi.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color.GREEN if hit else Color.RED
+	mi.material_override = mat
+	tree.current_scene.add_child(mi)
+	mi.queue_free.call_deferred()
 
 
 func _get_slap_target() -> Player:
-	var p := _player if is_instance_valid(_player) else (get_parent() as Player if get_parent() is Player else null)
-	var space_state := p.get_world_3d().direct_space_state if (p and is_instance_valid(p)) else get_world_3d().direct_space_state
+	var p := _player if is_instance_valid(_player) else ((get_parent() as Player) if get_parent() is Player else null)
+	if not p or not is_instance_valid(p):
+		return null
+	if not p.is_inside_tree():
+		return null
+	var space_state := p.get_world_3d().direct_space_state if p.has_method("get_world_3d") and p.get_world_3d() else null
 	if space_state == null:
 		return null
 	var cam := (_camera if is_instance_valid(_camera) else null) if _camera else (p.camera if (p and is_instance_valid(p) and "camera" in p and is_instance_valid(p.camera)) else null)
@@ -51,9 +88,13 @@ func _get_slap_target() -> Player:
 	params.from = origin
 	params.to = origin + dir * slap_range
 	params.collision_mask = 1 << 1
-	params.exclude = [p.get_rid()] if (p and is_instance_valid(p)) else [get_rid()]
+	params.exclude = [p.get_rid()] if p.has_method("get_rid") else []
 	var result := space_state.intersect_ray(params)
-	if not result or not result.has("collider"):
+	var hit := result and result.has("collider")
+	var dbg := get_node_or_null("/root/DebugOverlay")
+	if dbg != null and dbg.visible:
+		_draw_debug_ray(origin, origin + dir * slap_range, hit)
+	if not hit:
 		return null
 	var collider := result.collider as Node3D
 	var current: Node = collider
@@ -159,7 +200,7 @@ func _sync_apply_slap() -> void:
 
 
 func apply_slap(duration: float = -1.0) -> void:
-	var p := _player if is_instance_valid(_player) else (get_parent() as Player if get_parent() is Player else null)
+	var p := _player if is_instance_valid(_player) else ((get_parent() as Player) if get_parent() is Player else null)
 	if p and is_instance_valid(p) and p.player_state != Player.PlayerState.ALIVE:
 		return
 	if is_slapped:
@@ -168,10 +209,47 @@ func apply_slap(duration: float = -1.0) -> void:
 	var dur := duration if duration > 0.0 else slap_duration
 	_slap_time_left = clamp(dur, 3.0, 5.0)
 	_slap_token += 1
-	var token := _slap_token
-	await get_tree().create_timer(_slap_time_left).timeout
-	if token == _slap_token and is_slapped:
-		_clear_slap()
+
+
+func get_debug_state() -> Dictionary:
+	var target := _get_slap_target()
+	return {
+		"is_slapped": is_slapped,
+		"time_left": round(_slap_time_left * 100) / 100.0,
+		"cooldown": round(_slap_cooldown_left * 100) / 100.0,
+		"range": slap_range,
+		"target": target.name if target and is_instance_valid(target) else "none"
+	}
+
+
+func get_debug_actions() -> Array[Dictionary]:
+	return [
+		{ "id": "force_slap", "label": "Force Slap" },
+		{ "id": "toggle_ray", "label": "Toggle Ray" }
+	]
+
+
+func debug_action(action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	match action_id:
+		"force_slap":
+			apply_slap()
+		"toggle_ray":
+			pass
+
+
+func reset_for_restart() -> void:
+	_slap_token += 1
+	is_slapped = false
+	_slap_time_left = 0.0
+	_slap_cooldown_left = 0.0
+	var p := _player if is_instance_valid(_player) else ((get_parent() as Player) if get_parent() is Player else null)
+	if p and is_instance_valid(p):
+		if p.has_method("_update_prompt_visibility"):
+			p._update_prompt_visibility()
+		if p.has_method("_update_rock_prompt_visibility"):
+			p._update_rock_prompt_visibility()
 
 
 func _clear_slap() -> void:
@@ -180,7 +258,7 @@ func _clear_slap() -> void:
 	_slap_token += 1
 	is_slapped = false
 	_slap_time_left = 0.0
-	var p := _player if is_instance_valid(_player) else (get_parent() as Player if get_parent() is Player else null)
+	var p := _player if is_instance_valid(_player) else ((get_parent() as Player) if get_parent() is Player else null)
 	if p and is_instance_valid(p):
 		if p.has_method("_update_prompt_visibility"):
 			p._update_prompt_visibility()
@@ -189,11 +267,7 @@ func _clear_slap() -> void:
 
 
 func _process_slapped(delta: float) -> void:
-	_slap_time_left -= delta
-	if _slap_time_left <= 0.0:
-		_clear_slap()
-		return
-	var p := _player if is_instance_valid(_player) else (get_parent() as Player if get_parent() is Player else null)
+	var p := _player if is_instance_valid(_player) else ((get_parent() as Player) if get_parent() is Player else null)
 	if not p or not is_instance_valid(p):
 		return
 	p.velocity.x = 0.0

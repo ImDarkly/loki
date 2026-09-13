@@ -32,20 +32,21 @@ func test_apply_slap_sets_state_and_timer() -> void:
 func test_apply_slap_clamps_duration() -> void:
 	_component.apply_slap(1.0)
 	assert_eq(_component._slap_time_left, 3.0, "duration below 3.0 should clamp to 3.0")
+	_component._clear_slap()
 	_component.apply_slap(10.0)
 	assert_eq(_component._slap_time_left, 5.0, "duration above 5.0 should clamp to 5.0")
 
 
 func test_slap_cooldown_decrement() -> void:
 	_component._slap_cooldown_left = 1.0
-	_component._physics_process(0.4)
+	_component.tick(0.4)
 	assert_almost_eq(_component._slap_cooldown_left, 0.6, 0.001, "Slap cooldown should decrement")
 
 
 func test_apply_slap_self_clears_without_physics() -> void:
-	_component.apply_slap(0.1)
+	_component.apply_slap(3.0)
 	assert_true(_component.is_slapped)
-	await get_tree().create_timer(0.15).timeout
+	_component._process(3.1)
 	assert_false(_component.is_slapped, "slap should self-clear after timer")
 
 
@@ -68,8 +69,8 @@ func test_players_layer_mask() -> void:
 func test_process_slapped_expiry_clear() -> void:
 	_component.apply_slap(3.0)
 	assert_true(_component.is_slapped)
-	_component._process_slapped(3.1)
-	assert_false(_component.is_slapped, "_process_slapped expiry should clear slap when time left <= 0")
+	_component._process(3.1)
+	assert_false(_component.is_slapped, "_process expiry should clear slap when time left <= 0")
 	assert_eq(_component._slap_time_left, 0.0)
 
 

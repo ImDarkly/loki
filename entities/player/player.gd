@@ -663,9 +663,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if _slap_cooldown_left > 0.0:
-		_slap_cooldown_left -= delta
-
 	if player_state == PlayerState.SPECTATE:
 		if global_position.y <= FALL_DEATH_Y:
 			velocity = Vector3.ZERO
@@ -1271,8 +1268,8 @@ func toggle_sitting() -> void:
 
 
 func reset_for_restart() -> void:
-	if is_slapped:
-		_clear_slap()
+	if _slap_component and is_instance_valid(_slap_component):
+		_slap_component.reset_for_restart()
 	if is_carrying:
 		_clear_carry()
 	if holding_rock:
