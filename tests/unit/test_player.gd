@@ -9,7 +9,7 @@ func before_each() -> void:
 
 
 func _build_player(node_name: String = "", parent: Node = null) -> Player:
-	var player_node := CharacterBody3D.new()
+	var player_node := RigidBody3D.new()
 	if not node_name.is_empty():
 		player_node.name = node_name
 
@@ -224,13 +224,16 @@ func test_wasd_works_during_fight() -> void:
 	player.fishing_mechanic._fight_initial_distance = 0.0
 	player.fishing_mechanic._fight_target = 99.0
 
-	player.velocity = Vector3.ZERO
+	player.linear_velocity = Vector3.ZERO
 
 	Input.action_press("move_right")
-	player._physics_process(0.016)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._integrate_forces(state)
 	Input.action_release("move_right")
 
-	assert_gt(abs(player.velocity.x), 0.0, "WASD should affect velocity during fight")
+	assert_gt(abs(player.linear_velocity.x), 0.0, "WASD should affect velocity during fight")
 
 
 func test_player_moves_toward_fish_during_fight() -> void:
@@ -240,16 +243,19 @@ func test_player_moves_toward_fish_during_fight() -> void:
 	player.fishing_mechanic._fight_initial_distance = 10.0
 	player.fishing_mechanic._fight_target = 99.0
 
-	player.velocity = Vector3.ZERO
-	player._physics_process(0.016)
+	player.linear_velocity = Vector3.ZERO
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._integrate_forces(state)
 
 	var expected_dir: Vector3 = player.fishing_mechanic.cast_target_position.normalized()
-	if player.velocity.length() > 0.0:
-		var actual_dir: Vector3 = player.velocity.normalized()
+	if player.linear_velocity.length() > 0.0:
+		var actual_dir: Vector3 = player.linear_velocity.normalized()
 		var dot: float = actual_dir.dot(expected_dir)
 		assert_gt(dot, 0.7, "Player velocity should generally point toward fish position")
 	else:
-		assert_gt(player.velocity.length(), 0.0, "Velocity should not be zero during fight")
+		assert_gt(player.linear_velocity.length(), 0.0, "Velocity should not be zero during fight")
 
 
 func test_scroll_spikes_pull_higher_than_normal() -> void:
@@ -259,15 +265,18 @@ func test_scroll_spikes_pull_higher_than_normal() -> void:
 	player.fishing_mechanic._fight_initial_distance = 10.0
 	player.fishing_mechanic._fight_target = 99.0
 
-	player.velocity = Vector3.ZERO
+	player.linear_velocity = Vector3.ZERO
 	player._pull_spike_timer = 0.0
 
 	Input.action_press("reel_fight")
-	player._physics_process(0.016)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._integrate_forces(state)
 	Input.action_release("reel_fight")
 
 	var normal_pull_vel: float = 0.5
-	assert_gt(abs(player.velocity.x), normal_pull_vel + 0.5, "Scroll spike should produce velocity above 0.5-strength baseline")
+	assert_gt(abs(player.linear_velocity.x), normal_pull_vel + 0.5, "Scroll spike should produce velocity above 0.5-strength baseline")
 
 
 func test_pull_spike_decays_after_linger() -> void:
@@ -276,13 +285,16 @@ func test_pull_spike_decays_after_linger() -> void:
 	player.fishing_mechanic.cast_target_position = Vector3(10, 0, 0)
 	player.fishing_mechanic._fight_initial_distance = 10.0
 
-	player.velocity = Vector3.ZERO
+	player.linear_velocity = Vector3.ZERO
 	player._pull_spike_timer = 0.3
 
-	player._physics_process(0.4)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._integrate_forces(state)
 
 	var expected_normal_vel: float = 0.5
-	assert_true(abs(player.velocity.x) <= expected_normal_vel + 0.01, "After spike decays, velocity should return to 0.5-strength level")
+	assert_true(abs(player.linear_velocity.x) <= expected_normal_vel + 0.01, "After spike decays, velocity should return to 0.5-strength level")
 
 
 func test_fall_off_island_triggers_death() -> void:
@@ -358,12 +370,12 @@ func test_report_validates_position() -> void:
 
 func test_respawn_at_spawn() -> void:
 	player.spawn_index = 2
-	player.velocity = Vector3(10, 5, 10)
+	player.linear_velocity = Vector3(10, 5, 10)
 	player._respawn_at_spawn()
 
 	var expected_pos := player._spawn_positions()[2]
 	assert_eq(player.position, expected_pos, "Player position should reset to designated spawn index")
-	assert_eq(player.velocity, Vector3.ZERO, "Player velocity should zero out on respawn")
+	assert_eq(player.linear_velocity, Vector3.ZERO, "Player velocity should zero out on respawn")
 
 
 func test_fall_off_island_peer_branch_round_trip() -> void:
@@ -445,17 +457,23 @@ func test_sitting_starts_false() -> void:
 
 func test_sitting_blocks_movement() -> void:
 	player._sitting_heal.set_sitting(true)
-	player.velocity = Vector3(5, 0, 5)
-	player._physics_process(0.016)
+	player.linear_velocity = Vector3(5, 0, 5)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._integrate_forces(state)
 	assert_true(player._sitting_heal.is_sitting, "Player should remain sitting with no input")
-	assert_eq(player.velocity.x, 0.0, "Horizontal velocity should be locked while sitting")
-	assert_eq(player.velocity.z, 0.0, "Horizontal velocity should be locked while sitting")
+	assert_eq(player.linear_velocity.x, 0.0, "Horizontal velocity should be locked while sitting")
+	assert_eq(player.linear_velocity.z, 0.0, "Horizontal velocity should be locked while sitting")
 
 
 func test_wasd_press_stands_player_up() -> void:
 	player._sitting_heal.set_sitting(true)
 	Input.action_press("move_right")
-	player._physics_process(0.016)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._integrate_forces(state)
 	Input.action_release("move_right")
 	assert_false(player._sitting_heal.is_sitting, "WASD press should stand the player up")
 
@@ -578,7 +596,10 @@ func test_client_floating_increments_float_time() -> void:
 	player.player_state = Player.PlayerState.FLOATING
 	player._float_time = 0.0
 	var old_time := player._float_time
-	player._process_floating(1.0)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._process_floating(state)
 	assert_gt(player._float_time, old_time, "_float_time should increment in _process_floating for animation/visuals")
 
 
@@ -842,7 +863,10 @@ func test_floating_stays_floating_before_timeout() -> void:
 	var hp := player.get_node("HealthComponent") as HealthComponent
 	hp.current_health = hp.max_health
 
-	player._process_floating(1.0)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._process_floating(state)
 	assert_eq(player.player_state, Player.PlayerState.FLOATING, "Should remain FLOATING before timeout")
 	assert_eq(hp.current_health, hp.max_health, "Should take no damage before timeout")
 
@@ -854,7 +878,10 @@ func test_floating_kills_after_timeout_on_server() -> void:
 	var hp := player.get_node("HealthComponent") as HealthComponent
 	hp.current_health = hp.max_health
 
-	player._process_floating(0.016)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._process_floating(state)
 	assert_eq(hp.current_health, 0, "Should take max damage and die after timeout on server/no-peer")
 
 
@@ -913,7 +940,10 @@ func test_client_does_not_self_kill_on_timeout() -> void:
 	var hp := client_copy.get_node("HealthComponent") as HealthComponent
 	hp.current_health = hp.max_health
 
-	client_copy._process_floating(0.016)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(client_copy.get_rid())
+	if state:
+		client_copy._process_floating(state)
 
 	assert_eq(hp.current_health, hp.max_health, "Client should not self-kill on float timeout")
 
@@ -1147,7 +1177,7 @@ func test_joint_triple_drop_on_entering_floating() -> void:
 func test_strict_input_lock_when_floating() -> void:
 	player.player_state = Player.PlayerState.FLOATING
 	player.global_position = Vector3(0, -0.5, 0)
-	player.velocity = Vector3(0, 0, 0)
+	player.linear_velocity = Vector3(0, 0, 0)
 
 	var ev_action := InputEventAction.new()
 	ev_action.action = "move_forward"
@@ -1159,8 +1189,11 @@ func test_strict_input_lock_when_floating() -> void:
 	jump_action.pressed = true
 	player._unhandled_input(jump_action)
 
-	player._physics_process(0.016)
-	assert_eq(player.velocity.y, 0.0, "Vertical velocity should remain zero while floating")
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._integrate_forces(state)
+	assert_eq(player.linear_velocity.y, 0.0, "Vertical velocity should remain zero while floating")
 
 	var initial_head_rot := player.head.rotation.x
 	var motion := InputEventMouseMotion.new()
@@ -1170,7 +1203,7 @@ func test_strict_input_lock_when_floating() -> void:
 		player._unhandled_input(motion)
 		assert_ne(player.head.rotation.x, initial_head_rot, "Mouse look should rotate head while floating")
 	else:
-		assert_eq(player.velocity.x, 0.0, "Input lock ensures no movement velocity while floating")
+		assert_eq(player.linear_velocity.x, 0.0, "Input lock ensures no movement velocity while floating")
 
 
 func test_float_drift_outward_and_bob_sinusoid() -> void:
@@ -1179,11 +1212,14 @@ func test_float_drift_outward_and_bob_sinusoid() -> void:
 	player._float_time = 0.0
 	player._float_base_y = -0.5
 
-	player._process_floating(0.5)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._process_floating(state)
 
 	assert_gt(player._float_time, 0.0, "_float_time should advance")
 	assert_true(abs(player.global_position.y - (-0.5)) <= player.float_bob_amplitude + 0.01, "y should bob around base y")
-	assert_true(player.velocity.x != 0.0 or player.velocity.z != 0.0, "should drift outward")
+	assert_true(player.linear_velocity.x != 0.0 or player.linear_velocity.z != 0.0, "should drift outward")
 
 
 func test_restart_clears_flags_camera_and_physics() -> void:
@@ -1254,10 +1290,13 @@ func test_slap_clears_after_duration() -> void:
 
 func test_slap_input_lock_movement_and_physics() -> void:
 	player.apply_slap(3.5)
-	player.velocity = Vector3(5.0, 2.0, 5.0)
-	player._physics_process(0.016)
-	assert_eq(player.velocity.x, 0.0, "Horizontal velocity x should be locked to 0 while slapped")
-	assert_eq(player.velocity.z, 0.0, "Horizontal velocity z should be locked to 0 while slapped")
+	player.linear_velocity = Vector3(5.0, 2.0, 5.0)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._integrate_forces(state)
+	assert_eq(player.linear_velocity.x, 0.0, "Horizontal velocity x should be locked to 0 while slapped")
+	assert_eq(player.linear_velocity.z, 0.0, "Horizontal velocity z should be locked to 0 while slapped")
 
 
 func test_restart_clears_slap() -> void:
@@ -1355,6 +1394,22 @@ func test_sync_apply_slap_direct_call() -> void:
 	if player._slap_component and is_instance_valid(player._slap_component):
 		player._slap_component._sync_apply_slap()
 	assert_true(player.is_slapped, "_sync_apply_slap direct call should apply slap state")
+
+
+func test_current_max_speed_walk_and_sprint() -> void:
+	player.walk_speed = 5.0
+	player.sprint_speed = 8.0
+	Input.action_release("sprint")
+	assert_eq(player._current_max_speed(), 5.0, "should return walk_speed when sprint not pressed")
+	Input.action_press("sprint")
+	assert_eq(player._current_max_speed(), 8.0, "should return sprint_speed when sprint pressed")
+	Input.action_release("sprint")
+
+
+func test_jump_boost_export_and_config() -> void:
+	assert_true("jump_boost" in player, "jump_boost export should exist")
+	player.jump_boost = 1.5
+	assert_eq(player.jump_boost, 1.5, "jump_boost should be tunable")
 
 
 

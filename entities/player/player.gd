@@ -1,7 +1,13 @@
-class_name Player extends CharacterBody3D
+class_name Player extends RigidBody3D
 
 @export var move_speed: float = 5.0
-@export var jump_height: float = 2.0
+@export var walk_speed: float = 5.0
+@export var sprint_speed: float = 8.0
+@export var jump_boost: float = 1.2
+@export var accel_factor: float = 10.0
+@export var jump_height: float = 1.1
+@export var coyote_time: float = 0.10
+@export var jump_buffer_time: float = 0.12
 @export var mouse_sensitivity: float = 0.002
 @export var fall_gravity_multiplier: float = 1.5
 @export var hand_follow_speed_left: float = 8.0
@@ -32,6 +38,7 @@ class_name Player extends CharacterBody3D
 @export var float_bob_amplitude: float = 0.12
 @export var float_bob_frequency: float = 0.9
 @export var float_timeout: float = 30.0
+@export var launch_vertical_boost: float = 2.0
 
 
 @onready var head: Node3D = $Head
@@ -54,7 +61,7 @@ var assigned_fireplace: Node3D = null
 var assigned_fireplace_seat: Node3D = null
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
-var _jump_velocity: float
+
 
 var _hand_base_left: Vector3
 var _hand_base_right: Vector3
@@ -74,6 +81,10 @@ var _spectate_yaw: float = 0.0
 var _spectate_pitch: float = 0.0
 var _spectate_target: Node3D = null
 var _spectate_target_index: int = 0
+var _jump_buffer_t: float = -999.0
+var _coyote_clock: float = 0.0
+var _jump_hold_frames: int = 0
+var _jump_requested: bool = false
 
 var _last_fish_state: int = -1
 var _last_cast_target: Vector3 = Vector3.ZERO
@@ -154,12 +165,25 @@ const PLAYERS_LAYER = 1 << 1
 const INTERACTABLE_LAYER: int = 1 << 5
 const FALL_DEATH_Y: float = -3.0
 const WATER_SURFACE_Y: float = -0.5
+const GROUND_BRAKE_RATE: float = 60.0
+const AIR_DRAG_RATE: float = 10.0
+const STOP_SNAP_THRESHOLD: float = 0.05
+const DEADZONE: float = 0.15
+const UP = Vector3.UP
 
 
 func _ready() -> void:
 	randomize()
 
-	_jump_velocity = sqrt(2.0 * _gravity * jump_height)
+	contact_monitor = true
+	max_contacts_reported = 4
+	axis_lock_angular_x = true
+	axis_lock_angular_y = true
+	axis_lock_angular_z = true
+	physics_material_override = PhysicsMaterial.new()
+	physics_material_override.friction = 0.0
+	can_sleep = false
+
 
 	_setup_collision_shape()
 	_setup_meshes()
@@ -256,10 +280,13 @@ func _setup_interact_prompt() -> void:
 
 
 func _setup_collision_shape() -> void:
+	if get_node_or_null("CollisionShape3D") != null:
+		return
 	var shape := CylinderShape3D.new()
 	shape.height = 2.0
 	shape.radius = 0.3
 	var collision_shape := CollisionShape3D.new()
+	collision_shape.name = "CollisionShape3D"
 	collision_shape.shape = shape
 	collision_shape.position.y = 1.0
 	add_child(collision_shape)
@@ -381,7 +408,7 @@ func _process(delta: float) -> void:
 
 	is_yelling = _voice_chat.is_yelling if _voice_chat != null else false
 
-	var speed := Vector2(velocity.x, velocity.z).length()
+	var speed := Vector2(linear_velocity.x, linear_velocity.z).length()
 	var t := Time.get_ticks_msec() / 1000.0
 
 	var spring_force := -_bounce_pos * bounce_stiffness
@@ -587,22 +614,22 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if player_state == PlayerState.FLOATING:
 		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			rotate_y(-event.relative.x * mouse_sensitivity)
-			head.rotate_x(-event.relative.y * mouse_sensitivity)
-			head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
+			_pending_yaw += -event.relative.x * mouse_sensitivity
+			_pending_pitch += -event.relative.y * mouse_sensitivity
 		return
 
 	if is_slapped:
 		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			rotate_y(-event.relative.x * mouse_sensitivity)
-			head.rotate_x(-event.relative.y * mouse_sensitivity)
-			head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
+			_pending_yaw += -event.relative.x * mouse_sensitivity
+			_pending_pitch += -event.relative.y * mouse_sensitivity
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		rotate_y(-event.relative.x * mouse_sensitivity)
-		head.rotate_x(-event.relative.y * mouse_sensitivity)
-		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
+		_pending_yaw += -event.relative.x * mouse_sensitivity
+		_pending_pitch += -event.relative.y * mouse_sensitivity
+
+	if event.is_action_pressed("jump"):
+		_jump_requested = true
 
 	if event.is_action_pressed("cast_line"):
 		if _sitting_heal and _sitting_heal.is_sitting:
@@ -662,18 +689,59 @@ func _unhandled_input(event: InputEvent) -> void:
 								shark_bait_manager.request_deposit_shark_bait()
 
 
-func _physics_process(delta: float) -> void:
+var _pending_launch: Vector3 = Vector3.ZERO
+var _pending_yaw: float = 0.0
+var _pending_pitch: float = 0.0
+var _was_grounded: bool = false
+
+
+func _current_max_speed() -> float:
+	if Input.is_action_pressed("sprint"):
+		return sprint_speed
+	return walk_speed
+
+
+func _is_grounded(state: PhysicsDirectBodyState3D) -> bool:
+	var vel_y := state.linear_velocity.y if state != null else linear_velocity.y
+	if _was_grounded and abs(vel_y) < 0.2:
+		return true
+	if state != null:
+		for i in range(state.get_contact_count()):
+			var normal := state.get_contact_local_normal(i)
+			if normal.y > 0.5:
+				return true
+	var space_state := get_world_3d().direct_space_state if get_world_3d() else null
+	if space_state:
+		var origin := global_position + Vector3(0, 0.1, 0)
+		var params := PhysicsRayQueryParameters3D.new()
+		params.from = origin
+		params.to = origin + Vector3(0, -0.5, 0)
+		params.collision_mask = 1 << 0
+		params.exclude = [get_rid()]
+		var result := space_state.intersect_ray(params)
+		if result:
+			return true
+	return false
+
+
+func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	if not _is_local_authority():
+		return
+
 	if player_state == PlayerState.SPECTATE:
+		_pending_yaw = 0.0
+		_pending_pitch = 0.0
 		if global_position.y <= FALL_DEATH_Y:
-			velocity = Vector3.ZERO
-			move_and_slide()
+			state.linear_velocity = Vector3.ZERO
 			return
-		if not is_on_floor():
-			velocity.y -= _gravity * delta
+		var grounded := _is_grounded(state)
+		var vel := state.linear_velocity
+		if not grounded:
+			vel.y -= _gravity * state.step
 		else:
-			velocity.x = 0.0
-			velocity.z = 0.0
-		move_and_slide()
+			vel.x = 0.0
+			vel.z = 0.0
+		state.linear_velocity = vel
 		_sync_tick += 1
 		if _sync_tick >= 2:
 			_sync_tick = 0
@@ -691,55 +759,199 @@ func _physics_process(delta: float) -> void:
 				rpc("_sync_cast_target", ct)
 		return
 
+	if _pending_yaw != 0.0:
+		var t := state.transform
+		t.basis = Basis(UP, _pending_yaw) * t.basis
+		state.transform = t
+		_pending_yaw = 0.0
+	if _pending_pitch != 0.0:
+		head.rotation.x = clamp(head.rotation.x + _pending_pitch, deg_to_rad(-89.0), deg_to_rad(89.0))
+		_pending_pitch = 0.0
+
 	if player_state == PlayerState.FLOATING:
-		_process_floating(delta)
+		_process_floating(state)
 		return
 
 	if is_slapped:
-		_process_slapped(delta)
+		var vel := state.linear_velocity
+		vel.x = 0.0
+		vel.z = 0.0
+		var grounded := _is_grounded(state)
+		if not grounded:
+			var mult := fall_gravity_multiplier if vel.y < 0 else 1.0
+			vel.y -= _gravity * mult * state.step
+		else:
+			vel.y = 0.0
+		state.linear_velocity = vel
+		_check_fell_off_island()
+		_sync_tick += 1
+		if _sync_tick >= 2:
+			_sync_tick = 0
+			if multiplayer.has_multiplayer_peer() and _is_local_authority():
+				rpc("_sync_transform", global_position, rotation, head.rotation)
 		return
 
 	if _sitting_heal and _sitting_heal.is_sitting:
-		_process_sitting(delta)
-		return
+		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back", DEADZONE)
+		if input_dir.length() < DEADZONE:
+			input_dir = Vector2.ZERO
+		if input_dir != Vector2.ZERO:
+			if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
+				assigned_fireplace.release_seat_for_player(self)
+			_sitting_heal.set_sitting(false)
+		else:
+			var vel := state.linear_velocity
+			vel.x = 0.0
+			vel.z = 0.0
+			var grounded := _is_grounded(state)
+			if not grounded:
+				vel.y -= _gravity * state.step
+			else:
+				vel.y = 0.0
+			state.linear_velocity = vel
+			return
 
 	if fishing_mechanic.is_fighting():
-		_process_fight(delta)
+		var grounded := _is_grounded(state)
+		var vel := state.linear_velocity
+		if not grounded:
+			var mult := fall_gravity_multiplier if vel.y < 0 else 1.0
+			vel.y -= _gravity * mult * state.step
+
+		var fish_pos: Vector3 = fishing_mechanic.cast_target_position
+		var to_fish: Vector3 = fish_pos - global_position
+		var dist: float = to_fish.length()
+		var dir: Vector3 = to_fish.normalized() if dist > 0.001 else Vector3.FORWARD
+
+		var initial_dist: float = max(fishing_mechanic._fight_initial_distance, 0.01)
+		var pull_mult: float = clamp(dist / initial_dist, 0.1, 1.0)
+		_pull_spike_timer = max(0.0, _pull_spike_timer - state.step)
+		if Input.is_action_just_pressed("reel_fight"):
+			_pull_spike_timer = 0.3
+			fishing_mechanic.notify_scroll()
+		var is_spiked: bool = _pull_spike_timer > 0
+		var current_pull: float = fishing_mechanic.fighting_spike_pull if is_spiked else fishing_mechanic.fighting_pull_strength
+		var pull_force: Vector3 = dir * current_pull * pull_mult
+
+		fishing_mechanic.advance_fight(state.step)
+		if not fishing_mechanic._is_fighting:
+			var exit_vel := state.linear_velocity
+			exit_vel.x = 0.0
+			exit_vel.z = 0.0
+			state.linear_velocity = exit_vel
+			return
+
+		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back", DEADZONE)
+		if input_dir.length() < DEADZONE:
+			input_dir = Vector2.ZERO
+		var wasd_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+		var wasd_scale: float = 0.2 if is_spiked else 1.0
+		var wasd_force := wasd_dir * _current_max_speed() * wasd_scale
+
+		vel.x = pull_force.x + wasd_force.x
+		vel.z = pull_force.z + wasd_force.z
+		state.linear_velocity = vel
+
+		_check_fell_off_island()
+
+		_sync_tick += 1
+		if _sync_tick >= 2:
+			_sync_tick = 0
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_transform", global_position, rotation, head.rotation)
+
+		var fs: int = fishing_mechanic.current_state
+		if fs != _last_fish_state:
+			_last_fish_state = fs
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_fishing_state", fs)
 		return
 
-	if not is_on_floor():
-		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
-		velocity.y -= _gravity * mult * delta
+	if _pending_launch != Vector3.ZERO:
+		state.linear_velocity = Vector3.ZERO
+		state.apply_central_impulse(_pending_launch * mass)
+		_pending_launch = Vector3.ZERO
 
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		velocity.y = _jump_velocity
+	var grounded := _is_grounded(state)
+
+	if grounded:
+		_coyote_clock = 0.0
+	else:
+		_coyote_clock += state.step
+
+	if Input.is_action_pressed("jump"):
+		_jump_hold_frames += 1
+	else:
+		_jump_hold_frames = 0
+
+	if Input.is_action_just_pressed("jump") or _jump_requested:
+		_jump_buffer_t = jump_buffer_time
+		_jump_requested = false
+
+	if _jump_buffer_t > 0.0:
+		_jump_buffer_t = max(0.0, _jump_buffer_t - state.step)
+
+	if not grounded:
+		var vel := state.linear_velocity
+		var mult := fall_gravity_multiplier if vel.y < 0 else 1.0
+		state.apply_central_force(Vector3.DOWN * _gravity * (mult - 1.0) * mass)
+
+	if (grounded or _coyote_clock <= coyote_time) and _jump_buffer_t > 0.0:
+		var current_jump_height := jump_height
+		if Input.is_action_pressed("sprint"):
+			current_jump_height *= jump_boost
+		var jump_impulse := Vector3.UP * sqrt(2.0 * _gravity * current_jump_height) * mass
+		state.apply_central_impulse(jump_impulse)
 		_bounce_vel = -jump_bounce_impulse
 		_hand_bounce = hand_jump_raise
+		_jump_buffer_t = -999.0
+		_coyote_clock = coyote_time + 1.0
+		_jump_hold_frames = 0
 
-	if Input.is_action_just_released("jump") and velocity.y > 0.0:
-		velocity.y *= jump_cut_multiplier
+	if Input.is_action_just_released("jump") and state.linear_velocity.y > 0.0 and _jump_hold_frames >= 2:
+		var vel := state.linear_velocity
+		vel.y *= jump_cut_multiplier
+		state.linear_velocity = vel
 
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back", DEADZONE)
+	if input_dir.length() < DEADZONE:
+		input_dir = Vector2.ZERO
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 
 	if direction != Vector3.ZERO:
-		velocity.x = direction.x * move_speed
-		velocity.z = direction.z * move_speed
-	elif is_on_floor():
-		velocity.x = move_toward(velocity.x, 0.0, move_speed)
-		velocity.z = move_toward(velocity.z, 0.0, move_speed)
+		state.apply_central_force(direction * _current_max_speed() * mass * accel_factor)
+	else:
+		var vel := state.linear_velocity
+		if grounded:
+			vel.x = move_toward(vel.x, 0.0, GROUND_BRAKE_RATE * state.step)
+			vel.z = move_toward(vel.z, 0.0, GROUND_BRAKE_RATE * state.step)
+		else:
+			vel.x = move_toward(vel.x, 0.0, AIR_DRAG_RATE * state.step)
+			vel.z = move_toward(vel.z, 0.0, AIR_DRAG_RATE * state.step)
+		if abs(vel.x) < STOP_SNAP_THRESHOLD:
+			vel.x = 0.0
+		if abs(vel.z) < STOP_SNAP_THRESHOLD:
+			vel.z = 0.0
+		state.linear_velocity = vel
 
-	var was_on_floor := is_on_floor()
-	move_and_slide()
+	var max_spd := _current_max_speed()
+	var horiz_vel := Vector2(state.linear_velocity.x, state.linear_velocity.z)
+	if horiz_vel.length() > max_spd:
+		horiz_vel = horiz_vel.normalized() * max_spd
+		state.linear_velocity = Vector3(horiz_vel.x, state.linear_velocity.y, horiz_vel.y)
+
 	_check_fell_off_island()
 
-	if not was_on_floor and is_on_floor():
+	if not _was_grounded and grounded:
 		_hand_bounce = -hand_land_drop
+		_bounce_vel = land_bounce_impulse
+	_was_grounded = grounded
 
-	var is_moving := Vector2(velocity.x, velocity.z).length() > 0.1
+	var current_vel := state.linear_velocity
+	var is_moving := Vector2(current_vel.x, current_vel.z).length() > 0.1
 	if is_moving and not _was_moving:
 		_walk_squish_offset = -walk_squish_strength
-	_walk_squish_offset = lerp(_walk_squish_offset, 0.0, walk_squish_decay * delta)
+	_walk_squish_offset = lerp(_walk_squish_offset, 0.0, walk_squish_decay * state.step)
 	_was_moving = is_moving
 
 	var yaw_delta: float = fmod(rotation.y - _prev_yaw, TAU)
@@ -753,14 +965,14 @@ func _physics_process(delta: float) -> void:
 
 	var pitch_factor: float = head.rotation.x / deg_to_rad(89.0)
 	var target_y: float = _hand_base_left.y + pitch_factor * 0.04 + _walk_squish_offset + _hand_bounce
-	hand_left.position.y = lerp(hand_left.position.y, target_y, speed_l * delta)
-	hand_right.position.y = lerp(hand_right.position.y, target_y, speed_r * delta)
+	hand_left.position.y = lerp(hand_left.position.y, target_y, speed_l * state.step)
+	hand_right.position.y = lerp(hand_right.position.y, target_y, speed_r * state.step)
 
 	var yaw_sway: float = -yaw_delta * 2.0
-	hand_left.position.x = lerp(hand_left.position.x, _hand_base_left.x + yaw_sway, speed_l * delta)
-	hand_right.position.x = lerp(hand_right.position.x, _hand_base_right.x + yaw_sway, speed_r * delta)
+	hand_left.position.x = lerp(hand_left.position.x, _hand_base_left.x + yaw_sway, speed_l * state.step)
+	hand_right.position.x = lerp(hand_right.position.x, _hand_base_right.x + yaw_sway, speed_r * state.step)
 
-	_hand_bounce = lerp(_hand_bounce, 0.0, hand_bounce_decay * delta)
+	_hand_bounce = lerp(_hand_bounce, 0.0, hand_bounce_decay * state.step)
 
 	_prev_yaw = rotation.y
 
@@ -793,68 +1005,6 @@ func _physics_process(delta: float) -> void:
 		_last_flight_start = fsp
 		if multiplayer.has_multiplayer_peer():
 			rpc("_sync_flight_start", fsp)
-
-
-func _process_sitting(delta: float) -> void:
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	if input_dir != Vector2.ZERO:
-		if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
-			assigned_fireplace.release_seat_for_player(self)
-		_sitting_heal.set_sitting(false)
-		return
-	velocity.x = 0.0
-	velocity.z = 0.0
-	if not is_on_floor():
-		velocity.y -= _gravity * delta
-	move_and_slide()
-
-
-func _process_fight(delta: float) -> void:
-	if not is_on_floor():
-		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
-		velocity.y -= _gravity * mult * delta
-
-	var fish_pos: Vector3 = fishing_mechanic.cast_target_position
-	var to_fish: Vector3 = fish_pos - global_position
-	var dist: float = to_fish.length()
-	var dir: Vector3 = to_fish.normalized() if dist > 0.001 else Vector3.FORWARD
-
-	var initial_dist: float = max(fishing_mechanic._fight_initial_distance, 0.01)
-	var pull_mult: float = clamp(dist / initial_dist, 0.1, 1.0)
-	_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
-	if Input.is_action_just_pressed("reel_fight"):
-		_pull_spike_timer = 0.3
-		fishing_mechanic.notify_scroll()
-	var is_spiked: bool = _pull_spike_timer > 0
-	var current_pull: float = fishing_mechanic.fighting_spike_pull if is_spiked else fishing_mechanic.fighting_pull_strength
-	var pull_force: Vector3 = dir * current_pull * pull_mult
-
-	fishing_mechanic.advance_fight(delta)
-	if not fishing_mechanic._is_fighting:
-		return
-
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var wasd_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	var wasd_scale: float = 0.2 if is_spiked else 1.0
-	var wasd_force := wasd_dir * move_speed * wasd_scale
-
-	velocity.x = pull_force.x + wasd_force.x
-	velocity.z = pull_force.z + wasd_force.z
-
-	move_and_slide()
-	_check_fell_off_island()
-
-	_sync_tick += 1
-	if _sync_tick >= 2:
-		_sync_tick = 0
-		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_transform", global_position, rotation, head.rotation)
-
-	var fs: int = fishing_mechanic.current_state
-	if fs != _last_fish_state:
-		_last_fish_state = fs
-		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_fishing_state", fs)
 
 
 func _is_local_authority() -> bool:
@@ -979,7 +1129,7 @@ static func _spawn_positions() -> Array[Vector3]:
 func _respawn_at_spawn() -> void:
 	var spawns := _spawn_positions()
 	position = spawns[spawn_index] if spawn_index < spawns.size() else spawns[0]
-	velocity = Vector3.ZERO
+	linear_velocity = Vector3.ZERO
 
 
 func _check_fell_off_island() -> void:
@@ -1068,21 +1218,22 @@ func _enter_floating() -> void:
 	player_state = PlayerState.FLOATING
 	_float_time = 0.0
 	_float_base_y = WATER_SURFACE_Y
-	velocity.y = 0.0
+	linear_velocity = Vector3.ZERO
 	global_position.y = WATER_SURFACE_Y
 	set_physics_process(true)
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_sync_floating_state.rpc()
 
 
-func _process_floating(delta: float) -> void:
+func _process_floating(state: PhysicsDirectBodyState3D) -> void:
+	var delta := state.step
 	_float_time += delta
 	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		if _float_time >= float_timeout:
 			if _health_component:
 				_health_component.take_damage(_health_component.max_health)
 			return
-	var flat_pos := Vector2(global_position.x, global_position.z)
+	var flat_pos := Vector2(state.transform.origin.x, state.transform.origin.z)
 	var center_2d := Vector2(MapConfig.MAP_CENTER.x, MapConfig.MAP_CENTER.z)
 	var dir := (flat_pos - center_2d)
 	if dir.length() < 0.001:
@@ -1090,11 +1241,11 @@ func _process_floating(delta: float) -> void:
 	else:
 		dir = dir.normalized()
 	var drift := dir * float_drift_speed
-	velocity.x = drift.x
-	velocity.z = drift.y
-	velocity.y = 0.0
-	global_position.y = _float_base_y + sin(_float_time * TAU * float_bob_frequency) * float_bob_amplitude
-	move_and_slide()
+	state.linear_velocity = Vector3(drift.x, 0.0, drift.y)
+	var bob := _float_base_y + sin(_float_time * TAU * float_bob_frequency) * float_bob_amplitude
+	var t := state.transform
+	t.origin.y = bob
+	state.transform = t
 
 	_sync_tick += 1
 	if _sync_tick >= 2:
@@ -1126,11 +1277,6 @@ func _clear_slap() -> void:
 		_slap_component._clear_slap()
 
 
-func _process_slapped(delta: float) -> void:
-	if _slap_component:
-		_slap_component._process_slapped(delta)
-
-
 func _apply_player_visibility() -> void:
 	if _is_local_authority():
 		_enable_player()
@@ -1150,6 +1296,8 @@ func _enable_player() -> void:
 	camera.current = true
 	set_process(true)
 	set_physics_process(true)
+	freeze = false
+	can_sleep = false
 	set_process_unhandled_input(true)
 	if mic_level_bar != null:
 		mic_level_bar.visible = true
@@ -1168,6 +1316,10 @@ func _disable_player() -> void:
 	set_process(false)
 	var keep_physics := player_state == PlayerState.FLOATING
 	set_physics_process(keep_physics)
+	if not keep_physics:
+		freeze = true
+		freeze_mode = FREEZE_MODE_KINEMATIC
+	can_sleep = true
 	set_process_unhandled_input(false)
 	if mic_level_bar != null:
 		mic_level_bar.visible = false
@@ -1186,7 +1338,8 @@ func _on_reel_success(_personal_count: int) -> void:
 	start_carrying()
 
 func _on_escape_launch(direction: Vector3, strength: float) -> void:
-	velocity = direction * strength
+	_pending_launch = direction * strength
+	_pending_launch.y += launch_vertical_boost
 
 
 func _on_escape_telegraph_changed(intensity: float) -> void:
