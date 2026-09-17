@@ -408,6 +408,14 @@ func _process(delta: float) -> void:
 
 	is_yelling = _voice_chat.is_yelling if _voice_chat != null else false
 
+
+func _physics_process(delta: float) -> void:
+	if player_state == PlayerState.FLOATING and multiplayer.has_multiplayer_peer() and multiplayer.is_server() and not _is_local_authority():
+		_float_time += delta
+		if _float_time >= float_timeout:
+			if _health_component:
+				_health_component.take_damage(_health_component.max_health)
+
 	var speed := Vector2(linear_velocity.x, linear_velocity.z).length()
 	var t := Time.get_ticks_msec() / 1000.0
 
@@ -792,6 +800,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		return
 
 	if _sitting_heal and _sitting_heal.is_sitting:
+		_jump_requested = false
+		_jump_buffer_t = -999.0
 		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back", DEADZONE)
 		if input_dir.length() < DEADZONE:
 			input_dir = Vector2.ZERO
@@ -812,6 +822,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			return
 
 	if fishing_mechanic.is_fighting():
+		_jump_requested = false
+		_jump_buffer_t = -999.0
 		var grounded := _is_grounded(state)
 		var vel := state.linear_velocity
 		if not grounded:
@@ -879,6 +891,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	else:
 		_coyote_clock += state.step
 
+	var prev_jump_hold_frames := _jump_hold_frames
 	if Input.is_action_pressed("jump"):
 		_jump_hold_frames += 1
 	else:
@@ -908,7 +921,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		_coyote_clock = coyote_time + 1.0
 		_jump_hold_frames = 0
 
-	if Input.is_action_just_released("jump") and state.linear_velocity.y > 0.0 and _jump_hold_frames >= 2:
+	if Input.is_action_just_released("jump") and state.linear_velocity.y > 0.0 and prev_jump_hold_frames >= 2:
 		var vel := state.linear_velocity
 		vel.y *= jump_cut_multiplier
 		state.linear_velocity = vel

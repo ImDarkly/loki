@@ -1412,6 +1412,91 @@ func test_jump_boost_export_and_config() -> void:
 	assert_eq(player.jump_boost, 1.5, "jump_boost should be tunable")
 
 
+func test_physics_process_floating_server_timeout_peer() -> void:
+	var server_peer := ENetMultiplayerPeer.new()
+	var client_peer := ENetMultiplayerPeer.new()
+	var chosen_port := -1
+	for port in [37912, 37913, 37914, 37915, 37916]:
+		if server_peer.create_server(port, 2) == OK:
+			chosen_port = port
+			break
+		server_peer = ENetMultiplayerPeer.new()
+	assert_ne(chosen_port, -1, "should bind an ENet server port")
+	client_peer.create_client("127.0.0.1", chosen_port)
+
+	var server_root := Node3D.new()
+	server_root.name = "ServerRoot"
+	add_child(server_root)
+	var client_root := Node3D.new()
+	client_root.name = "ClientRoot"
+	add_child(client_root)
+
+	var server_mp := SceneMultiplayer.new()
+	server_mp.multiplayer_peer = server_peer
+	var client_mp := SceneMultiplayer.new()
+	client_mp.multiplayer_peer = client_peer
+	get_tree().set_multiplayer(server_mp, server_root.get_path())
+	get_tree().set_multiplayer(client_mp, client_root.get_path())
+
+	var server_players := Node3D.new()
+	server_players.name = "Players"
+	server_root.add_child(server_players)
+	var client_players := Node3D.new()
+	client_players.name = "Players"
+	client_root.add_child(client_players)
+
+	var frames := 0
+	while frames < 120 and (client_mp.get_unique_id() == 1 or server_mp.get_peers().is_empty()):
+		await get_tree().process_frame
+		frames += 1
+
+	var client_id := client_mp.get_unique_id()
+	var server_copy := await _build_player("Player_%d" % client_id, server_players)
+	var client_copy := await _build_player("Player_%d" % client_id, client_players)
+
+	server_copy.player_state = Player.PlayerState.FLOATING
+	server_copy.float_timeout = 1.0
+	server_copy._float_time = 1.0
+	var server_hp := server_copy.get_node("HealthComponent") as HealthComponent
+	server_hp.current_health = server_hp.max_health
+
+	server_copy._physics_process(1.0)
+
+	assert_eq(server_hp.current_health, 0, "Server should damage remote floating player on timeout in _physics_process")
+
+	server_peer.close()
+	client_peer.close()
+	get_tree().set_multiplayer(null, server_root.get_path())
+	get_tree().set_multiplayer(null, client_root.get_path())
+	server_root.queue_free()
+	client_root.queue_free()
+
+
+func test_buffered_jump_cleared_on_sitting_and_fighting() -> void:
+	player._jump_requested = true
+	player._jump_buffer_t = 0.1
+	player._sitting_heal.set_sitting(true)
+	await get_tree().physics_frame
+	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._integrate_forces(state)
+	assert_false(player._jump_requested, "_jump_requested should be cleared at entry to sitting")
+	assert_eq(player._jump_buffer_t, -999.0, "_jump_buffer_t should be cleared at entry to sitting")
+	player._sitting_heal.set_sitting(false)
+
+	player._jump_requested = true
+	player._jump_buffer_t = 0.1
+	player.fishing_mechanic._is_fighting = true
+	await get_tree().physics_frame
+	state = PhysicsServer3D.body_get_direct_state(player.get_rid())
+	if state:
+		player._integrate_forces(state)
+	assert_false(player._jump_requested, "_jump_requested should be cleared at entry to fighting")
+	assert_eq(player._jump_buffer_t, -999.0, "_jump_buffer_t should be cleared at entry to fighting")
+	player.fishing_mechanic._is_fighting = false
+
+
+
 
 
 
