@@ -10,6 +10,9 @@ var _slap_time_left: float = 0.0
 var _slap_token: int = 0
 var _slap_cooldown_left: float = 0.0
 
+var slap_cooldown_left: float:
+	get: return _slap_cooldown_left
+
 var _player: Player = null
 var _camera: Camera3D = null
 var _players_container: Node = null
@@ -297,6 +300,3 @@ func _clear_slap() -> void:
 			p._update_prompt_visibility()
 		if p.has_method("_update_rock_prompt_visibility"):
 			p._update_rock_prompt_visibility()
-
-
-

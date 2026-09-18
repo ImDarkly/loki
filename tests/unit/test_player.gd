@@ -56,6 +56,14 @@ func _build_player(node_name: String = "", parent: Node = null) -> Player:
 	slap_component.name = "SlapComponent"
 	player_node.add_child(slap_component)
 
+	var carry_component := CarryComponent.new()
+	carry_component.name = "CarryComponent"
+	player_node.add_child(carry_component)
+
+	var interaction_component := InteractionComponent.new()
+	interaction_component.name = "InteractionComponent"
+	player_node.add_child(interaction_component)
+
 	var spectate_camera := Node3D.new()
 	spectate_camera.name = "SpectateCamera"
 	player_node.add_child(spectate_camera)

@@ -1,46 +1,5 @@
 class_name Player extends RigidBody3D
 
-@export var move_speed: float = 5.0
-@export var walk_speed: float = 5.0
-@export var sprint_speed: float = 8.0
-@export var jump_boost: float = 1.2
-@export var accel_factor: float = 10.0
-@export var jump_height: float = 1.1
-@export var coyote_time: float = 0.10
-@export var jump_buffer_time: float = 0.12
-@export var mouse_sensitivity: float = 0.002
-@export var fall_gravity_multiplier: float = 1.5
-@export var hand_follow_speed_left: float = 8.0
-@export var hand_follow_speed_right: float = 5.0
-@export var yaw_speed_variation: float = 4.0
-@export var walk_squish_strength: float = 0.05
-@export var walk_squish_decay: float = 8.0
-@export var shake_lateral: float = 0.01
-@export var shake_vertical: float = 0.0075
-@export var shake_forward: float = 0.005
-@export var shake_roll: float = 0.0025
-@export var shake_speed_lateral: float = 12.0
-@export var shake_speed_vertical: float = 10.0
-@export var shake_speed_forward: float = 8.0
-@export var shake_speed_roll: float = 14.0
-@export var jump_bounce_impulse: float = 0.3
-@export var land_bounce_impulse: float = 0.18
-@export var bounce_stiffness: float = 50.0
-@export var bounce_damping: float = 8.0
-@export var hand_jump_raise: float = 0.03
-@export var hand_land_drop: float = 0.025
-@export var hand_bounce_decay: float = 10.0
-@export var jump_cut_multiplier: float = 0.5
-@export var spawn_index: int = 0
-@export var launch_speed: float = 15.0
-@export var max_cast_range: float = 20.0
-@export var float_drift_speed: float = 1.0
-@export var float_bob_amplitude: float = 0.12
-@export var float_bob_frequency: float = 0.9
-@export var float_timeout: float = 30.0
-@export var launch_vertical_boost: float = 2.0
-
-
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var fishing_mechanic: Node3D = $FishingMechanic
@@ -56,119 +15,237 @@ class_name Player extends RigidBody3D
 @onready var _health_component: HealthComponent = $HealthComponent
 @onready var _sitting_heal: SittingHealComponent = $SittingHeal
 @onready var _slap_component: SlapComponent = $SlapComponent
+@onready var _carry_component: CarryComponent = $CarryComponent
+@onready var _interaction_component: InteractionComponent = $InteractionComponent
+@onready var _movement_component: MovementComponent = $MovementComponent
+@onready var _camera_component: CameraComponent = $CameraComponent
+@onready var _net_sync: NetworkSyncComponent = $NetworkSyncComponent
 
 var assigned_fireplace: Node3D = null
 var assigned_fireplace_seat: Node3D = null
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
-
-var _hand_base_left: Vector3
-var _hand_base_right: Vector3
-var _prev_yaw: float = 0.0
-var _was_moving: bool = false
-var _walk_squish_offset: float = 0.0
-var _cam_home: Vector3
-var _bounce_pos: float = 0.0
-var _bounce_vel: float = 0.0
-var _hand_bounce: float = 0.0
 var is_yelling: bool = false
 
 enum PlayerState { ALIVE, FLOATING, SPECTATE }
-
 var player_state: PlayerState = PlayerState.ALIVE
-var _spectate_yaw: float = 0.0
-var _spectate_pitch: float = 0.0
-var _spectate_target: Node3D = null
-var _spectate_target_index: int = 0
-var _jump_buffer_t: float = -999.0
-var _coyote_clock: float = 0.0
-var _jump_hold_frames: int = 0
-var _jump_requested: bool = false
-
-var _last_fish_state: int = -1
-var _last_cast_target: Vector3 = Vector3.ZERO
-var _last_flight_duration: float = 0.0
-var _last_flight_start: Vector3 = Vector3.ZERO
-var _sync_tick: int = 0
-var _pull_spike_timer: float = 0.0
+var spawn_index: int = 0
+var launch_speed: float = 15.0
 var _rod_pivot: Node3D = null
 
-var is_carrying: bool = false
+var walk_speed: float:
+	get: return _movement_component.walk_speed if _movement_component else 5.0
+	set(val): if _movement_component: _movement_component.walk_speed = val
+
+var sprint_speed: float:
+	get: return _movement_component.sprint_speed if _movement_component else 8.0
+	set(val): if _movement_component: _movement_component.sprint_speed = val
+
+var jump_boost: float:
+	get: return _movement_component.jump_boost if _movement_component else 1.2
+	set(val): if _movement_component: _movement_component.jump_boost = val
+
+var accel_factor: float:
+	get: return _movement_component.accel_factor if _movement_component else 10.0
+	set(val): if _movement_component: _movement_component.accel_factor = val
+
+var jump_height: float:
+	get: return _movement_component.jump_height if _movement_component else 1.1
+	set(val): if _movement_component: _movement_component.jump_height = val
+
+var coyote_time: float:
+	get: return _movement_component.coyote_time if _movement_component else 0.10
+	set(val): if _movement_component: _movement_component.coyote_time = val
+
+var jump_buffer_time: float:
+	get: return _movement_component.jump_buffer_time if _movement_component else 0.12
+	set(val): if _movement_component: _movement_component.jump_buffer_time = val
+
+var mouse_sensitivity: float:
+	get: return _camera_component.mouse_sensitivity if _camera_component else 0.002
+	set(val): if _camera_component: _camera_component.mouse_sensitivity = val
+
+var fall_gravity_multiplier: float:
+	get: return _movement_component.fall_gravity_multiplier if _movement_component else 1.5
+	set(val): if _movement_component: _movement_component.fall_gravity_multiplier = val
+
+var hand_follow_speed_left: float:
+	get: return _camera_component.hand_follow_speed_left if _camera_component else 8.0
+	set(val): if _camera_component: _camera_component.hand_follow_speed_left = val
+
+var hand_follow_speed_right: float:
+	get: return _camera_component.hand_follow_speed_right if _camera_component else 5.0
+	set(val): if _camera_component: _camera_component.hand_follow_speed_right = val
+
+var yaw_speed_variation: float:
+	get: return _camera_component.yaw_speed_variation if _camera_component else 4.0
+	set(val): if _camera_component: _camera_component.yaw_speed_variation = val
+
+var walk_squish_strength: float:
+	get: return _camera_component.walk_squish_strength if _camera_component else 0.05
+	set(val): if _camera_component: _camera_component.walk_squish_strength = val
+
+var walk_squish_decay: float:
+	get: return _camera_component.walk_squish_decay if _camera_component else 8.0
+	set(val): if _camera_component: _camera_component.walk_squish_decay = val
+
+var shake_lateral: float:
+	get: return _camera_component.shake_lateral if _camera_component else 0.01
+	set(val): if _camera_component: _camera_component.shake_lateral = val
+
+var shake_vertical: float:
+	get: return _camera_component.shake_vertical if _camera_component else 0.0075
+	set(val): if _camera_component: _camera_component.shake_vertical = val
+
+var shake_forward: float:
+	get: return _camera_component.shake_forward if _camera_component else 0.005
+	set(val): if _camera_component: _camera_component.shake_forward = val
+
+var shake_roll: float:
+	get: return _camera_component.shake_roll if _camera_component else 0.0025
+	set(val): if _camera_component: _camera_component.shake_roll = val
+
+var shake_speed_lateral: float:
+	get: return _camera_component.shake_speed_lateral if _camera_component else 12.0
+	set(val): if _camera_component: _camera_component.shake_speed_lateral = val
+
+var shake_speed_vertical: float:
+	get: return _camera_component.shake_speed_vertical if _camera_component else 10.0
+	set(val): if _camera_component: _camera_component.shake_speed_vertical = val
+
+var shake_speed_forward: float:
+	get: return _camera_component.shake_speed_forward if _camera_component else 8.0
+	set(val): if _camera_component: _camera_component.shake_speed_forward = val
+
+var shake_speed_roll: float:
+	get: return _camera_component.shake_speed_roll if _camera_component else 14.0
+	set(val): if _camera_component: _camera_component.shake_speed_roll = val
+
+var jump_bounce_impulse: float:
+	get: return _camera_component.jump_bounce_impulse if _camera_component else 0.3
+	set(val): if _camera_component: _camera_component.jump_bounce_impulse = val
+
+var land_bounce_impulse: float:
+	get: return _camera_component.land_bounce_impulse if _camera_component else 0.18
+	set(val): if _camera_component: _camera_component.land_bounce_impulse = val
+
+var bounce_stiffness: float:
+	get: return _camera_component.bounce_stiffness if _camera_component else 50.0
+	set(val): if _camera_component: _camera_component.bounce_stiffness = val
+
+var bounce_damping: float:
+	get: return _camera_component.bounce_damping if _camera_component else 8.0
+	set(val): if _camera_component: _camera_component.bounce_damping = val
+
+var hand_jump_raise: float:
+	get: return _camera_component.hand_jump_raise if _camera_component else 0.03
+	set(val): if _camera_component: _camera_component.hand_jump_raise = val
+
+var hand_land_drop: float:
+	get: return _camera_component.hand_land_drop if _camera_component else 0.025
+	set(val): if _camera_component: _camera_component.hand_land_drop = val
+
+var hand_bounce_decay: float:
+	get: return _camera_component.hand_bounce_decay if _camera_component else 10.0
+	set(val): if _camera_component: _camera_component.hand_bounce_decay = val
+
+var jump_cut_multiplier: float:
+	get: return _movement_component.jump_cut_multiplier if _movement_component else 0.5
+	set(val): if _movement_component: _movement_component.jump_cut_multiplier = val
+
+var max_cast_range: float:
+	get: return _movement_component.max_cast_range if _movement_component else 20.0
+	set(val): if _movement_component: _movement_component.max_cast_range = val
+
+var float_drift_speed: float:
+	get: return _movement_component.float_drift_speed if _movement_component else 1.0
+	set(val): if _movement_component: _movement_component.float_drift_speed = val
+
+var float_bob_amplitude: float:
+	get: return _movement_component.float_bob_amplitude if _movement_component else 0.12
+	set(val): if _movement_component: _movement_component.float_bob_amplitude = val
+
+var float_bob_frequency: float:
+	get: return _movement_component.float_bob_frequency if _movement_component else 0.9
+	set(val): if _movement_component: _movement_component.float_bob_frequency = val
+
+var float_timeout: float:
+	get: return _movement_component.float_timeout if _movement_component else 30.0
+	set(val): if _movement_component: _movement_component.float_timeout = val
+
+var launch_vertical_boost: float:
+	get: return _movement_component.launch_vertical_boost if _movement_component else 2.0
+	set(val): if _movement_component: _movement_component.launch_vertical_boost = val
+
+var is_carrying: bool:
+	get: return _carry_component.is_carrying if _carry_component else false
+	set(val):
+		if _carry_component and is_instance_valid(_carry_component):
+			_carry_component.is_carrying = val
+
+var holding_rock: bool:
+	get: return _carry_component.holding_rock if (_carry_component and is_instance_valid(_carry_component)) else false
+	set(val):
+		if _carry_component and is_instance_valid(_carry_component):
+			_carry_component.holding_rock = val
+
+var holding_shark_bait: bool:
+	get: return _carry_component.holding_shark_bait if (_carry_component and is_instance_valid(_carry_component)) else false
+	set(val):
+		if _carry_component and is_instance_valid(_carry_component):
+			_carry_component.holding_shark_bait = val
+
 var is_slapped: bool:
-	get:
-		return _slap_component.is_slapped if _slap_component else false
+	get: return _slap_component.is_slapped if (_slap_component and is_instance_valid(_slap_component)) else false
+
+var _slap_cooldown_left: float:
+	get: return (_slap_component._slap_cooldown_left if (_slap_component and is_instance_valid(_slap_component)) else 0.0) as float
+	set(val):
+		if _slap_component and is_instance_valid(_slap_component):
+			_slap_component._slap_cooldown_left = val
 
 var _slap_time_left: float:
-	get:
-		return _slap_component._slap_time_left if _slap_component else 0.0
+	get: return (_slap_component._slap_time_left if (_slap_component and is_instance_valid(_slap_component)) else 0.0) as float
 	set(val):
-		if _slap_component:
+		if _slap_component and is_instance_valid(_slap_component):
 			_slap_component._slap_time_left = val
 
 var _slap_token: int:
-	get:
-		return _slap_component._slap_token if _slap_component else 0
+	get: return (_slap_component._slap_token if (_slap_component and is_instance_valid(_slap_component)) else 0) as int
 	set(val):
-		if _slap_component:
+		if _slap_component and is_instance_valid(_slap_component):
 			_slap_component._slap_token = val
 
-var _slap_cooldown_left: float:
-	get:
-		return _slap_component._slap_cooldown_left if _slap_component else 0.0
-	set(val):
-		if _slap_component:
-			_slap_component._slap_cooldown_left = val
-
 var slap_duration: float:
-	get:
-		return _slap_component.slap_duration if _slap_component else 3.5
+	get: return (_slap_component.slap_duration if (_slap_component and is_instance_valid(_slap_component)) else 3.5) as float
 	set(val):
-		if _slap_component:
+		if _slap_component and is_instance_valid(_slap_component):
 			_slap_component.slap_duration = val
 
 var slap_range: float:
-	get:
-		return _slap_component.slap_range if _slap_component else 2.0
+	get: return (_slap_component.slap_range if (_slap_component and is_instance_valid(_slap_component)) else 2.0) as float
 	set(val):
-		if _slap_component:
+		if _slap_component and is_instance_valid(_slap_component):
 			_slap_component.slap_range = val
 
 var slap_cooldown: float:
-	get:
-		return _slap_component.slap_cooldown if _slap_component else 1.0
+	get: return (_slap_component.slap_cooldown if (_slap_component and is_instance_valid(_slap_component)) else 1.0) as float
 	set(val):
-		if _slap_component:
+		if _slap_component and is_instance_valid(_slap_component):
 			_slap_component.slap_cooldown = val
-var holding_rock: bool = false
-var holding_shark_bait: bool = false
-var _held_fish: Node3D = null
-var _held_rock_mesh: MeshInstance3D = null
-var _held_bait_mesh: MeshInstance3D = null
-var _ray_hit_box: bool = false
-var _ray_rock: bool = false
-var _interact_prompt: CanvasLayer = null
-var _quota_manager_ref: Node3D = null
-var _rock_manager_ref: Node = null
-var _danger_manager_ref: Node = null
-var _seagull_manager_ref: Node = null
-var _is_shop_open: bool = false
-var _fell_off_island_reported: bool = false
-var _entered_water_reported: bool = false
-var _water_report_retry: int = 0
-var _float_time: float = 0.0
-var _float_base_y: float = -0.5
-@export var interact_range: float = 3.0
-@export var rock_pickup_range: float = 3.0
 
-const PLAYERS_LAYER = 1 << 1
-const INTERACTABLE_LAYER: int = 1 << 5
+var sitting_heal: SittingHealComponent:
+	get: return _sitting_heal
+
+var slap_component: SlapComponent:
+	get: return _slap_component
+
+var gravity: float:
+	get: return _gravity
+
 const FALL_DEATH_Y: float = -3.0
 const WATER_SURFACE_Y: float = -0.5
-const GROUND_BRAKE_RATE: float = 60.0
-const AIR_DRAG_RATE: float = 10.0
-const STOP_SNAP_THRESHOLD: float = 0.05
-const DEADZONE: float = 0.15
 const UP = Vector3.UP
 
 
@@ -184,7 +261,6 @@ func _ready() -> void:
 	physics_material_override.friction = 0.0
 	can_sleep = false
 
-
 	_setup_collision_shape()
 	_setup_meshes()
 	_setup_input_actions()
@@ -192,40 +268,36 @@ func _ready() -> void:
 	_setup_authority_from_name()
 
 	camera.position = Vector3.ZERO
-	_cam_home = Vector3.ZERO
 
 	_apply_player_visibility()
 
+	if _movement_component:
+		_movement_component.setup(self, head, fishing_mechanic, _sitting_heal, _slap_component, _net_sync, _camera_component)
+
+	if _camera_component:
+		_camera_component.setup(self, head, camera, hand_left, hand_right, spectate_camera, spectate_cam_camera, _players_container)
+
+	if _net_sync:
+		_net_sync.setup(self, fishing_mechanic)
+
 	if _slap_component:
 		_slap_component.setup(self, camera, _players_container)
+
+	if _carry_component:
+		_carry_component.setup(self, head, _rod_pivot, null, null, null, null, _interaction_component.rock_pickup_range)
+
+	if _interaction_component:
+		_interaction_component.setup(_carry_component, self, camera, head)
 
 	_health_component.died.connect(_enter_spectate)
 	_health_component.health_changed.connect(_on_health_changed)
 	fishing_mechanic.reel_success.connect(_on_reel_success)
 	fishing_mechanic.escape_launch.connect(_on_escape_launch)
 	fishing_mechanic.escape_telegraph_changed.connect(_on_escape_telegraph_changed)
-	
+
 	var gm := get_node_or_null("/root/game_manager")
 	if gm:
 		gm.shop_toggled.connect(_on_shop_toggled)
-
-	_setup_interact_prompt()
-
-	var qm := get_node_or_null("/root/main/QuotaManager")
-	if qm:
-		_quota_manager_ref = qm
-
-	var rm := get_node_or_null("/root/main/RockManager")
-	if rm:
-		_rock_manager_ref = rm
-	
-	var dm := get_node_or_null("/root/main/DangerManager")
-	if dm:
-		_danger_manager_ref = dm
-
-	var sm := get_node_or_null("/root/main/SeagullManager")
-	if sm:
-		_seagull_manager_ref = sm
 
 	if multiplayer.has_multiplayer_peer():
 		multiplayer.peer_connected.connect(_on_peer_connected)
@@ -239,44 +311,8 @@ func _exit_tree() -> void:
 func _on_peer_connected(id: int) -> void:
 	if not multiplayer.is_server():
 		return
-	if holding_shark_bait:
-		sync_holding_bait.rpc_id(id, true)
-
-
-func _setup_interact_prompt() -> void:
-	_interact_prompt = CanvasLayer.new()
-	_interact_prompt.name = "InteractPrompt"
-	_interact_prompt.layer = 130
-	var label := Label.new()
-	label.name = "PromptLabel"
-	label.text = "Deposit Fish [Right Click]"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	label.offset_left = -150
-	label.offset_top = -25
-	label.offset_right = 150
-	label.offset_bottom = 25
-	var font_size := 24
-	label.add_theme_font_size_override("font_size", font_size)
-	label.visible = false
-	_interact_prompt.add_child(label)
-
-	var rock_label := Label.new()
-	rock_label.name = "RockPromptLabel"
-	rock_label.text = "Pick up rock [Left Click]"
-	rock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	rock_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	rock_label.offset_left = -150
-	rock_label.offset_top = -60
-	rock_label.offset_right = 150
-	rock_label.offset_bottom = -10
-	rock_label.add_theme_font_size_override("font_size", font_size)
-	rock_label.visible = false
-	_interact_prompt.add_child(rock_label)
-
-	add_child(_interact_prompt)
+	if _carry_component and _carry_component.holding_shark_bait:
+		_carry_component.sync_holding_bait.rpc_id(id, true)
 
 
 func _setup_collision_shape() -> void:
@@ -307,9 +343,6 @@ func _setup_meshes() -> void:
 
 	_setup_hand(hand_left, Vector3(-0.25, -0.2, -0.35))
 	_setup_hand(hand_right, Vector3(0.25, -0.2, -0.35))
-
-	_hand_base_left = hand_left.position
-	_hand_base_right = hand_right.position
 
 	_setup_fishing_rod()
 	_rod_pivot = $Head/HandRight/FishingRod
@@ -396,628 +429,52 @@ func _remove_key_from_action(action: String, keycode: Key) -> void:
 
 func _process(delta: float) -> void:
 	if player_state == PlayerState.SPECTATE:
-		_update_spectate_camera(delta)
+		if _camera_component:
+			_camera_component.tick_process(delta)
 		return
 
 	if player_state == PlayerState.FLOATING:
-		_ray_hit_box = false
-		_ray_rock = false
-		_update_prompt_visibility()
-		_update_rock_prompt_visibility()
 		return
 
 	is_yelling = _voice_chat.is_yelling if _voice_chat != null else false
 
-
-func _physics_process(delta: float) -> void:
-	if player_state == PlayerState.FLOATING and multiplayer.has_multiplayer_peer() and multiplayer.is_server() and not _is_local_authority():
-		_float_time += delta
-		if _float_time >= float_timeout:
-			if _health_component:
-				_health_component.take_damage(_health_component.max_health)
-
-	var speed := Vector2(linear_velocity.x, linear_velocity.z).length()
-	var t := Time.get_ticks_msec() / 1000.0
-
-	var spring_force := -_bounce_pos * bounce_stiffness
-	_bounce_vel += (spring_force - _bounce_vel * bounce_damping) * delta
-	_bounce_pos += _bounce_vel * delta
-
-	var shake_pos := Vector3.ZERO
-	var shake_rot: float = 0.0
-
-	if speed > 0.1:
-		shake_pos = Vector3(
-			sin(t * shake_speed_lateral) * shake_lateral,
-			cos(t * shake_speed_vertical) * shake_vertical,
-			sin(t * shake_speed_forward) * shake_forward
-		)
-		shake_rot = sin(t * shake_speed_roll) * shake_roll
-
-	camera.position = _cam_home + shake_pos + Vector3(0, _bounce_pos, 0)
-	camera.rotation.z = shake_rot
-
-	if not multiplayer.has_multiplayer_peer() or get_multiplayer_authority() == multiplayer.get_unique_id():
-		_update_interact_raycast()
-		_update_rock_raycast()
-
-
-func _update_interact_raycast() -> void:
-	var space_state := get_world_3d().direct_space_state
-	if space_state == null:
-		return
-	var origin := camera.global_position
-	var dir := -camera.global_transform.basis.z
-	var params := PhysicsRayQueryParameters3D.new()
-	params.from = origin
-	params.to = origin + dir * interact_range
-	params.collision_mask = INTERACTABLE_LAYER
-	var result := space_state.intersect_ray(params)
-
-	var hit_node = result.get("collider") if result else null
-	var interactable = hit_node.get_node_or_null("InteractableComponent") if hit_node and hit_node.has_method("get_node_or_null") else null
-	_ray_hit_box = interactable != null and interactable.is_enabled
-
-	_update_prompt_visibility(interactable)
-
-
-func _update_prompt_visibility(interactable = null) -> void:
-	if not is_instance_valid(_interact_prompt):
-		return
-	var label := _interact_prompt.get_node_or_null("PromptLabel") as Label
-	if not label:
-		return
-	
-	if _ray_hit_box and interactable and not _is_shop_open and (is_carrying or interactable.show_prompt_without_carrying):
-		label.text = interactable.prompt_text
-		label.add_theme_color_override("font_color", interactable.prompt_color)
-		label.visible = true
-	else:
-		label.visible = false
-
-
-func _update_rock_raycast() -> void:
-	if is_carrying or holding_rock or holding_shark_bait:
-		if _ray_rock:
-			_ray_rock = false
-			_update_rock_prompt_visibility()
-		return
-	if not _rock_manager_ref:
-		return
-	var space_state := get_world_3d().direct_space_state
-	if space_state == null:
-		return
-	var origin := camera.global_position
-	var dir := -camera.global_transform.basis.z
-	var params := PhysicsRayQueryParameters3D.new()
-	params.from = origin
-	params.to = origin + dir * rock_pickup_range
-	params.collision_mask = 4
-	var result := space_state.intersect_ray(params)
-	var hit_rock := false
-	if result:
-		var rock_index: int = _rock_manager_ref.get_nearest_available_point(result.position, 2.0)
-		hit_rock = rock_index != -1
-	if hit_rock != _ray_rock:
-		_ray_rock = hit_rock
-		_update_rock_prompt_visibility()
-
-
-func _update_rock_prompt_visibility() -> void:
-	if not is_instance_valid(_interact_prompt):
-		return
-	var label := _interact_prompt.get_node_or_null("RockPromptLabel") as Label
-	if not label:
-		return
-	label.visible = _ray_rock and not _is_shop_open
-
-
-func _try_pickup_rock() -> bool:
-	if is_carrying or holding_rock or holding_shark_bait:
-		return false
-	if not _rock_manager_ref:
-		return false
-	var space_state := get_world_3d().direct_space_state
-	if not space_state:
-		return false
-	var origin := camera.global_position
-	var dir := -camera.global_transform.basis.z
-	var params := PhysicsRayQueryParameters3D.new()
-	params.from = origin
-	params.to = origin + dir * rock_pickup_range
-	params.collision_mask = 4
-	var result := space_state.intersect_ray(params)
-	if not result:
-		return false
-	var rock_index: int = _rock_manager_ref.get_nearest_available_point(result.position, 2.0)
-	if rock_index == -1:
-		return false
-	_rock_manager_ref.request_pickup(rock_index)
-	holding_rock = true
-	_show_held_rock_remote()
-	if multiplayer.has_multiplayer_peer():
-		sync_holding_rock.rpc(true)
-	_update_rock_prompt_visibility()
-	return true
-
-
-func _throw_rock() -> void:
-	var rock := RigidBody3D.new()
-	rock.name = "ThrownRock"
-	rock.gravity_scale = 1.0
-
-	var mi := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.25, 0.15, 0.25)
-	mi.mesh = mesh
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.5, 0.5, 0.5)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mi.material_override = mat
-	rock.add_child(mi)
-
-	var cs := CollisionShape3D.new()
-	cs.shape = BoxShape3D.new()
-	cs.shape.size = Vector3(0.25, 0.15, 0.25)
-	rock.add_child(cs)
-
-	var rock_pos := camera.global_position + (-camera.global_transform.basis.z * 0.5)
-	rock.position = rock_pos
-	var throw_dir := -camera.global_transform.basis.z
-	rock.linear_velocity = throw_dir * launch_speed + Vector3(0, 3, 0)
-	rock.angular_velocity = Vector3(randf_range(-5, 5), randf_range(-5, 5), randf_range(-5, 5))
-	get_tree().root.add_child(rock)
-	
-	if _danger_manager_ref:
-		if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
-			_danger_manager_ref.repel(rock_pos, throw_dir)
-		else:
-			_danger_manager_ref.repel.rpc(rock_pos, throw_dir)
-	if _seagull_manager_ref:
-		if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
-			_seagull_manager_ref.repel(rock_pos, throw_dir)
-		else:
-			_seagull_manager_ref.repel.rpc(rock_pos, throw_dir)
-
-	var cleanup := Timer.new()
-	cleanup.one_shot = true
-	cleanup.timeout.connect(rock.queue_free)
-	rock.add_child(cleanup)
-	cleanup.start(5.0)
-
-	holding_rock = false
-	_hide_held_rock_remote()
-	if multiplayer.has_multiplayer_peer():
-		sync_holding_rock.rpc(false)
-
-
-func _try_place_shark_bait() -> void:
-	if not holding_shark_bait:
-		return
-	var origin := camera.global_position
-	var dir := -camera.global_transform.basis.z
-	var target := origin + dir * 3.0
-	target.y = 0.0
-	var shark_bait_manager := get_node_or_null("/root/main/SharkBaitManager")
-	if not shark_bait_manager:
-		shark_bait_manager = get_node_or_null("../SharkBaitManager")
-	if shark_bait_manager and shark_bait_manager.has_method("request_place_shark_bait"):
-		if multiplayer.has_multiplayer_peer():
-			shark_bait_manager.request_place_shark_bait.rpc(target)
-		else:
-			shark_bait_manager.request_place_shark_bait(target)
+	if _interaction_component:
+		_interaction_component.tick(delta, is_carrying, holding_rock, holding_shark_bait)
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if player_state == PlayerState.SPECTATE:
-		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			_spectate_yaw -= event.relative.x * mouse_sensitivity
-			_spectate_pitch -= event.relative.y * mouse_sensitivity
-			_spectate_pitch = clamp(_spectate_pitch, deg_to_rad(-89.0), deg_to_rad(89.0))
-			spectate_camera.rotation.y = _spectate_yaw
-			spectate_camera.rotation.x = _spectate_pitch
-		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			_cycle_spectate_target()
-		return
+	if _interaction_component:
+		if event.is_action_pressed("interact"):
+			_interaction_component.handle_interact()
+		elif event.is_action_pressed("cast_line"):
+			_interaction_component.handle_cast_line(launch_speed)
 
-	if player_state == PlayerState.FLOATING:
-		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			_pending_yaw += -event.relative.x * mouse_sensitivity
-			_pending_pitch += -event.relative.y * mouse_sensitivity
-		return
-
-	if is_slapped:
-		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			_pending_yaw += -event.relative.x * mouse_sensitivity
-			_pending_pitch += -event.relative.y * mouse_sensitivity
-		return
-
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_pending_yaw += -event.relative.x * mouse_sensitivity
-		_pending_pitch += -event.relative.y * mouse_sensitivity
-
-	if event.is_action_pressed("jump"):
-		_jump_requested = true
-
-	if event.is_action_pressed("cast_line"):
-		if _sitting_heal and _sitting_heal.is_sitting:
-			return
-		if is_carrying and not holding_rock and not holding_shark_bait:
-			if _slap_cooldown_left <= 0.0:
-				if _try_fish_slap():
-					get_viewport().set_input_as_handled()
-				return
-		if holding_rock:
-			_throw_rock()
-		elif holding_shark_bait:
-			return
-		elif not is_carrying and _try_pickup_rock():
-			pass
-		elif not is_carrying and fishing_mechanic.can_cast():
-			var rod_tip: Vector3 = fishing_mechanic.get_rod_tip_position()
-			var dir := -camera.global_transform.basis.z
-			var v := dir * launch_speed
-			var discriminant: float = v.y * v.y + 2.0 * _gravity * rod_tip.y
-			var flight_time := (v.y + sqrt(max(discriminant, 0.0))) / _gravity
-			flight_time = max(flight_time, 0.1)
-			var target := Vector3(rod_tip.x + v.x * flight_time, 0.0, rod_tip.z + v.z * flight_time)
-			var offset := Vector2(target.x - global_position.x, target.z - global_position.z)
-			if offset.length() > max_cast_range:
-				offset = offset.normalized() * max_cast_range
-				target.x = global_position.x + offset.x
-				target.z = global_position.z + offset.y
-			fishing_mechanic.cast(target, flight_time)
-
-	if event.is_action_pressed("interact"):
-		if holding_shark_bait:
-			_try_place_shark_bait()
-			return
-		if _ray_hit_box:
-			var space_state := get_world_3d().direct_space_state
-			var origin := camera.global_position
-			var dir := -camera.global_transform.basis.z
-			var params := PhysicsRayQueryParameters3D.new()
-			params.from = origin
-			params.to = origin + dir * interact_range
-			params.collision_mask = INTERACTABLE_LAYER
-			var result := space_state.intersect_ray(params)
-			
-			if result and result.collider:
-				var interactable = result.collider.get_node_or_null("InteractableComponent")
-				if interactable and interactable.is_enabled:
-					interactable.interacted.emit(self)
-					if is_carrying and result.collider.is_in_group("storage_box"):
-						deposit_carried_fish()
-					elif is_carrying and result.collider.is_in_group("shark_bait"):
-						var shark_bait_manager := get_node_or_null("/root/main/SharkBaitManager")
-						if shark_bait_manager and shark_bait_manager.has_method("request_deposit_shark_bait"):
-							if multiplayer.has_multiplayer_peer():
-								shark_bait_manager.request_deposit_shark_bait.rpc()
-							else:
-								shark_bait_manager.request_deposit_shark_bait()
+	if event is InputEventMouseMotion and _is_local_authority() and player_state == PlayerState.ALIVE:
+		if _movement_component:
+			_movement_component._pending_yaw -= event.relative.x * mouse_sensitivity
+			_movement_component._pending_pitch -= event.relative.y * mouse_sensitivity
 
 
-var _pending_launch: Vector3 = Vector3.ZERO
-var _pending_yaw: float = 0.0
-var _pending_pitch: float = 0.0
-var _was_grounded: bool = false
+func _physics_process(delta: float) -> void:
+	if player_state == PlayerState.FLOATING and multiplayer.has_multiplayer_peer() and multiplayer.is_server() and not _is_local_authority():
+		if _movement_component:
+			_movement_component._float_time += delta
+			if _movement_component._float_time >= float_timeout:
+				if _health_component:
+					_health_component.take_damage(_health_component.max_health)
 
 
 func _current_max_speed() -> float:
-	if Input.is_action_pressed("sprint"):
-		return sprint_speed
-	return walk_speed
+	return _movement_component._current_max_speed() if _movement_component else walk_speed
 
 
 func _is_grounded(state: PhysicsDirectBodyState3D) -> bool:
-	var vel_y := state.linear_velocity.y if state != null else linear_velocity.y
-	if _was_grounded and abs(vel_y) < 0.2:
-		return true
-	if state != null:
-		for i in range(state.get_contact_count()):
-			var normal := state.get_contact_local_normal(i)
-			if normal.y > 0.5:
-				return true
-	var space_state := get_world_3d().direct_space_state if get_world_3d() else null
-	if space_state:
-		var origin := global_position + Vector3(0, 0.1, 0)
-		var params := PhysicsRayQueryParameters3D.new()
-		params.from = origin
-		params.to = origin + Vector3(0, -0.5, 0)
-		params.collision_mask = 1 << 0
-		params.exclude = [get_rid()]
-		var result := space_state.intersect_ray(params)
-		if result:
-			return true
-	return false
+	return _movement_component._is_grounded(state) if _movement_component else false
 
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
-	if not _is_local_authority():
-		return
-
-	if player_state == PlayerState.SPECTATE:
-		_pending_yaw = 0.0
-		_pending_pitch = 0.0
-		if global_position.y <= FALL_DEATH_Y:
-			state.linear_velocity = Vector3.ZERO
-			return
-		var grounded := _is_grounded(state)
-		var vel := state.linear_velocity
-		if not grounded:
-			vel.y -= _gravity * state.step
-		else:
-			vel.x = 0.0
-			vel.z = 0.0
-		state.linear_velocity = vel
-		_sync_tick += 1
-		if _sync_tick >= 2:
-			_sync_tick = 0
-			if multiplayer.has_multiplayer_peer():
-				rpc("_sync_transform", global_position, rotation, head.rotation)
-		var fs: int = fishing_mechanic.current_state
-		if fs != _last_fish_state:
-			_last_fish_state = fs
-			if multiplayer.has_multiplayer_peer():
-				rpc("_sync_fishing_state", fs)
-		var ct: Vector3 = fishing_mechanic.cast_target_position
-		if ct != _last_cast_target:
-			_last_cast_target = ct
-			if multiplayer.has_multiplayer_peer():
-				rpc("_sync_cast_target", ct)
-		return
-
-	if _pending_yaw != 0.0:
-		var t := state.transform
-		t.basis = Basis(UP, _pending_yaw) * t.basis
-		state.transform = t
-		_pending_yaw = 0.0
-	if _pending_pitch != 0.0:
-		head.rotation.x = clamp(head.rotation.x + _pending_pitch, deg_to_rad(-89.0), deg_to_rad(89.0))
-		_pending_pitch = 0.0
-
-	if player_state == PlayerState.FLOATING:
-		_process_floating(state)
-		return
-
-	if is_slapped:
-		var vel := state.linear_velocity
-		vel.x = 0.0
-		vel.z = 0.0
-		var grounded := _is_grounded(state)
-		if not grounded:
-			var mult := fall_gravity_multiplier if vel.y < 0 else 1.0
-			vel.y -= _gravity * mult * state.step
-		else:
-			vel.y = 0.0
-		state.linear_velocity = vel
-		_check_fell_off_island()
-		_sync_tick += 1
-		if _sync_tick >= 2:
-			_sync_tick = 0
-			if multiplayer.has_multiplayer_peer() and _is_local_authority():
-				rpc("_sync_transform", global_position, rotation, head.rotation)
-		return
-
-	if _sitting_heal and _sitting_heal.is_sitting:
-		_jump_requested = false
-		_jump_buffer_t = -999.0
-		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back", DEADZONE)
-		if input_dir.length() < DEADZONE:
-			input_dir = Vector2.ZERO
-		if input_dir != Vector2.ZERO:
-			if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
-				assigned_fireplace.release_seat_for_player(self)
-			_sitting_heal.set_sitting(false)
-		else:
-			var vel := state.linear_velocity
-			vel.x = 0.0
-			vel.z = 0.0
-			var grounded := _is_grounded(state)
-			if not grounded:
-				vel.y -= _gravity * state.step
-			else:
-				vel.y = 0.0
-			state.linear_velocity = vel
-			return
-
-	if fishing_mechanic.is_fighting():
-		_jump_requested = false
-		_jump_buffer_t = -999.0
-		var grounded := _is_grounded(state)
-		var vel := state.linear_velocity
-		if not grounded:
-			var mult := fall_gravity_multiplier if vel.y < 0 else 1.0
-			vel.y -= _gravity * mult * state.step
-
-		var fish_pos: Vector3 = fishing_mechanic.cast_target_position
-		var to_fish: Vector3 = fish_pos - global_position
-		var dist: float = to_fish.length()
-		var dir: Vector3 = to_fish.normalized() if dist > 0.001 else Vector3.FORWARD
-
-		var initial_dist: float = max(fishing_mechanic._fight_initial_distance, 0.01)
-		var pull_mult: float = clamp(dist / initial_dist, 0.1, 1.0)
-		_pull_spike_timer = max(0.0, _pull_spike_timer - state.step)
-		if Input.is_action_just_pressed("reel_fight"):
-			_pull_spike_timer = 0.3
-			fishing_mechanic.notify_scroll()
-		var is_spiked: bool = _pull_spike_timer > 0
-		var current_pull: float = fishing_mechanic.fighting_spike_pull if is_spiked else fishing_mechanic.fighting_pull_strength
-		var pull_force: Vector3 = dir * current_pull * pull_mult
-
-		fishing_mechanic.advance_fight(state.step)
-		if not fishing_mechanic._is_fighting:
-			var exit_vel := state.linear_velocity
-			exit_vel.x = 0.0
-			exit_vel.z = 0.0
-			state.linear_velocity = exit_vel
-			return
-
-		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back", DEADZONE)
-		if input_dir.length() < DEADZONE:
-			input_dir = Vector2.ZERO
-		var wasd_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-		var wasd_scale: float = 0.2 if is_spiked else 1.0
-		var wasd_force := wasd_dir * _current_max_speed() * wasd_scale
-
-		vel.x = pull_force.x + wasd_force.x
-		vel.z = pull_force.z + wasd_force.z
-		state.linear_velocity = vel
-
-		_check_fell_off_island()
-
-		_sync_tick += 1
-		if _sync_tick >= 2:
-			_sync_tick = 0
-			if multiplayer.has_multiplayer_peer():
-				rpc("_sync_transform", global_position, rotation, head.rotation)
-
-		var fs: int = fishing_mechanic.current_state
-		if fs != _last_fish_state:
-			_last_fish_state = fs
-			if multiplayer.has_multiplayer_peer():
-				rpc("_sync_fishing_state", fs)
-		return
-
-	if _pending_launch != Vector3.ZERO:
-		state.linear_velocity = Vector3.ZERO
-		state.apply_central_impulse(_pending_launch * mass)
-		_pending_launch = Vector3.ZERO
-
-	var grounded := _is_grounded(state)
-
-	if grounded:
-		_coyote_clock = 0.0
-	else:
-		_coyote_clock += state.step
-
-	var prev_jump_hold_frames := _jump_hold_frames
-	if Input.is_action_pressed("jump"):
-		_jump_hold_frames += 1
-	else:
-		_jump_hold_frames = 0
-
-	if Input.is_action_just_pressed("jump") or _jump_requested:
-		_jump_buffer_t = jump_buffer_time
-		_jump_requested = false
-
-	if _jump_buffer_t > 0.0:
-		_jump_buffer_t = max(0.0, _jump_buffer_t - state.step)
-
-	if not grounded:
-		var vel := state.linear_velocity
-		var mult := fall_gravity_multiplier if vel.y < 0 else 1.0
-		state.apply_central_force(Vector3.DOWN * _gravity * (mult - 1.0) * mass)
-
-	if (grounded or _coyote_clock <= coyote_time) and _jump_buffer_t > 0.0:
-		var current_jump_height := jump_height
-		if Input.is_action_pressed("sprint"):
-			current_jump_height *= jump_boost
-		var jump_impulse := Vector3.UP * sqrt(2.0 * _gravity * current_jump_height) * mass
-		state.apply_central_impulse(jump_impulse)
-		_bounce_vel = -jump_bounce_impulse
-		_hand_bounce = hand_jump_raise
-		_jump_buffer_t = -999.0
-		_coyote_clock = coyote_time + 1.0
-		_jump_hold_frames = 0
-
-	if Input.is_action_just_released("jump") and state.linear_velocity.y > 0.0 and prev_jump_hold_frames >= 2:
-		var vel := state.linear_velocity
-		vel.y *= jump_cut_multiplier
-		state.linear_velocity = vel
-
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back", DEADZONE)
-	if input_dir.length() < DEADZONE:
-		input_dir = Vector2.ZERO
-	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-
-	if direction != Vector3.ZERO:
-		state.apply_central_force(direction * _current_max_speed() * mass * accel_factor)
-	else:
-		var vel := state.linear_velocity
-		if grounded:
-			vel.x = move_toward(vel.x, 0.0, GROUND_BRAKE_RATE * state.step)
-			vel.z = move_toward(vel.z, 0.0, GROUND_BRAKE_RATE * state.step)
-		else:
-			vel.x = move_toward(vel.x, 0.0, AIR_DRAG_RATE * state.step)
-			vel.z = move_toward(vel.z, 0.0, AIR_DRAG_RATE * state.step)
-		if abs(vel.x) < STOP_SNAP_THRESHOLD:
-			vel.x = 0.0
-		if abs(vel.z) < STOP_SNAP_THRESHOLD:
-			vel.z = 0.0
-		state.linear_velocity = vel
-
-	var max_spd := _current_max_speed()
-	var horiz_vel := Vector2(state.linear_velocity.x, state.linear_velocity.z)
-	if horiz_vel.length() > max_spd:
-		horiz_vel = horiz_vel.normalized() * max_spd
-		state.linear_velocity = Vector3(horiz_vel.x, state.linear_velocity.y, horiz_vel.y)
-
-	_check_fell_off_island()
-
-	if not _was_grounded and grounded:
-		_hand_bounce = -hand_land_drop
-		_bounce_vel = land_bounce_impulse
-	_was_grounded = grounded
-
-	var current_vel := state.linear_velocity
-	var is_moving := Vector2(current_vel.x, current_vel.z).length() > 0.1
-	if is_moving and not _was_moving:
-		_walk_squish_offset = -walk_squish_strength
-	_walk_squish_offset = lerp(_walk_squish_offset, 0.0, walk_squish_decay * state.step)
-	_was_moving = is_moving
-
-	var yaw_delta: float = fmod(rotation.y - _prev_yaw, TAU)
-	if yaw_delta > PI:
-		yaw_delta -= TAU
-	elif yaw_delta < -PI:
-		yaw_delta += TAU
-	var yaw_sign: float = sign(yaw_delta)
-	var speed_l: float = hand_follow_speed_left + yaw_sign * yaw_speed_variation
-	var speed_r: float = hand_follow_speed_right - yaw_sign * yaw_speed_variation
-
-	var pitch_factor: float = head.rotation.x / deg_to_rad(89.0)
-	var target_y: float = _hand_base_left.y + pitch_factor * 0.04 + _walk_squish_offset + _hand_bounce
-	hand_left.position.y = lerp(hand_left.position.y, target_y, speed_l * state.step)
-	hand_right.position.y = lerp(hand_right.position.y, target_y, speed_r * state.step)
-
-	var yaw_sway: float = -yaw_delta * 2.0
-	hand_left.position.x = lerp(hand_left.position.x, _hand_base_left.x + yaw_sway, speed_l * state.step)
-	hand_right.position.x = lerp(hand_right.position.x, _hand_base_right.x + yaw_sway, speed_r * state.step)
-
-	_hand_bounce = lerp(_hand_bounce, 0.0, hand_bounce_decay * state.step)
-
-	_prev_yaw = rotation.y
-
-	_sync_tick += 1
-	if _sync_tick >= 2:
-		_sync_tick = 0
-		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_transform", global_position, rotation, head.rotation)
-
-	var fs: int = fishing_mechanic.current_state
-	if fs != _last_fish_state:
-		_last_fish_state = fs
-		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_fishing_state", fs)
-
-	var ct: Vector3 = fishing_mechanic.cast_target_position
-	if ct != _last_cast_target:
-		_last_cast_target = ct
-		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_cast_target", ct)
-
-	var fd: float = fishing_mechanic._current_flight_duration
-	if fd != _last_flight_duration:
-		_last_flight_duration = fd
-		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_flight_duration", fd)
-
-	var fsp: Vector3 = fishing_mechanic._flight_start_position
-	if fsp != _last_flight_start:
-		_last_flight_start = fsp
-		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_flight_start", fsp)
+	if _movement_component:
+		_movement_component.integrate_forces(state)
 
 
 func _is_local_authority() -> bool:
@@ -1038,63 +495,34 @@ func _enter_spectate() -> void:
 	player_state = PlayerState.SPECTATE
 	camera.current = false
 	spectate_cam_camera.current = true
-	_spectate_yaw = 0.0
-	_spectate_pitch = 0.0
-	_spectate_target = _find_spectate_target()
+	if _camera_component:
+		_camera_component._spectate_yaw = 0.0
+		_camera_component._spectate_pitch = 0.0
+		_camera_component._spectate_target = _camera_component._find_spectate_target()
 	is_yelling = false
 	if multiplayer.has_multiplayer_peer():
-		sync_yelling.rpc(false)
+		sync_yelling(false)
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		_sync_player_state.rpc(PlayerState.SPECTATE)
+		if _net_sync:
+			_net_sync._sync_player_state.rpc(PlayerState.SPECTATE)
 
 
 func _update_spectate_camera(delta: float) -> void:
-	if _spectate_target == null or not is_instance_valid(_spectate_target):
-		_spectate_target = _find_spectate_target()
-	elif _spectate_target != self:
-		var hp := _spectate_target.get_node_or_null("HealthComponent") as HealthComponent
-		if hp == null or not hp.is_alive():
-			_spectate_target = _find_spectate_target()
-	var target := _spectate_target if _spectate_target != null else self
-	spectate_camera.global_position = target.global_position
-	spectate_cam_camera.look_at(target.global_position + Vector3(0, 1.0, 0))
+	if _camera_component:
+		_camera_component._update_spectate_camera(delta)
 
 
 func _find_spectate_target() -> Node3D:
-	if _players_container == null:
-		return null
-	for child in _players_container.get_children():
-		if child == self:
-			continue
-		var hp := child.get_node_or_null("HealthComponent") as HealthComponent
-		if hp and hp.is_alive():
-			return child
-	return null
+	return _camera_component._find_spectate_target() if _camera_component else null
 
 
 func _get_alive_players() -> Array[Node3D]:
-	var alive: Array[Node3D] = []
-	if _players_container == null:
-		return alive
-	for child in _players_container.get_children():
-		if child == self:
-			continue
-		var hp := child.get_node_or_null("HealthComponent") as HealthComponent
-		if hp and hp.is_alive():
-			alive.append(child)
-	return alive
+	return _camera_component._get_alive_players() if _camera_component else []
 
 
 func _cycle_spectate_target() -> void:
-	var alive := _get_alive_players()
-	if alive.is_empty():
-		_spectate_target = null
-		return
-	var current_index := alive.find(_spectate_target)
-	if current_index == -1:
-		current_index = _spectate_target_index
-	_spectate_target_index = (current_index + 1) % alive.size()
-	_spectate_target = alive[_spectate_target_index]
+	if _camera_component:
+		_camera_component.cycle_spectate_target()
 
 
 func _on_restart() -> void:
@@ -1102,19 +530,20 @@ func _on_restart() -> void:
 	var hp := $HealthComponent as HealthComponent
 	if hp:
 		hp.reset_to_max()
-	_spectate_target = null
-	# Reposition to a spawn: without it, a fall-death in the ocean would instantly re-trigger the fall check.
+	if _camera_component:
+		_camera_component._spectate_target = null
 	_respawn_at_spawn()
 	if not _is_local_authority():
 		return
 	player_state = PlayerState.ALIVE
-	_spectate_yaw = 0.0
-	_spectate_pitch = 0.0
+	if _camera_component:
+		_camera_component._spectate_yaw = 0.0
+		_camera_component._spectate_pitch = 0.0
 	camera.current = true
 	spectate_cam_camera.current = false
 	set_process_unhandled_input(true)
-	if is_instance_valid(_interact_prompt):
-		_interact_prompt.visible = true
+	if _interaction_component:
+		_interaction_component.set_prompt_visibility(true)
 
 
 func _setup_authority_from_name() -> void:
@@ -1146,71 +575,30 @@ func _respawn_at_spawn() -> void:
 
 
 func _check_fell_off_island() -> void:
-	if player_state != PlayerState.ALIVE:
-		return
-	if not _is_local_authority():
-		return
-	if global_position.y < FALL_DEATH_Y:
-		if _fell_off_island_reported:
-			return
-		_fell_off_island_reported = true
-		if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-			report_fell_off_island.rpc(global_position)
-		else:
-			_apply_fall_death(global_position)
-	elif global_position.y < WATER_SURFACE_Y:
-		if _entered_water_reported:
-			_water_report_retry += 1
-			if _water_report_retry < 15:
-				return
-			_water_report_retry = 0
-		else:
-			_entered_water_reported = true
-		if multiplayer.has_multiplayer_peer():
-			if not multiplayer.is_server():
-				report_entered_water.rpc(global_position)
-			else:
-				_apply_enter_water(global_position)
-		else:
-			_apply_enter_water(global_position)
+	if _movement_component:
+		_movement_component._check_fell_off_island()
 
 
-# authority, not any_peer: blocks one peer remotely killing another player's node.
-# _fell_position is owner hint (trusted when server transform is stale; RPC is authority-gated to owner only)
 @rpc("authority", "reliable", "call_remote")
 func report_fell_off_island(_fell_position: Vector3) -> void:
-	_apply_fall_death(_fell_position)
+	if _net_sync:
+		_net_sync.report_fell_off_island(_fell_position)
 
 
 func _apply_fall_death(_fell_position: Vector3) -> void:
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		return
-	var server_below := global_position.y < FALL_DEATH_Y
-	var client_below := _fell_position.y < FALL_DEATH_Y
-	if not (server_below or client_below):
-		return
-	if player_state != PlayerState.ALIVE:
-		return
-	if _health_component:
-		_health_component.take_damage(_health_component.max_health)
+	if _movement_component:
+		_movement_component._apply_fall_death(_fell_position)
 
 
-# _fell_position is owner hint (trusted when server transform is stale; RPC is authority-gated to owner only)
 @rpc("authority", "reliable", "call_remote")
 func report_entered_water(_fell_position: Vector3) -> void:
-	_apply_enter_water(_fell_position)
+	if _net_sync:
+		_net_sync.report_entered_water(_fell_position)
 
 
 func _apply_enter_water(_fell_position: Vector3) -> void:
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		return
-	var server_in_water := global_position.y < WATER_SURFACE_Y and global_position.y >= FALL_DEATH_Y
-	var client_in_water := _fell_position.y < WATER_SURFACE_Y and _fell_position.y >= FALL_DEATH_Y
-	if not (server_in_water or client_in_water):
-		return
-	if player_state != PlayerState.ALIVE:
-		return
-	_enter_floating()
+	if _movement_component:
+		_movement_component._apply_enter_water(_fell_position)
 
 
 func _enter_floating() -> void:
@@ -1218,66 +606,49 @@ func _enter_floating() -> void:
 		return
 	if is_slapped:
 		_clear_slap()
-	_entered_water_reported = true
-	drop_carried_fish()
-	holding_rock = false
-	_hide_held_rock_remote()
-	if multiplayer.has_multiplayer_peer() and _is_local_authority():
-		sync_holding_rock.rpc(false)
-	clear_holding_shark_bait()
+	if _movement_component:
+		_movement_component._entered_water_reported = true
+	if _carry_component:
+		_carry_component.drop_carried_fish()
+		_carry_component.holding_rock = false
+		_carry_component.hide_held_rock_remote()
+		if multiplayer.has_multiplayer_peer() and _is_local_authority():
+			_carry_component.sync_holding_rock.rpc(false)
+		_carry_component.clear_holding_shark_bait()
 	fishing_mechanic.reset_for_restart()
 	if _sitting_heal:
 		_sitting_heal.reset()
 	player_state = PlayerState.FLOATING
-	_float_time = 0.0
-	_float_base_y = WATER_SURFACE_Y
+	if _movement_component:
+		_movement_component._float_time = 0.0
+		_movement_component._float_base_y = WATER_SURFACE_Y
 	linear_velocity = Vector3.ZERO
 	global_position.y = WATER_SURFACE_Y
 	set_physics_process(true)
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		_sync_floating_state.rpc()
+		if _net_sync:
+			_net_sync._sync_floating_state.rpc()
 
 
 func _process_floating(state: PhysicsDirectBodyState3D) -> void:
-	var delta := state.step
-	_float_time += delta
-	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
-		if _float_time >= float_timeout:
-			if _health_component:
-				_health_component.take_damage(_health_component.max_health)
-			return
-	var flat_pos := Vector2(state.transform.origin.x, state.transform.origin.z)
-	var center_2d := Vector2(MapConfig.MAP_CENTER.x, MapConfig.MAP_CENTER.z)
-	var dir := (flat_pos - center_2d)
-	if dir.length() < 0.001:
-		dir = Vector2(1.0, 0.0)
-	else:
-		dir = dir.normalized()
-	var drift := dir * float_drift_speed
-	state.linear_velocity = Vector3(drift.x, 0.0, drift.y)
-	var bob := _float_base_y + sin(_float_time * TAU * float_bob_frequency) * float_bob_amplitude
-	var t := state.transform
-	t.origin.y = bob
-	state.transform = t
-
-	_sync_tick += 1
-	if _sync_tick >= 2:
-		_sync_tick = 0
-		if multiplayer.has_multiplayer_peer() and _is_local_authority():
-			rpc("_sync_transform", global_position, rotation, head.rotation)
+	if _movement_component:
+		_movement_component._process_floating(state)
 
 
 func _get_slap_target() -> Player:
 	return _slap_component._get_slap_target() if _slap_component else null
 
 
+func try_fish_slap() -> bool:
+	return _slap_component._try_fish_slap() if (_slap_component and is_instance_valid(_slap_component)) else false
+
+
 func _try_fish_slap() -> bool:
-	return _slap_component._try_fish_slap() if _slap_component else false
+	return try_fish_slap()
 
 
 func _find_player_by_id(id: int) -> Player:
 	return _slap_component._find_player_by_id(id) if _slap_component else null
-
 
 
 func apply_slap(duration: float = -1.0) -> void:
@@ -1320,8 +691,8 @@ func _enable_player() -> void:
 		_voice_chat.set_process(true)
 		if not _voice_chat.yelling_state_changed.is_connected(_on_yelling_state_changed):
 			_voice_chat.yelling_state_changed.connect(_on_yelling_state_changed)
-	if is_instance_valid(_interact_prompt):
-		_interact_prompt.visible = true
+	if _interaction_component:
+		_interaction_component.set_prompt_visibility(true)
 
 
 func _disable_player() -> void:
@@ -1343,16 +714,18 @@ func _disable_player() -> void:
 		if _voice_chat.yelling_state_changed.is_connected(_on_yelling_state_changed):
 			_voice_chat.yelling_state_changed.disconnect(_on_yelling_state_changed)
 	fishing_mechanic.is_local_render = false
-	if is_instance_valid(_interact_prompt):
-		_interact_prompt.visible = false
+	if _interaction_component:
+		_interaction_component.set_prompt_visibility(false)
 
 
 func _on_reel_success(_personal_count: int) -> void:
 	start_carrying()
 
+
 func _on_escape_launch(direction: Vector3, strength: float) -> void:
-	_pending_launch = direction * strength
-	_pending_launch.y += launch_vertical_boost
+	if _movement_component:
+		_movement_component._pending_launch = direction * strength
+		_movement_component._pending_launch.y += launch_vertical_boost
 
 
 func _on_escape_telegraph_changed(intensity: float) -> void:
@@ -1362,66 +735,61 @@ func _on_escape_telegraph_changed(intensity: float) -> void:
 
 
 func _on_shop_toggled(is_open: bool) -> void:
-	_is_shop_open = is_open
-	_update_prompt_visibility()
-	_update_rock_prompt_visibility()
+	if _interaction_component:
+		_interaction_component.on_shop_toggled(is_open)
 
 
 func _on_health_changed(old: int, new: int) -> void:
-	if is_carrying and new < old:
-		drop_carried_fish()
-	if holding_shark_bait and new < old:
-		clear_holding_shark_bait()
+	if _carry_component and _carry_component.is_carrying and new < old:
+		_carry_component.drop_carried_fish()
+	if _carry_component and _carry_component.holding_shark_bait and new < old:
+		_carry_component.clear_holding_shark_bait()
+
+
+func refresh_prompts() -> void:
+	if _interaction_component:
+		_interaction_component.refresh_prompts()
+
+
+func _update_prompt_visibility(interactable = null) -> void:
+	if _interaction_component and is_instance_valid(_interaction_component):
+		_interaction_component._update_prompt_visibility(interactable)
 
 
 func start_carrying() -> void:
-	is_carrying = true
-	_show_held_fish_remote()
-	if multiplayer.has_multiplayer_peer():
-		sync_carrying.rpc(true)
-	_update_prompt_visibility()
+	if _carry_component:
+		_carry_component.start_carrying()
 
 
 func deposit_carried_fish() -> void:
-	if not is_carrying:
-		return
-	if is_instance_valid(_quota_manager_ref) and (not multiplayer.has_multiplayer_peer() or multiplayer.is_server()):
-		_quota_manager_ref.report_catch(1)
-	elif is_instance_valid(_quota_manager_ref):
-		_quota_manager_ref.report_catch.rpc(1)
-	_clear_carry()
+	if _carry_component:
+		_carry_component.deposit_carried_fish()
 
 
 func drop_carried_fish() -> void:
-	if not is_carrying:
-		return
-	_clear_carry()
-
-
-func _clear_carry() -> void:
-	is_carrying = false
-	_hide_held_fish_remote()
-	if multiplayer.has_multiplayer_peer():
-		sync_carrying.rpc(false)
-	_update_prompt_visibility()
+	if _carry_component:
+		_carry_component.drop_carried_fish()
 
 
 func start_holding_shark_bait() -> void:
-	holding_shark_bait = true
-	_show_held_bait_remote()
-	if multiplayer.has_multiplayer_peer():
-		sync_holding_bait.rpc(true)
-	_update_rock_prompt_visibility()
-	_update_prompt_visibility()
+	if _carry_component:
+		_carry_component.start_holding_shark_bait()
 
 
 func clear_holding_shark_bait() -> void:
-	holding_shark_bait = false
-	_hide_held_bait_remote()
-	if multiplayer.has_multiplayer_peer():
-		sync_holding_bait.rpc(false)
-	_update_rock_prompt_visibility()
-	_update_prompt_visibility()
+	if _carry_component:
+		_carry_component.clear_holding_shark_bait()
+
+
+func _try_pickup_rock() -> bool:
+	if _carry_component:
+		return _carry_component.try_pickup_rock()
+	return false
+
+
+func _throw_rock() -> void:
+	if _carry_component:
+		_carry_component.throw_rock(launch_speed)
 
 
 func toggle_sitting() -> void:
@@ -1436,204 +804,111 @@ func toggle_sitting() -> void:
 func reset_for_restart() -> void:
 	if _slap_component and is_instance_valid(_slap_component):
 		_slap_component.reset_for_restart()
-	if is_carrying:
-		_clear_carry()
-	if holding_rock:
-		holding_rock = false
-		_hide_held_rock_remote()
-	if holding_shark_bait:
-		clear_holding_shark_bait()
+	if _carry_component:
+		if _carry_component.is_carrying:
+			_carry_component.clear_carry()
+		if _carry_component.holding_rock:
+			_carry_component.holding_rock = false
+			_carry_component.hide_held_rock_remote()
+		if _carry_component.holding_shark_bait:
+			_carry_component.clear_holding_shark_bait()
 	if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
 		assigned_fireplace.release_seat_for_player(self)
 	if _sitting_heal:
 		_sitting_heal.reset()
-	_fell_off_island_reported = false
-	_entered_water_reported = false
-	_water_report_retry = 0
-	_float_time = 0.0
+	if _movement_component:
+		_movement_component.reset_for_restart()
 	player_state = PlayerState.ALIVE
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		_sync_player_state.rpc(PlayerState.ALIVE)
+		if _net_sync:
+			_net_sync._sync_player_state.rpc(PlayerState.ALIVE)
 	if not _is_local_authority():
 		set_physics_process(false)
 
 
+var _held_fish: Node3D:
+	get: return _carry_component._held_fish if (_carry_component and is_instance_valid(_carry_component)) else null
+
+var _held_rock_mesh: MeshInstance3D:
+	get: return _carry_component._held_rock_mesh if (_carry_component and is_instance_valid(_carry_component)) else null
+
+var _held_bait_mesh: MeshInstance3D:
+	get: return _carry_component._held_bait_mesh if (_carry_component and is_instance_valid(_carry_component)) else null
+
+var _ray_hit_box: bool:
+	get: return (_interaction_component._ray_hit_box if (_interaction_component and is_instance_valid(_interaction_component)) else false) as bool
+	set(val):
+		if _interaction_component and is_instance_valid(_interaction_component):
+			_interaction_component._ray_hit_box = val
+
+var _ray_rock: bool:
+	get: return (_interaction_component._ray_rock if (_interaction_component and is_instance_valid(_interaction_component)) else false) as bool
+	set(val):
+		if _interaction_component and is_instance_valid(_interaction_component):
+			_interaction_component._ray_rock = val
+
+var _interact_prompt: CanvasLayer:
+	get: return _interaction_component._interact_prompt if (_interaction_component and is_instance_valid(_interaction_component)) else null
+
+
+func _show_held_rock_remote() -> void:
+	if _carry_component and is_instance_valid(_carry_component):
+		_carry_component._show_held_rock_remote()
+
+
+func _hide_held_rock_remote() -> void:
+	if _carry_component and is_instance_valid(_carry_component):
+		_carry_component._hide_held_rock_remote()
+
+
 func _on_yelling_state_changed(is_yelling: bool) -> void:
 	if multiplayer.has_multiplayer_peer():
-		sync_yelling.rpc(is_yelling)
+		sync_yelling(is_yelling)
 
 
 @rpc("any_peer", "unreliable", "call_remote")
 func sync_yelling(new_is_yelling: bool) -> void:
-	is_yelling = new_is_yelling
-
-
-@rpc("authority", "reliable", "call_remote")
-func sync_holding_rock(val: bool) -> void:
-	holding_rock = val
-	if val:
-		_show_held_rock_remote()
-	else:
-		_hide_held_rock_remote()
-	_update_rock_prompt_visibility()
-
-
-@rpc("any_peer", "reliable", "call_local")
-func sync_holding_bait(val: bool) -> void:
-	if multiplayer.has_multiplayer_peer():
-		var sender_id := multiplayer.get_remote_sender_id()
-		if sender_id != 0 and sender_id != 1 and sender_id != get_multiplayer_authority():
-			return
-	holding_shark_bait = val
-	if val:
-		_show_held_bait_remote()
-	else:
-		_hide_held_bait_remote()
-	_update_rock_prompt_visibility()
-	_update_prompt_visibility()
-
-
-@rpc("any_peer", "reliable", "call_remote")
-func sync_carrying(val: bool) -> void:
-	if multiplayer.has_multiplayer_peer():
-		var sender_id := multiplayer.get_remote_sender_id()
-		if sender_id != 0 and sender_id != get_multiplayer_authority():
-			return
-	is_carrying = val
-	if val:
-		_show_held_fish_remote()
-	else:
-		_hide_held_fish_remote()
-	_update_prompt_visibility()
-	_update_rock_prompt_visibility()
-
-
-func _update_rod_visibility() -> void:
-	if _rod_pivot:
-		_rod_pivot.visible = not is_carrying and not holding_rock and not holding_shark_bait
-
-
-func _show_held_fish_remote() -> void:
-	if is_instance_valid(_held_fish):
-		return
-	_update_rod_visibility()
-	_held_fish = MeshInstance3D.new()
-	var fish_mesh := BoxMesh.new()
-	fish_mesh.size = Vector3(0.3, 0.1, 0.5)
-	_held_fish.mesh = fish_mesh
-	var fish_mat := ORMMaterial3D.new()
-	fish_mat.albedo_color = Color(1.0, 0.5, 0.0)
-	fish_mat.shading_mode = ORMMaterial3D.SHADING_MODE_UNSHADED
-	_held_fish.material_override = fish_mat
-	_held_fish.position = Vector3(0, -0.1, -0.5)
-	head.add_child(_held_fish)
-
-
-func _hide_held_fish_remote() -> void:
-	if is_instance_valid(_held_fish):
-		_held_fish.queue_free()
-		_held_fish = null
-	_update_rod_visibility()
-
-
-func _show_held_rock_remote() -> void:
-	if is_instance_valid(_held_rock_mesh):
-		return
-	_update_rod_visibility()
-	_held_rock_mesh = MeshInstance3D.new()
-	var rock_mesh := BoxMesh.new()
-	rock_mesh.size = Vector3(0.25, 0.15, 0.25)
-	_held_rock_mesh.mesh = rock_mesh
-	var rock_mat := StandardMaterial3D.new()
-	rock_mat.albedo_color = Color(0.5, 0.5, 0.5)
-	rock_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_held_rock_mesh.material_override = rock_mat
-	_held_rock_mesh.position = Vector3(0, -0.1, -0.5)
-	head.add_child(_held_rock_mesh)
-
-
-func _hide_held_rock_remote() -> void:
-	if is_instance_valid(_held_rock_mesh):
-		_held_rock_mesh.queue_free()
-		_held_rock_mesh = null
-	_update_rod_visibility()
-
-
-func _show_held_bait_remote() -> void:
-	if is_instance_valid(_held_bait_mesh):
-		return
-	_update_rod_visibility()
-	_held_bait_mesh = MeshInstance3D.new()
-	var bait_mesh := BoxMesh.new()
-	bait_mesh.size = Vector3(0.3, 0.15, 0.25)
-	_held_bait_mesh.mesh = bait_mesh
-	var bait_mat := StandardMaterial3D.new()
-	bait_mat.albedo_color = Color(0.9, 0.2, 0.2)
-	bait_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_held_bait_mesh.material_override = bait_mat
-	_held_bait_mesh.position = Vector3(0, -0.1, -0.5)
-	head.add_child(_held_bait_mesh)
-
-
-func _hide_held_bait_remote() -> void:
-	if is_instance_valid(_held_bait_mesh):
-		_held_bait_mesh.queue_free()
-		_held_bait_mesh = null
-	_update_rod_visibility()
+	if _net_sync:
+		_net_sync.sync_yelling(new_is_yelling)
 
 
 @rpc("authority", "unreliable", "call_remote")
 func _sync_transform(pos: Vector3, rot: Vector3, head_rot: Vector3) -> void:
-	global_position = pos
-	rotation = rot
-	head.rotation = head_rot
+	if _net_sync:
+		_net_sync._sync_transform(pos, rot, head_rot)
 
 
 @rpc("authority", "reliable", "call_remote")
 func _sync_fishing_state(state: int) -> void:
-	fishing_mechanic.current_state = state
+	if _net_sync:
+		_net_sync._sync_fishing_state(state)
 
 
 @rpc("authority", "reliable", "call_remote")
 func _sync_cast_target(pos: Vector3) -> void:
-	fishing_mechanic.cast_target_position = pos
+	if _net_sync:
+		_net_sync._sync_cast_target(pos)
 
 
 @rpc("authority", "reliable", "call_remote")
 func _sync_flight_duration(dur: float) -> void:
-	fishing_mechanic._current_flight_duration = dur
+	if _net_sync:
+		_net_sync._sync_flight_duration(dur)
 
 
 @rpc("authority", "reliable", "call_remote")
 func _sync_flight_start(pos: Vector3) -> void:
-	fishing_mechanic._flight_start_position = pos
+	if _net_sync:
+		_net_sync._sync_flight_start(pos)
 
 
 @rpc("any_peer", "reliable", "call_remote")
 func _sync_floating_state() -> void:
-	if multiplayer.has_multiplayer_peer():
-		if multiplayer.is_server():
-			return
-		if multiplayer.get_remote_sender_id() != 1:
-			return
-	_enter_floating()
+	if _net_sync:
+		_net_sync._sync_floating_state()
 
 
 @rpc("any_peer", "reliable", "call_remote")
 func _sync_player_state(state: int) -> void:
-	if multiplayer.has_multiplayer_peer():
-		if multiplayer.is_server():
-			return
-		if multiplayer.get_remote_sender_id() != 1:
-			return
-	if state == PlayerState.FLOATING:
-		_water_report_retry = 0
-		_enter_floating()
-	elif state == PlayerState.ALIVE:
-		player_state = PlayerState.ALIVE
-		_entered_water_reported = false
-		_water_report_retry = 0
-		_fell_off_island_reported = false
-		_float_time = 0.0
-	elif state == PlayerState.SPECTATE:
-		player_state = PlayerState.SPECTATE
+	if _net_sync:
+		_net_sync._sync_player_state(state)
