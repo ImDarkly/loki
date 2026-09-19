@@ -56,6 +56,26 @@ func _build_player(node_name: String = "", parent: Node = null) -> Player:
 	slap_component.name = "SlapComponent"
 	player_node.add_child(slap_component)
 
+	var carry_component := CarryComponent.new()
+	carry_component.name = "CarryComponent"
+	player_node.add_child(carry_component)
+
+	var interaction_component := InteractionComponent.new()
+	interaction_component.name = "InteractionComponent"
+	player_node.add_child(interaction_component)
+
+	var movement_component := MovementComponent.new()
+	movement_component.name = "MovementComponent"
+	player_node.add_child(movement_component)
+
+	var camera_component := CameraComponent.new()
+	camera_component.name = "CameraComponent"
+	player_node.add_child(camera_component)
+
+	var net_sync := NetworkSyncComponent.new()
+	net_sync.name = "NetworkSyncComponent"
+	player_node.add_child(net_sync)
+
 	var spectate_camera := Node3D.new()
 	spectate_camera.name = "SpectateCamera"
 	player_node.add_child(spectate_camera)
@@ -266,7 +286,7 @@ func test_scroll_spikes_pull_higher_than_normal() -> void:
 	player.fishing_mechanic._fight_target = 99.0
 
 	player.linear_velocity = Vector3.ZERO
-	player._pull_spike_timer = 0.0
+	player._movement_component._pull_spike_timer = 0.0
 
 	Input.action_press("reel_fight")
 	await get_tree().physics_frame
@@ -286,7 +306,7 @@ func test_pull_spike_decays_after_linger() -> void:
 	player.fishing_mechanic._fight_initial_distance = 10.0
 
 	player.linear_velocity = Vector3.ZERO
-	player._pull_spike_timer = 0.3
+	player._movement_component._pull_spike_timer = 0.3
 
 	await get_tree().physics_frame
 	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
@@ -1008,9 +1028,9 @@ func test_sitting_blocked_while_floating() -> void:
 
 func test_process_early_return_when_floating() -> void:
 	player.player_state = Player.PlayerState.FLOATING
-	player._bounce_pos = 1.5
+	player._camera_component._bounce_pos = 1.5
 	player._process(0.016)
-	assert_eq(player._bounce_pos, 1.5, "Process should return early without updating bounce position when floating")
+	assert_eq(player._camera_component._bounce_pos, 1.5, "Process should return early without updating bounce position when floating")
 
 
 func test_sync_floating_state_exists() -> void:
@@ -1473,26 +1493,26 @@ func test_physics_process_floating_server_timeout_peer() -> void:
 
 
 func test_buffered_jump_cleared_on_sitting_and_fighting() -> void:
-	player._jump_requested = true
-	player._jump_buffer_t = 0.1
+	player._movement_component._jump_requested = true
+	player._movement_component._jump_buffer_t = 0.1
 	player._sitting_heal.set_sitting(true)
 	await get_tree().physics_frame
 	var state: PhysicsDirectBodyState3D = PhysicsServer3D.body_get_direct_state(player.get_rid())
 	if state:
 		player._integrate_forces(state)
-	assert_false(player._jump_requested, "_jump_requested should be cleared at entry to sitting")
-	assert_eq(player._jump_buffer_t, -999.0, "_jump_buffer_t should be cleared at entry to sitting")
+	assert_false(player._movement_component._jump_requested, "_jump_requested should be cleared at entry to sitting")
+	assert_eq(player._movement_component._jump_buffer_t, -999.0, "_jump_buffer_t should be cleared at entry to sitting")
 	player._sitting_heal.set_sitting(false)
 
-	player._jump_requested = true
-	player._jump_buffer_t = 0.1
+	player._movement_component._jump_requested = true
+	player._movement_component._jump_buffer_t = 0.1
 	player.fishing_mechanic._is_fighting = true
 	await get_tree().physics_frame
 	state = PhysicsServer3D.body_get_direct_state(player.get_rid())
 	if state:
 		player._integrate_forces(state)
-	assert_false(player._jump_requested, "_jump_requested should be cleared at entry to fighting")
-	assert_eq(player._jump_buffer_t, -999.0, "_jump_buffer_t should be cleared at entry to fighting")
+	assert_false(player._movement_component._jump_requested, "_jump_requested should be cleared at entry to fighting")
+	assert_eq(player._movement_component._jump_buffer_t, -999.0, "_jump_buffer_t should be cleared at entry to fighting")
 	player.fishing_mechanic._is_fighting = false
 
 
