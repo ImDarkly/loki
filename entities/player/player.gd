@@ -178,6 +178,48 @@ var launch_vertical_boost: float:
 	get: return _movement_component.launch_vertical_boost if _movement_component else 2.0
 	set(val): if _movement_component: _movement_component.launch_vertical_boost = val
 
+const PLAYERS_LAYER: int = 1 << 1
+const FALL_DEATH_Y: float = -3.0
+const WATER_SURFACE_Y: float = -0.5
+const INTERACTABLE_LAYER: int = 1 << 5
+const GROUND_BRAKE_RATE: float = 60.0
+const AIR_DRAG_RATE: float = 10.0
+const STOP_SNAP_THRESHOLD: float = 0.05
+const DEADZONE: float = 0.15
+const UP = Vector3.UP
+
+var _float_time: float:
+	get: return _movement_component._float_time if _movement_component else 0.0
+	set(val): if _movement_component: _movement_component._float_time = val
+
+var _float_base_y: float:
+	get: return _movement_component._float_base_y if _movement_component else -0.5
+	set(val): if _movement_component: _movement_component._float_base_y = val
+
+var _fell_off_island_reported: bool:
+	get: return _movement_component._fell_off_island_reported if _movement_component else false
+	set(val): if _movement_component: _movement_component._fell_off_island_reported = val
+
+var _entered_water_reported: bool:
+	get: return _movement_component._entered_water_reported if _movement_component else false
+	set(val): if _movement_component: _movement_component._entered_water_reported = val
+
+var _water_report_retry: int:
+	get: return _movement_component._water_report_retry if _movement_component else 0
+	set(val): if _movement_component: _movement_component._water_report_retry = val
+
+var _last_fish_state: int:
+	get: return _movement_component._last_fish_state if _movement_component else -1
+	set(val): if _movement_component: _movement_component._last_fish_state = val
+
+var _last_cast_target: Vector3:
+	get: return _movement_component._last_cast_target if _movement_component else Vector3.ZERO
+	set(val): if _movement_component: _movement_component._last_cast_target = val
+
+func _process_floating(state: PhysicsDirectBodyState3D) -> void:
+	if _movement_component:
+		_movement_component._process_floating(state)
+
 var is_carrying: bool:
 	get: return _carry_component.is_carrying if _carry_component else false
 	set(val):
@@ -243,10 +285,6 @@ var slap_component: SlapComponent:
 
 var gravity: float:
 	get: return _gravity
-
-const FALL_DEATH_Y: float = -3.0
-const WATER_SURFACE_Y: float = -0.5
-const UP = Vector3.UP
 
 
 func _ready() -> void:
@@ -550,11 +588,13 @@ func _setup_authority_from_name() -> void:
 	var owning_id := _parse_owner_id()
 	set_multiplayer_authority(owning_id)
 
-	spawn_index = 0
-	for i in game_manager.players.size():
-		if game_manager.players[i].id == owning_id:
-			spawn_index = i
-			break
+	var gm := get_node_or_null("/root/game_manager")
+	if gm:
+		spawn_index = 0
+		for i in gm.players.size():
+			if gm.players[i].id == owning_id:
+				spawn_index = i
+				break
 
 	_respawn_at_spawn()
 
@@ -628,11 +668,6 @@ func _enter_floating() -> void:
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		if _net_sync:
 			_net_sync._sync_floating_state.rpc()
-
-
-func _process_floating(state: PhysicsDirectBodyState3D) -> void:
-	if _movement_component:
-		_movement_component._process_floating(state)
 
 
 func _get_slap_target() -> Player:
@@ -863,11 +898,16 @@ func _hide_held_rock_remote() -> void:
 
 func _on_yelling_state_changed(is_yelling: bool) -> void:
 	if multiplayer.has_multiplayer_peer():
-		sync_yelling(is_yelling)
+		sync_yelling.rpc(is_yelling)
 
 
 @rpc("any_peer", "unreliable", "call_remote")
 func sync_yelling(new_is_yelling: bool) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var s := multiplayer.get_remote_sender_id()
+		var a := get_multiplayer_authority()
+		if s != 0 and s != 1 and s != a:
+			return
 	if _net_sync:
 		_net_sync.sync_yelling(new_is_yelling)
 

@@ -290,6 +290,11 @@ func _hide_held_bait_remote() -> void:
 func request_start_carrying() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var sender := multiplayer.get_remote_sender_id()
+		var auth := _player.get_multiplayer_authority() if _player and is_instance_valid(_player) else 1
+		if sender != 0 and sender != 1 and sender != auth:
+			return
 	is_carrying = true
 	_show_held_fish_remote()
 	if multiplayer.has_multiplayer_peer():
@@ -302,6 +307,11 @@ func request_start_carrying() -> void:
 func request_clear_carry() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var sender := multiplayer.get_remote_sender_id()
+		var auth := _player.get_multiplayer_authority() if _player and is_instance_valid(_player) else 1
+		if sender != 0 and sender != 1 and sender != auth:
+			return
 	is_carrying = false
 	_hide_held_fish_remote()
 	if multiplayer.has_multiplayer_peer():
@@ -314,10 +324,24 @@ func request_clear_carry() -> void:
 func request_pickup_rock(rock_index: int) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var sender := multiplayer.get_remote_sender_id()
+		var auth := _player.get_multiplayer_authority() if _player and is_instance_valid(_player) else 1
+		if sender != 0 and sender != 1 and sender != auth:
+			return
 	if is_carrying or holding_rock or holding_shark_bait:
 		return
+	if not _rock_manager_ref or rock_index < 0 or rock_index >= _rock_manager_ref.rocks.size():
+		return
+	var rock: Dictionary = _rock_manager_ref.rocks[rock_index]
+	if not rock or not rock.get("available", false):
+		return
+	if _player and _player.global_position.distance_to(rock["position"]) > _rock_pickup_range + 2.5:
+		return
 	if _rock_manager_ref:
-		_rock_manager_ref.request_pickup(rock_index)
+		var success: bool = _rock_manager_ref.request_pickup(rock_index)
+		if not success:
+			return
 	holding_rock = true
 	_show_held_rock_remote()
 	if multiplayer.has_multiplayer_peer():
@@ -330,6 +354,11 @@ func request_pickup_rock(rock_index: int) -> void:
 func request_clear_holding_rock() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var sender := multiplayer.get_remote_sender_id()
+		var auth := _player.get_multiplayer_authority() if _player and is_instance_valid(_player) else 1
+		if sender != 0 and sender != 1 and sender != auth:
+			return
 	holding_rock = false
 	_hide_held_rock_remote()
 	if multiplayer.has_multiplayer_peer():
@@ -342,6 +371,11 @@ func request_clear_holding_rock() -> void:
 func request_start_holding_shark_bait() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var sender := multiplayer.get_remote_sender_id()
+		var auth := _player.get_multiplayer_authority() if _player and is_instance_valid(_player) else 1
+		if sender != 0 and sender != 1 and sender != auth:
+			return
 	holding_shark_bait = true
 	_show_held_bait_remote()
 	if multiplayer.has_multiplayer_peer():
@@ -354,6 +388,11 @@ func request_start_holding_shark_bait() -> void:
 func request_clear_holding_shark_bait() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var sender := multiplayer.get_remote_sender_id()
+		var auth := _player.get_multiplayer_authority() if _player and is_instance_valid(_player) else 1
+		if sender != 0 and sender != 1 and sender != auth:
+			return
 	holding_shark_bait = false
 	_hide_held_bait_remote()
 	if multiplayer.has_multiplayer_peer():

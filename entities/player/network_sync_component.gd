@@ -47,10 +47,9 @@ func push_flight(dur: float, start: Vector3) -> void:
 			_sync_flight_start.rpc(start)
 
 
-@rpc("any_peer", "unreliable", "call_remote")
-func sync_yelling(new_is_yelling: bool) -> void:
+func sync_yelling(v: bool) -> void:
 	if _player:
-		_player.is_yelling = new_is_yelling
+		_player.is_yelling = v
 
 
 @rpc("authority", "unreliable", "call_remote")
@@ -121,11 +120,21 @@ func _sync_player_state(state: int) -> void:
 
 @rpc("any_peer", "reliable", "call_remote")
 func report_fell_off_island(_fell_position: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var s := multiplayer.get_remote_sender_id()
+		var a := _player.get_multiplayer_authority() if _player and is_instance_valid(_player) else 1
+		if s != 0 and s != 1 and s != a:
+			return
 	if _player and _player._movement_component:
 		_player._movement_component._apply_fall_death(_fell_position)
 
 
 @rpc("any_peer", "reliable", "call_remote")
 func report_entered_water(_fell_position: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var s := multiplayer.get_remote_sender_id()
+		var a := _player.get_multiplayer_authority() if _player and is_instance_valid(_player) else 1
+		if s != 0 and s != 1 and s != a:
+			return
 	if _player and _player._movement_component:
 		_player._movement_component._apply_enter_water(_fell_position)

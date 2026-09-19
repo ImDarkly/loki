@@ -15,6 +15,7 @@ func before_each() -> void:
 	_player.add_child(_component)
 	_component.setup(_player, _player.head, _player._rod_pivot)
 	await get_tree().process_frame
+	assert_not_null(_player._rod_pivot, "Player scene must provide RodPivot")
 
 
 func after_each() -> void:
@@ -99,41 +100,32 @@ func test_rpc_sync_holding_bait() -> void:
 
 
 func test_rod_visibility_updated_on_carry() -> void:
-	if _player._rod_pivot:
-		assert_true(_player._rod_pivot.visible, "rod should be visible when not carrying")
+	assert_true(_player._rod_pivot.visible, "rod should be visible when not carrying")
 	_component.start_carrying()
 	await get_tree().process_frame
-	if _player._rod_pivot:
-		assert_false(_player._rod_pivot.visible, "rod should be hidden when carrying")
+	assert_false(_player._rod_pivot.visible, "rod should be hidden when carrying")
 	_component._clear_carry()
 	await get_tree().process_frame
-	if _player._rod_pivot:
-		assert_true(_player._rod_pivot.visible, "rod should be visible again after clearing carry")
+	assert_true(_player._rod_pivot.visible, "rod should be visible again after clearing carry")
 
 
 func test_rod_visibility_updated_on_holding_rock() -> void:
-	if _player._rod_pivot:
-		assert_true(_player._rod_pivot.visible)
+	assert_true(_player._rod_pivot.visible)
 	_component.holding_rock = true
 	_component._show_held_rock_remote()
 	await get_tree().process_frame
-	if _player._rod_pivot:
-		assert_false(_player._rod_pivot.visible, "rod should be hidden when holding rock")
+	assert_false(_player._rod_pivot.visible, "rod should be hidden when holding rock")
 	_component.holding_rock = false
 	_component._hide_held_rock_remote()
 	await get_tree().process_frame
-	if _player._rod_pivot:
-		assert_true(_player._rod_pivot.visible)
+	assert_true(_player._rod_pivot.visible)
 
 
 func test_rod_visibility_updated_on_holding_bait() -> void:
-	if _player._rod_pivot:
-		assert_true(_player._rod_pivot.visible)
+	assert_true(_player._rod_pivot.visible)
 	_component.start_holding_shark_bait()
 	await get_tree().process_frame
-	if _player._rod_pivot:
-		assert_false(_player._rod_pivot.visible, "rod should be hidden when holding shark bait")
+	assert_false(_player._rod_pivot.visible, "rod should be hidden when holding shark bait")
 	_component.clear_holding_shark_bait()
 	await get_tree().process_frame
-	if _player._rod_pivot:
-		assert_true(_player._rod_pivot.visible)
+	assert_true(_player._rod_pivot.visible)

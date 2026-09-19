@@ -65,17 +65,18 @@ func set_rocks(new_rocks: Array) -> void:
 
 
 @rpc("any_peer", "reliable")
-func request_pickup(rock_index: int) -> void:
+func request_pickup(rock_index: int) -> bool:
 	if not _is_valid_index(rock_index):
-		return
+		return false
 	if not rocks[rock_index]["available"]:
-		return
+		return false
 
 	rocks[rock_index]["available"] = false
 	_cooldowns[rock_index] = respawn_delay
 	_start_respawn_timer_if_needed()
 	_update_rock_visuals()
 	_sync_state_to_clients()
+	return true
 
 
 func reset_for_restart() -> void:
