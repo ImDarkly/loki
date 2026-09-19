@@ -9,6 +9,11 @@
 [ext_resource type="PackedScene" path="res://systems/health/health_component.tscn" id="7_ok2f6"]
 [ext_resource type="Script" path="res://systems/health/sitting_heal_component.gd" id="8_sit"]
 [ext_resource type="Script" path="res://systems/slap/slap_component.gd" id="9_slap"]
+[ext_resource type="Script" path="res://entities/player/carry_component.gd" id="10_carry"]
+[ext_resource type="Script" path="res://entities/player/interaction_component.gd" id="11_interact"]
+[ext_resource type="Script" path="res://entities/player/movement_component.gd" id="12_movement"]
+[ext_resource type="Script" path="res://entities/player/camera_component.gd" id="13_camera"]
+[ext_resource type="Script" path="res://entities/player/network_sync_component.gd" id="14_net_sync"]
 
 [node name="Player" type="RigidBody3D" unique_id=997464534]
 collision_layer = 2
@@ -43,6 +48,21 @@ script = ExtResource("8_sit")
 [node name="SlapComponent" type="Node" parent="."]
 script = ExtResource("9_slap")
 
+[node name="CarryComponent" type="Node" parent="."]
+script = ExtResource("10_carry")
+
+[node name="InteractionComponent" type="Node" parent="."]
+script = ExtResource("11_interact")
+
+[node name="MovementComponent" type="Node" parent="."]
+script = ExtResource("12_movement")
+
+[node name="CameraComponent" type="Node" parent="."]
+script = ExtResource("13_camera")
+
+[node name="NetworkSyncComponent" type="Node" parent="."]
+script = ExtResource("14_net_sync")
+
 [node name="SpectateCamera" type="Node3D" parent="."]
 top_level = true
 
@@ -67,4 +87,3 @@ offset_right = 80.0
 offset_bottom = 50.0
 text = "HP: 5/5"
 horizontal_alignment = 1
-
