@@ -343,7 +343,8 @@ func _ready() -> void:
 	if not coin_mgr and get_tree() and get_tree().root:
 		coin_mgr = get_tree().root.find_child("CoinManager", true, false)
 	if coin_mgr and is_instance_valid(coin_mgr) and coin_mgr.has_method("is_shark_bait_owned") and coin_mgr.is_shark_bait_owned():
-		start_holding_shark_bait()
+		if not multiplayer.has_multiplayer_peer() or get_multiplayer_authority() == coin_mgr.shark_bait_buyer_id:
+			start_holding_shark_bait()
 
 	if multiplayer.has_multiplayer_peer():
 		multiplayer.peer_connected.connect(_on_peer_connected)
@@ -355,7 +356,7 @@ func _exit_tree() -> void:
 
 
 func _on_peer_connected(id: int) -> void:
-	if not multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	if _carry_component and _carry_component.holding_shark_bait:
 		_carry_component.sync_holding_bait.rpc_id(id, true)
