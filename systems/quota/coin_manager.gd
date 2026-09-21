@@ -10,6 +10,7 @@ signal shark_bait_updated()
 var coins: int = 0
 var fireplace_owned: bool = false
 var shark_bait_owned: bool = false
+var shark_bait_buyer_id: int = 0
 
 
 func _ready() -> void:
@@ -21,16 +22,35 @@ func _ready() -> void:
 		if sb:
 			shop_items.append(sb)
 
+	multiplayer.peer_connected.connect(_on_peer_connected)
+
 	var dbg = get_node_or_null("/root/DebugOverlay")
 	if dbg:
 		dbg.register_system(name, self)
+
+
+func _exit_tree() -> void:
+	if multiplayer.peer_connected.is_connected(_on_peer_connected):
+		multiplayer.peer_connected.disconnect(_on_peer_connected)
+
+
+func _on_peer_connected(id: int) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if shark_bait_owned:
+		_sync_shark_bait.rpc_id(id, true, shark_bait_buyer_id)
+	if fireplace_owned:
+		_sync_fireplace.rpc_id(id, true)
+	if coins != 0:
+		_sync_coins.rpc_id(id, coins)
 
 
 func get_debug_state() -> Dictionary:
 	return {
 		"coins": coins,
 		"fireplace_owned": fireplace_owned,
-		"shark_bait_owned": shark_bait_owned
+		"shark_bait_owned": shark_bait_owned,
+		"shark_bait_buyer_id": shark_bait_buyer_id
 	}
 
 
@@ -83,10 +103,14 @@ func _debug_toggle_fireplace() -> void:
 
 func _debug_toggle_shark_bait() -> void:
 	shark_bait_owned = not shark_bait_owned
-	if multiplayer.has_multiplayer_peer():
-		_sync_shark_bait.rpc(shark_bait_owned)
+	if shark_bait_owned:
+		shark_bait_buyer_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 0
 	else:
-		_sync_shark_bait(shark_bait_owned)
+		shark_bait_buyer_id = 0
+	if multiplayer.has_multiplayer_peer():
+		_sync_shark_bait.rpc(shark_bait_owned, shark_bait_buyer_id)
+	else:
+		_sync_shark_bait(shark_bait_owned, shark_bait_buyer_id)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -133,9 +157,11 @@ func request_buy_item(item_id: StringName) -> void:
 	else:
 		_sync_coins(coins)
 
-	var buyer_id := multiplayer.get_remote_sender_id()
-	if buyer_id == 0:
-		buyer_id = multiplayer.get_unique_id()
+	var buyer_id := 0
+	if multiplayer.has_multiplayer_peer():
+		buyer_id = multiplayer.get_remote_sender_id()
+		if buyer_id == 0:
+			buyer_id = multiplayer.get_unique_id()
 
 	match item.owned_flag_property:
 		&"fireplace_owned":
@@ -148,18 +174,20 @@ func request_buy_item(item_id: StringName) -> void:
 				_notify_fireplace_bought(buyer_id, _buyer_name(buyer_id))
 		&"shark_bait_owned":
 			shark_bait_owned = true
+			shark_bait_buyer_id = buyer_id
 			if multiplayer.has_multiplayer_peer():
-				_sync_shark_bait.rpc(true)
+				_sync_shark_bait.rpc(true, buyer_id)
 				_notify_shark_bait_bought.rpc(buyer_id, _buyer_name(buyer_id))
 			else:
-				_sync_shark_bait(true)
+				_sync_shark_bait(true, buyer_id)
 				_notify_shark_bait_bought(buyer_id, _buyer_name(buyer_id))
 			var buyer_player := _find_player_by_peer_id(buyer_id)
 			if buyer_player == null and not multiplayer.has_multiplayer_peer():
+				# TODO: consolidate player finding helpers across managers
 				var container := _get_players_container()
 				if container:
 					for child in container.get_children():
-						if child is Player or child.name.begins_with("Player_") or "holding_shark_bait" in child:
+						if child is Player or child.name.begins_with("Player_") or "is_carrying" in child or "holding_shark_bait" in child:
 							buyer_player = child
 							break
 			if buyer_player and buyer_player.has_method("start_holding_shark_bait"):
@@ -180,8 +208,12 @@ func _sync_fireplace(owned: bool) -> void:
 
 
 @rpc("authority", "call_local", "reliable")
-func _sync_shark_bait(owned: bool) -> void:
+func _sync_shark_bait(owned: bool, buyer_id_arg: int = 0) -> void:
 	shark_bait_owned = owned
+	if owned:
+		shark_bait_buyer_id = buyer_id_arg
+	else:
+		shark_bait_buyer_id = 0
 	shark_bait_updated.emit()
 
 
