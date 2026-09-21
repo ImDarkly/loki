@@ -133,9 +133,11 @@ func request_buy_item(item_id: StringName) -> void:
 	else:
 		_sync_coins(coins)
 
-	var buyer_id := multiplayer.get_remote_sender_id()
-	if buyer_id == 0:
-		buyer_id = multiplayer.get_unique_id()
+	var buyer_id := 0
+	if multiplayer.has_multiplayer_peer():
+		buyer_id = multiplayer.get_remote_sender_id()
+		if buyer_id == 0:
+			buyer_id = multiplayer.get_unique_id()
 
 	match item.owned_flag_property:
 		&"fireplace_owned":
@@ -155,11 +157,12 @@ func request_buy_item(item_id: StringName) -> void:
 				_sync_shark_bait(true)
 				_notify_shark_bait_bought(buyer_id, _buyer_name(buyer_id))
 			var buyer_player := _find_player_by_peer_id(buyer_id)
-			if buyer_player == null and not multiplayer.has_multiplayer_peer():
+			if buyer_player == null:
+				# TODO: consolidate player finding helpers across managers
 				var container := _get_players_container()
 				if container:
 					for child in container.get_children():
-						if child is Player or child.name.begins_with("Player_") or "holding_shark_bait" in child:
+						if child is Player or child.name.begins_with("Player_") or "is_carrying" in child or "holding_shark_bait" in child:
 							buyer_player = child
 							break
 			if buyer_player and buyer_player.has_method("start_holding_shark_bait"):

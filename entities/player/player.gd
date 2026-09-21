@@ -337,6 +337,14 @@ func _ready() -> void:
 	if gm:
 		gm.shop_toggled.connect(_on_shop_toggled)
 
+	var coin_mgr := get_node_or_null("/root/main/CoinManager")
+	if not coin_mgr:
+		coin_mgr = get_node_or_null("../CoinManager")
+	if not coin_mgr and get_tree() and get_tree().root:
+		coin_mgr = get_tree().root.find_child("CoinManager", true, false)
+	if coin_mgr and is_instance_valid(coin_mgr) and coin_mgr.has_method("is_shark_bait_owned") and coin_mgr.is_shark_bait_owned():
+		start_holding_shark_bait()
+
 	if multiplayer.has_multiplayer_peer():
 		multiplayer.peer_connected.connect(_on_peer_connected)
 
