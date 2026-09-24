@@ -631,7 +631,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				offset = offset.normalized() * max_cast_range
 				target.x = global_position.x + offset.x
 				target.z = global_position.z + offset.y
-			fishing_mechanic.cast(target, flight_time)
+			fishing_mechanic.try_cast_with_detection(target, flight_time)
 
 	if event.is_action_pressed("interact"):
 		if holding_shark_bait:

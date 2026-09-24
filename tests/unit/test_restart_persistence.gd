@@ -87,3 +87,19 @@ func test_shop_ui_close_emits_shop_toggled_false() -> void:
 	_round_manager._apply_restart()
 
 	assert_signal_emitted_with_parameters(gm, "shop_toggled", [false])
+
+
+func test_fishing_mechanic_reset_on_restart() -> void:
+	var player = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	_main.add_child(player)
+	await get_tree().process_frame
+	player.fishing_mechanic.hook_type = player.fishing_mechanic.HookType.PLAYER
+	player.fishing_mechanic.current_state = player.fishing_mechanic.State.BITE
+
+	player.fishing_mechanic.reset_for_restart()
+
+	assert_eq(player.fishing_mechanic.hook_type, player.fishing_mechanic.HookType.NONE, "Fishing mechanic hook_type should reset to NONE on restart")
+	assert_eq(player.fishing_mechanic.current_state, player.fishing_mechanic.State.IDLE, "Fishing mechanic state should reset to IDLE on restart")
+
+
+

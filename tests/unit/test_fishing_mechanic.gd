@@ -234,3 +234,83 @@ func test_arc_is_deterministic() -> void:
 	var pos1: Vector3 = start + v1 * t + 0.5 * g * t * t
 	var pos2: Vector3 = start + v2 * t + 0.5 * g * t * t
 	assert_eq(pos1, pos2, "Same inputs should produce identical intermediate positions")
+
+
+func test_max_tether_range_export() -> void:
+	assert_true("max_tether_range" in mechanic, "max_tether_range export should exist")
+	assert_eq(mechanic.max_tether_range, 25.0, "max_tether_range should default to 25.0")
+	mechanic.max_tether_range = 10.0
+	assert_eq(mechanic.max_tether_range, 10.0, "max_tether_range should be tunable")
+
+
+func test_hook_type_defaults_to_none() -> void:
+	assert_eq(mechanic.hook_type, mechanic.HookType.NONE, "hook_type should default to NONE")
+
+
+func test_detect_floating_player_null_when_not_player_parent() -> void:
+	assert_null(mechanic._detect_floating_player(), "Should return null when parent is not a Player")
+
+
+func test_try_cast_with_detection_fish_fallback() -> void:
+	watch_signals(mechanic)
+	mechanic.try_cast_with_detection(Vector3(10, 0, 0), 0.5)
+	assert_eq(mechanic.hook_type, mechanic.HookType.FISH, "Fallback should set hook_type to FISH")
+	assert_eq(mechanic.current_state, mechanic.State.CASTING, "Fallback should enter CASTING state")
+	assert_null(mechanic._tether_target, "_tether_target should be null for fish hook")
+
+
+func test_player_tether_detection_and_direct_hook() -> void:
+	var container = autofree(Node3D.new())
+	add_child(container)
+
+	var p1 = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	p1.name = "Player_1"
+	container.add_child(p1)
+	p1.global_position = Vector3(0, 0, 0)
+
+	var mech = p1.fishing_mechanic
+
+	var p2 = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	p2.name = "Player_2"
+	container.add_child(p2)
+	p2.global_position = Vector3(0, 0, -5.0)
+	p2.player_state = Player.PlayerState.ALIVE
+	await get_tree().process_frame
+	await get_tree().physics_frame
+
+	# When p2 is ALIVE, _detect_floating_player should return null
+	assert_null(mech._detect_floating_player(), "Should not detect ALIVE player")
+
+	# When p2 is beyond range
+	p2.global_position = Vector3(0, 0, -25.0)
+	p2.player_state = Player.PlayerState.FLOATING
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	assert_null(mech._detect_floating_player(), "Should not detect FLOATING player beyond range")
+
+	# Within range and FLOATING
+	p2.global_position = Vector3(0, 0, -5.0)
+	p2.player_state = Player.PlayerState.FLOATING
+	await get_tree().process_frame
+	await get_tree().physics_frame
+
+	var detected = mech._detect_floating_player()
+	assert_eq(detected, p2, "Should detect FLOATING player within range")
+
+	# Test direct hook via try_cast_with_detection
+	watch_signals(mech)
+	mech.try_cast_with_detection(Vector3(10, 0, 0), 0.5)
+
+	assert_eq(mech.hook_type, mech.HookType.PLAYER, "hook_type should be PLAYER on direct player hook")
+	assert_eq(mech._tether_target, p2, "_tether_target should be p2")
+	assert_eq(mech.current_state, mech.State.BITE, "Direct hook should skip arc and enter BITE state")
+	assert_signal_not_emitted(mech, "bite_occurred", "Should not emit bite_occurred signal on player direct hook")
+	assert_null(mech.get_node("FishManager").get_fish(), "Should not spawn fish on player direct hook")
+	assert_false(mech.bite_timer.time_left > 0, "bite_timer should be stopped")
+	assert_false(mech.casting_timer.time_left > 0, "casting_timer should be stopped")
+
+	# Test reset_for_restart clears hook_type and _tether_target
+	mech.reset_for_restart()
+	assert_eq(mech.hook_type, mech.HookType.NONE, "reset_for_restart should clear hook_type to NONE")
+	assert_null(mech._tether_target, "reset_for_restart should clear _tether_target")
+

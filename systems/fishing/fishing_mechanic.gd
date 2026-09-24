@@ -9,6 +9,12 @@ signal escape_launch(direction: Vector3, strength: float)
 signal escape_telegraph_changed(intensity: float)
 signal personal_catch_changed(count: int)
 
+@export var max_tether_range: float = 25.0
+
+enum HookType { NONE, FISH, PLAYER }
+var hook_type: HookType = HookType.NONE
+var _tether_target: Player = null
+
 @export var min_bite_delay: float = 3.0
 @export var max_bite_delay: float = 8.0
 
@@ -92,6 +98,8 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 	_snap_bobber_to_rod()
 	$FishManager.cleanup()
 	current_state = State.IDLE
+	hook_type = HookType.NONE
+	_tether_target = null
 	reel_failure.emit()
 
 
@@ -141,6 +149,8 @@ func _trigger_escape_launch() -> void:
 	_snap_bobber_to_rod()
 	$FishManager.cleanup()
 	current_state = State.IDLE
+	hook_type = HookType.NONE
+	_tether_target = null
 	reel_failure.emit()
 	escape_launch.emit(direction, escape_launch_strength)
 
@@ -164,6 +174,8 @@ func _complete_fight_catch() -> void:
 	_telegraph_intensity = 0.0
 	_stop_telegraph()
 	current_state = State.SUCCESS
+	hook_type = HookType.NONE
+	_tether_target = null
 	personal_catch_count += 1
 	personal_catch_changed.emit(personal_catch_count)
 	reel_success.emit(personal_catch_count)
@@ -265,11 +277,28 @@ func _get_bobber_position() -> Vector3:
 		return _flight_start_position \
 			+ _launch_velocity * elapsed \
 			+ 0.5 * Vector3(0, -gravity_strength, 0) * elapsed * elapsed
+	if hook_type == HookType.PLAYER and is_instance_valid(_tether_target):
+		return _tether_target.global_position
 	if current_state in [State.WAITING, State.BITE]:
 		return cast_target_position
 	if is_instance_valid(bobber_node):
 		return bobber_node.position
 	return cast_target_position
+
+
+func _find_floating_player_near(pos: Vector3) -> Player:
+	var root := get_tree().root.get_node_or_null("/root/main/Players")
+	if not root:
+		root = get_tree().root.find_child("Players", true, false)
+	if not root:
+		return null
+	for child in root.get_children():
+		if child is Player:
+			var player := child as Player
+			if is_instance_valid(player) and player.player_state == Player.PlayerState.FLOATING:
+				if player.global_position.distance_to(pos) < 1.5:
+					return player
+	return null
 
 
 func _handle_remote_transition(to_state: int) -> void:
@@ -285,17 +314,28 @@ func _handle_remote_transition(to_state: int) -> void:
 			_rebuild_line()
 
 		State.BITE:
+			var floating_player = _find_floating_player_near(cast_target_position)
+			if floating_player:
+				hook_type = HookType.PLAYER
+				_tether_target = floating_player
 			if is_instance_valid(bobber_node):
 				bobber_node.visible = true
+			else:
+				_create_bobber(cast_target_position)
+				_create_line_node()
+				_rebuild_line()
 			_line_twitch = 0.0
 			var tw := create_tween()
 			tw.tween_property(self, "_line_twitch", 0.3, 0.08).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 			tw.tween_property(self, "_line_twitch", 0.0, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-			$FishManager.spawn(cast_target_position)
+			if hook_type != HookType.PLAYER:
+				$FishManager.spawn(cast_target_position)
 
 		State.IDLE, State.SUCCESS:
 			_snap_bobber_to_rod()
 			$FishManager.cleanup()
+			hook_type = HookType.NONE
+			_tether_target = null
 
 
 func _process(delta: float) -> void:
@@ -305,6 +345,8 @@ func _process(delta: float) -> void:
 
 	match current_state:
 		State.CASTING, State.WAITING, State.BITE:
+			if hook_type == HookType.PLAYER and is_instance_valid(_tether_target):
+				cast_target_position = _tether_target.global_position
 			_update_bobber()
 			_rebuild_line()
 
@@ -340,6 +382,69 @@ func _process(delta: float) -> void:
 				_rebuild_line()
 
 
+func _detect_floating_player() -> Player:
+	# TODO(273-followup): max_tether_range is reserved for future pull slice.
+	var p := get_parent() as Player
+	if not p or not is_instance_valid(p):
+		return null
+	if not p.is_inside_tree():
+		return null
+	var space_state := p.get_world_3d().direct_space_state if p.has_method("get_world_3d") and p.get_world_3d() else null
+	if space_state == null:
+		return null
+	var cam := p.camera if (p and is_instance_valid(p) and "camera" in p and is_instance_valid(p.camera)) else null
+	if not cam or not is_instance_valid(cam):
+		return null
+	var origin := cam.global_position
+	var dir := -cam.global_transform.basis.z
+	var params := PhysicsRayQueryParameters3D.new()
+	params.from = origin
+	params.to = origin + dir * p.max_cast_range
+	params.collision_mask = Player.PLAYERS_LAYER
+	params.exclude = [p.get_rid()] if p.has_method("get_rid") else []
+	var result := space_state.intersect_ray(params)
+	var hit := result and result.has("collider")
+	if not hit:
+		return null
+	var collider := result.collider as Node3D
+	var current: Node = collider
+	while current != null and is_instance_valid(current):
+		if current is Player:
+			var player := current as Player
+			if player != p and is_instance_valid(player) and player.player_state == Player.PlayerState.FLOATING:
+				return player
+		current = current.get_parent()
+	return null
+
+
+func try_cast_with_detection(target: Vector3, flight_time: float) -> void:
+	if current_state in [State.BITE, State.SUCCESS]:
+		return
+	var floating_player := _detect_floating_player()
+	if floating_player and is_instance_valid(floating_player):
+		_report_zone_leave()
+		_active_zone_index = -1
+		_cleanup_all()
+		hook_type = HookType.PLAYER
+		_tether_target = floating_player
+		cast_target_position = floating_player.global_position
+		current_state = State.BITE
+		_bite_time = 0.0
+		_is_fighting = false
+		if bite_timer:
+			bite_timer.stop()
+		if casting_timer:
+			casting_timer.stop()
+		_create_bobber(floating_player.global_position)
+		_create_line_node()
+		_rebuild_line()
+		_play_bite_feedback()
+	else:
+		hook_type = HookType.FISH
+		_tether_target = null
+		cast(target, flight_time)
+
+
 func cast(target_position: Vector3, flight_time: float) -> void:
 	if current_state in [State.BITE, State.SUCCESS]:
 		return
@@ -349,6 +454,8 @@ func cast(target_position: Vector3, flight_time: float) -> void:
 	_cleanup_all()
 
 	current_state = State.CASTING
+	hook_type = HookType.FISH
+	_tether_target = null
 
 	cast_target_position = target_position
 	cast_target_position.y = 0.0
@@ -513,6 +620,8 @@ func reset_for_restart() -> void:
 	_cleanup_all()
 	bite_timer.stop()
 	current_state = State.IDLE
+	hook_type = HookType.NONE
+	_tether_target = null
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
