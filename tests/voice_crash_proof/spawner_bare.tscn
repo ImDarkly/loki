@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://spawner_bare_1"]
+
+[ext_resource type="Script" path="res://tests/voice_crash_proof/spawner_bare.gd" id="1_sb"]
+
+[node name="SpawnerBare" type="Node"]
+script = ExtResource("1_sb")

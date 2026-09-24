@@ -2,30 +2,8 @@
 
 **Version:** 1.0
 **Date:** July 7, 2026
-**Status:** SUPERSEDED — see notice below
+**Status:** APPROVED FOR DEVELOPMENT
 **Owner:** Solo Developer
-
----
-
-> **⚠️ Superseded (September 2026).** The project did **not** end up on the
-> ENet + godot-voip stack this document describes. The transport that
-> actually shipped and is running today is **EOSG (Epic Online Services)**:
-> `autoloads/network_manager.gd` uses `HPlatform` / `HAuth` / `HLobbies` /
-> `EOSGMultiplayerPeer` for game transport and lobbies, and
-> `systems/voice_chat/eos_voice_network.gd` uses `EOS.RTCAudio` for networked
-> voice — not `EOSGMultiplayerPeer`'s sibling ENet path or `godot-voip`.
-> `tests/eosg_spike/` is the (separate, experimental) spike that validated the
-> EOSG transport; it is not part of this plan.
->
-> This document is kept for historical context (the original problem
-> statement and the vertical-slice migration order were followed in spirit,
-> just onto a different transport). **Do not treat the "Decision" sections
-> below as ground truth for the current codebase** — if you need to know how
-> networking actually works today, read `autoloads/network_manager.gd` and
-> `systems/voice_chat/eos_voice_network.gd` directly, not this file.
->
-> If/when the EOSG approach is formally documented, this file should be
-> replaced rather than further amended.
 
 ---
 

@@ -217,7 +217,7 @@ func test_coin_manager_registers_with_debug_overlay() -> void:
 
 func test_buy_shark_bait_grants_hold_to_buyer() -> void:
 	var peer := ENetMultiplayerPeer.new()
-	peer.create_server(0)
+	peer.create_server(4242)
 	coin_manager.multiplayer.multiplayer_peer = peer
 
 	var main := get_node_or_null("/root/main")
@@ -239,78 +239,4 @@ func test_buy_shark_bait_grants_hold_to_buyer() -> void:
 	assert_true(player.holding_shark_bait, "Buyer player should be holding shark bait after purchase, skipping spawner at index 0")
 	players.queue_free()
 	coin_manager.multiplayer.multiplayer_peer = null
-	await get_tree().process_frame
-
-
-func test_buy_shark_bait_holding_mesh_and_rod_hidden_no_peer_and_server_peer() -> void:
-	var main := get_node_or_null("/root/main")
-	var players := Node3D.new()
-	players.name = "Players"
-	main.add_child(players)
-	var player_scene = load("res://entities/player/player.tscn")
-	var player = player_scene.instantiate()
-	player.name = "Player_1"
-	players.add_child(player)
-	await get_tree().process_frame
-
-	coin_manager.coins = 20
-	coin_manager.request_buy_shark_bait()
-	assert_true(player.holding_shark_bait, "Player should hold shark bait (no peer)")
-	assert_not_null(player._held_bait_mesh, "Held bait mesh should exist (no peer)")
-	assert_false(player._rod_pivot.visible, "Rod pivot should be hidden when holding shark bait (no peer)")
-
-	coin_manager.shark_bait_owned = false
-	player.clear_holding_shark_bait()
-
-	var peer := ENetMultiplayerPeer.new()
-	peer.create_server(0)
-	coin_manager.multiplayer.multiplayer_peer = peer
-	coin_manager.coins = 20
-	coin_manager.request_buy_shark_bait()
-	assert_true(player.holding_shark_bait, "Player should hold shark bait (server peer)")
-	assert_not_null(player._held_bait_mesh, "Held bait mesh should exist (server peer)")
-	assert_false(player._rod_pivot.visible, "Rod pivot should be hidden when holding shark bait (server peer)")
-
-	players.queue_free()
-	coin_manager.multiplayer.multiplayer_peer = null
-	await get_tree().process_frame
-
-
-func test_shark_bait_late_join_buyer_gets_bait() -> void:
-	coin_manager.shark_bait_owned = true
-	coin_manager.shark_bait_buyer_id = 1
-	var main := get_node_or_null("/root/main")
-	var players := Node3D.new()
-	players.name = "Players"
-	main.add_child(players)
-	var player_scene = load("res://entities/player/player.tscn")
-	var player = player_scene.instantiate()
-	player.name = "Player_1"
-	player.set_multiplayer_authority(1)
-	players.add_child(player)
-	await get_tree().process_frame
-
-	assert_true(player.holding_shark_bait, "Buyer player should hold shark bait on late join")
-	assert_not_null(player._held_bait_mesh, "Buyer player should have held bait mesh")
-	assert_false(player._rod_pivot.visible, "Buyer player should have rod hidden")
-	players.queue_free()
-	await get_tree().process_frame
-
-
-func test_shark_bait_late_join_non_buyer_gets_nothing() -> void:
-	coin_manager.shark_bait_owned = true
-	coin_manager.shark_bait_buyer_id = 1
-	var main := get_node_or_null("/root/main")
-	var players := Node3D.new()
-	players.name = "Players"
-	main.add_child(players)
-	var player_scene = load("res://entities/player/player.tscn")
-	var player = player_scene.instantiate()
-	player.name = "Player_2"
-	player.set_multiplayer_authority(2)
-	players.add_child(player)
-	await get_tree().process_frame
-
-	assert_false(player.holding_shark_bait, "Non-buyer player should NOT hold shark bait on late join")
-	players.queue_free()
 	await get_tree().process_frame

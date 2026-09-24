@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://silent_client_1"]
+
+[ext_resource type="Script" path="res://tests/voice_crash_proof/silent_client.gd" id="1_sc"]
+
+[node name="SilentClient" type="Node"]
+script = ExtResource("1_sc")

@@ -10,9 +10,6 @@ var _slap_time_left: float = 0.0
 var _slap_token: int = 0
 var _slap_cooldown_left: float = 0.0
 
-var slap_cooldown_left: float:
-	get: return _slap_cooldown_left
-
 var _player: Player = null
 var _camera: Camera3D = null
 var _players_container: Node = null
@@ -300,3 +297,24 @@ func _clear_slap() -> void:
 			p._update_prompt_visibility()
 		if p.has_method("_update_rock_prompt_visibility"):
 			p._update_rock_prompt_visibility()
+
+
+func _process_slapped(delta: float) -> void:
+	var p := _player if is_instance_valid(_player) else ((get_parent() as Player) if get_parent() is Player else null)
+	if not p or not is_instance_valid(p):
+		return
+	p.velocity.x = 0.0
+	p.velocity.z = 0.0
+	if not p.is_on_floor():
+		var mult := p.fall_gravity_multiplier if p.velocity.y < 0 else 1.0
+		p.velocity.y -= p._gravity * mult * delta
+	else:
+		p.velocity.y = 0.0
+	p.move_and_slide()
+	p._check_fell_off_island()
+
+	p._sync_tick += 1
+	if p._sync_tick >= 2:
+		p._sync_tick = 0
+		if multiplayer.has_multiplayer_peer() and p._is_local_authority():
+			p.rpc("_sync_transform", p.global_position, p.rotation, p.head.rotation)
