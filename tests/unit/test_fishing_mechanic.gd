@@ -302,6 +302,7 @@ func test_player_tether_detection_and_direct_hook() -> void:
 	mech.try_cast_with_detection(Vector3(10, 0, 0), 0.5)
 
 	assert_eq(mech.hook_type, mech.HookType.PLAYER, "hook_type should be PLAYER on direct player hook")
+	assert_true(mech._is_fighting, "_is_fighting should be true on direct player hook")
 	assert_eq(mech._tether_target, p2, "_tether_target should be p2")
 	assert_eq(mech.current_state, mech.State.BITE, "Direct hook should skip arc and enter BITE state")
 	assert_signal_not_emitted(mech, "bite_occurred", "Should not emit bite_occurred signal on player direct hook")

@@ -24,10 +24,11 @@ file like `tests/unit/test_danger_manager.gd` before writing):
 - Write tests that would fail against the pre-change code — confirm this
   distinction explicitly, don't write trivially-true assertions.
 
-**Running** — after writing, run:
+**Running** — task-scoped only, never full suite. After writing, run only the test file(s) directly covering the changed system(s) via single-file filter:
 ```
-C:\Godot\Godot_v4.6.2-stable_win64.exe --headless --path . -s addons/gut/gut_cmdln.gd
+C:\Godot\Godot_v4.6.2-stable_win64.exe --headless --path . -s addons/gut/gut_cmdln.gd -gtest=res://tests/unit/test_<system>.gd
 ```
+(one run per touched system; add `test_restart_persistence.gd` only if restart implications). Do NOT run full suite; if >90s stop and report partial + which test hung.
 
 **Reporting** — back to the orchestrator:
 - Total run / passed / failed.
