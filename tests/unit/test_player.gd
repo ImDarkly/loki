@@ -35,7 +35,7 @@ func _build_player(node_name: String = "", parent: Node = null) -> Player:
 	player_node.add_child(body_mesh)
 
 	var fishing_scene = load("res://systems/fishing/fishing_mechanic.tscn")
-	var fishing_mechanic = autofree(fishing_scene.instantiate())
+	var fishing_mechanic = fishing_scene.instantiate()
 	fishing_mechanic.name = "FishingMechanic"
 	player_node.add_child(fishing_mechanic)
 
@@ -1173,7 +1173,7 @@ func test_strict_input_lock_when_floating() -> void:
 		assert_eq(player.velocity.x, 0.0, "Input lock ensures no movement velocity while floating")
 
 
-func test_float_drift_outward_and_bob_sinusoid() -> void:
+func test_float_freeze_and_bob_sinusoid() -> void:
 	player.player_state = Player.PlayerState.FLOATING
 	player.global_position = Vector3(5, -0.5, 5)
 	player._float_time = 0.0
@@ -1183,7 +1183,8 @@ func test_float_drift_outward_and_bob_sinusoid() -> void:
 
 	assert_gt(player._float_time, 0.0, "_float_time should advance")
 	assert_true(abs(player.global_position.y - (-0.5)) <= player.float_bob_amplitude + 0.01, "y should bob around base y")
-	assert_true(player.velocity.x != 0.0 or player.velocity.z != 0.0, "should drift outward")
+	assert_eq(player.velocity.x, 0.0, "velocity x should be zero when floating")
+	assert_eq(player.velocity.z, 0.0, "velocity z should be zero when floating")
 
 
 func test_restart_clears_flags_camera_and_physics() -> void:
