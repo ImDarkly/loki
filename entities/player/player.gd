@@ -28,7 +28,6 @@ class_name Player extends CharacterBody3D
 @export var spawn_index: int = 0
 @export var launch_speed: float = 15.0
 @export var max_cast_range: float = 20.0
-@export var float_drift_speed: float = 1.0
 @export var float_bob_amplitude: float = 0.12
 @export var float_bob_frequency: float = 0.9
 @export var float_timeout: float = 30.0
@@ -1082,16 +1081,8 @@ func _process_floating(delta: float) -> void:
 			if _health_component:
 				_health_component.take_damage(_health_component.max_health)
 			return
-	var flat_pos := Vector2(global_position.x, global_position.z)
-	var center_2d := Vector2(MapConfig.MAP_CENTER.x, MapConfig.MAP_CENTER.z)
-	var dir := (flat_pos - center_2d)
-	if dir.length() < 0.001:
-		dir = Vector2(1.0, 0.0)
-	else:
-		dir = dir.normalized()
-	var drift := dir * float_drift_speed
-	velocity.x = drift.x
-	velocity.z = drift.y
+	velocity.x = 0.0
+	velocity.z = 0.0
 	velocity.y = 0.0
 	global_position.y = _float_base_y + sin(_float_time * TAU * float_bob_frequency) * float_bob_amplitude
 	move_and_slide()
@@ -1101,6 +1092,12 @@ func _process_floating(delta: float) -> void:
 		_sync_tick = 0
 		if multiplayer.has_multiplayer_peer() and _is_local_authority():
 			rpc("_sync_transform", global_position, rotation, head.rotation)
+
+	var fs: int = fishing_mechanic.current_state
+	if fs != _last_fish_state:
+		_last_fish_state = fs
+		if multiplayer.has_multiplayer_peer() and _is_local_authority():
+			rpc("_sync_fishing_state", fs)
 
 
 func _get_slap_target() -> Player:
