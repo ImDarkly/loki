@@ -315,3 +315,98 @@ func test_player_tether_detection_and_direct_hook() -> void:
 	assert_eq(mech.hook_type, mech.HookType.NONE, "reset_for_restart should clear hook_type to NONE")
 	assert_null(mech._tether_target, "reset_for_restart should clear _tether_target")
 
+
+func test_player_hook_skips_escape_beyond_threshold() -> void:
+	mechanic.current_state = 3
+	mechanic.hook_type = mechanic.HookType.PLAYER
+	mechanic._is_fighting = true
+	mechanic._fight_target = 99.0
+	mechanic._fight_progress = 0.0
+	mechanic._escape_timer = 0.0
+	mechanic.escape_time_threshold = 0.5
+	mechanic.cast_target_position = Vector3(10, 0, 0)
+
+	watch_signals(mechanic)
+	mechanic.advance_fight(0.6)
+
+	assert_eq(mechanic.current_state, 3, "PLAYER hook should remain in BITE past escape threshold")
+	assert_true(mechanic._is_fighting, "_is_fighting should stay true for PLAYER hook past escape threshold")
+	assert_signal_not_emitted(mechanic, "reel_failure")
+	assert_signal_not_emitted(mechanic, "escape_launch")
+
+
+func test_player_hook_catches_despite_elapsed_escape_time() -> void:
+	mechanic.current_state = 3
+	mechanic.hook_type = mechanic.HookType.PLAYER
+	mechanic._is_fighting = true
+	mechanic._fight_target = 2.0
+	mechanic._fight_progress = 1.9
+	mechanic._escape_timer = 0.4
+	mechanic.escape_time_threshold = 0.5
+	mechanic.cast_target_position = Vector3(10, 0, 0)
+
+	watch_signals(mechanic)
+	mechanic.advance_fight(0.2)
+
+	assert_eq(mechanic.current_state, 0, "PLAYER hook catch should settle to IDLE")
+	assert_eq(mechanic.hook_type, mechanic.HookType.NONE, "hook_type should clear after PLAYER catch")
+	assert_false(mechanic._is_fighting, "_is_fighting should be false after PLAYER catch")
+	assert_signal_not_emitted(mechanic, "reel_failure")
+	assert_signal_not_emitted(mechanic, "escape_launch")
+
+
+func test_request_hook_rejects_when_attacker_busy() -> void:
+	var container = autofree(Node3D.new())
+	add_child(container)
+	var p1 = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	p1.name = "Player_1"
+	container.add_child(p1)
+	await get_tree().process_frame
+	p1.player_state = Player.PlayerState.ALIVE
+	var mech = p1.fishing_mechanic
+	mech.current_state = mech.State.BITE
+	mech.hook_type = mech.HookType.FISH
+	mech._is_fighting = true
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+	watch_signals(mech)
+	mech.request_hook_player(2)
+	multiplayer.multiplayer_peer = saved_peer
+
+	assert_eq(mech.current_state, mech.State.IDLE, "Busy attacker should be rejected back to IDLE")
+	assert_eq(mech.hook_type, mech.HookType.NONE, "Busy attacker reject should clear hook_type")
+	assert_signal_emitted(mech, "reel_failure")
+
+
+func test_request_hook_rejects_when_attacker_not_alive() -> void:
+	var container = autofree(Node3D.new())
+	add_child(container)
+	var p1 = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	p1.name = "Player_1"
+	container.add_child(p1)
+	await get_tree().process_frame
+	p1.player_state = Player.PlayerState.FLOATING
+	var mech = p1.fishing_mechanic
+	mech.current_state = mech.State.IDLE
+	mech.hook_type = mech.HookType.NONE
+	mech._is_fighting = false
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+	watch_signals(mech)
+	mech.request_hook_player(2)
+	multiplayer.multiplayer_peer = saved_peer
+
+	assert_eq(mech.current_state, mech.State.IDLE, "Non-ALIVE attacker should stay IDLE after reject")
+	assert_eq(mech.hook_type, mech.HookType.NONE, "Non-ALIVE attacker reject should keep hook_type NONE")
+	assert_signal_emitted(mech, "reel_failure")
+
+
+func test_remote_transition_to_idle_clears_fighting() -> void:
+	mechanic._is_fighting = true
+	mechanic.hook_type = mechanic.HookType.PLAYER
+	mechanic._handle_remote_transition(mechanic.State.IDLE)
+	assert_false(mechanic._is_fighting, "Remote IDLE transition should clear _is_fighting")
+	assert_eq(mechanic.hook_type, mechanic.HookType.NONE, "Remote IDLE transition should clear hook_type")
+

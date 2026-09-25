@@ -109,11 +109,12 @@ func advance_fight(delta: float) -> void:
 		return
 	_fight_progress += delta
 
-	_escape_timer += delta
-	_update_telegraph()
-	if _escape_timer >= escape_time_threshold:
-		_trigger_escape_launch()
-		return
+	if hook_type != HookType.PLAYER:
+		_escape_timer += delta
+		_update_telegraph()
+		if _escape_timer >= escape_time_threshold:
+			_trigger_escape_launch()
+			return
 
 	if _fight_progress >= _fight_target:
 		_complete_fight_catch()
@@ -149,17 +150,20 @@ func _process_pull(delta: float) -> void:
 	var victim_id := _tether_target._parse_owner_id()
 	if multiplayer.has_multiplayer_peer():
 		if victim_id == 1:
-			_tether_target._apply_hook_pull(pull_vel)
+			_tether_target._do_apply_hook_pull(pull_vel)
 		else:
 			_tether_target._apply_hook_pull.rpc_id(victim_id, pull_vel)
 	else:
-		_tether_target._apply_hook_pull(pull_vel)
+		_tether_target._do_apply_hook_pull(pull_vel)
 
 
 @rpc("any_peer", "reliable", "call_remote")
 func request_hook_player(target_id: int) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
+	var reject_id := multiplayer.get_remote_sender_id() if multiplayer.has_multiplayer_peer() else 1
+	if reject_id == 0:
+		reject_id = multiplayer.get_unique_id()
 	var p := get_parent() as Player
 	if not p or not is_instance_valid(p):
 		return
@@ -172,17 +176,30 @@ func request_hook_player(target_id: int) -> void:
 	else:
 		attacker = p
 	if not attacker or not is_instance_valid(attacker):
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
 		return
 	if attacker != p:
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
 		return
 	if attacker.player_state != Player.PlayerState.ALIVE:
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
 		return
 	if current_state != State.IDLE or hook_type != HookType.NONE or _is_fighting:
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
 		return
 	var target := attacker._find_player_by_id(target_id)
-	var reject_id := multiplayer.get_remote_sender_id() if multiplayer.has_multiplayer_peer() else 1
-	if reject_id == 0:
-		reject_id = multiplayer.get_unique_id()
 	if not target or not is_instance_valid(target) or target.player_state != Player.PlayerState.FLOATING or target == attacker or (target.fishing_mechanic and target.fishing_mechanic.hook_type == HookType.PLAYER):
 		if multiplayer.has_multiplayer_peer():
 			p.rpc_id(reject_id, "_reject_hook_request")
@@ -475,6 +492,7 @@ func _handle_remote_transition(to_state: int) -> void:
 				$FishManager.spawn(cast_target_position)
 
 		State.IDLE, State.SUCCESS:
+			_is_fighting = false
 			_snap_bobber_to_rod()
 			$FishManager.cleanup()
 			hook_type = HookType.NONE

@@ -1530,6 +1530,10 @@ func _apply_hook_pull(pull_velocity: Vector3) -> void:
 			return
 		if multiplayer.get_remote_sender_id() != 1:
 			return
+	_do_apply_hook_pull(pull_velocity)
+
+
+func _do_apply_hook_pull(pull_velocity: Vector3) -> void:
 	if player_state != PlayerState.FLOATING:
 		return
 	var y := global_position.y
@@ -1555,7 +1559,8 @@ func _sync_fishing_state(state: int) -> void:
 	if multiplayer.has_multiplayer_peer():
 		if multiplayer.is_server():
 			return
-		if multiplayer.get_remote_sender_id() != 1:
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id != 1 and sender_id != get_multiplayer_authority():
 			return
 	fishing_mechanic.current_state = state
 
@@ -1565,7 +1570,8 @@ func _sync_cast_target(pos: Vector3) -> void:
 	if multiplayer.has_multiplayer_peer():
 		if multiplayer.is_server():
 			return
-		if multiplayer.get_remote_sender_id() != 1:
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id != 1 and sender_id != get_multiplayer_authority():
 			return
 	fishing_mechanic.cast_target_position = pos
 
