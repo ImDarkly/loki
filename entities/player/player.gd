@@ -380,6 +380,10 @@ func _process(delta: float) -> void:
 
 	is_yelling = _voice_chat.is_yelling if _voice_chat != null else false
 
+	var ct: Vector3 = Vector3.ZERO
+	var fd: float = 0.0
+	var fsp: Vector3 = Vector3.ZERO
+	var fs: int = 0
 	var speed := Vector2(velocity.x, velocity.z).length()
 	var t := Time.get_ticks_msec() / 1000.0
 
@@ -662,6 +666,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var ct: Vector3 = Vector3.ZERO
+	var fd: float = 0.0
+	var fsp: Vector3 = Vector3.ZERO
+	var fs: int = 0
 	if player_state == PlayerState.SPECTATE:
 		if global_position.y <= FALL_DEATH_Y:
 			velocity = Vector3.ZERO
@@ -678,16 +686,27 @@ func _physics_process(delta: float) -> void:
 			_sync_tick = 0
 			if multiplayer.has_multiplayer_peer():
 				rpc("_sync_transform", global_position, rotation, head.rotation)
-		var fs: int = fishing_mechanic.current_state
-		if fs != _last_fish_state:
-			_last_fish_state = fs
-			if multiplayer.has_multiplayer_peer():
-				rpc("_sync_fishing_state", fs)
-		var ct: Vector3 = fishing_mechanic.cast_target_position
+		# cast_target must precede state
+		ct = fishing_mechanic.cast_target_position
 		if ct != _last_cast_target:
 			_last_cast_target = ct
 			if multiplayer.has_multiplayer_peer():
 				rpc("_sync_cast_target", ct)
+		fd = fishing_mechanic._current_flight_duration
+		if fd != _last_flight_duration:
+			_last_flight_duration = fd
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_flight_duration", fd)
+		fsp = fishing_mechanic._flight_start_position
+		if fsp != _last_flight_start:
+			_last_flight_start = fsp
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_flight_start", fsp)
+		fs = fishing_mechanic.current_state
+		if fs != _last_fish_state:
+			_last_fish_state = fs
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_fishing_state", fs)
 		return
 
 	if player_state == PlayerState.FLOATING:
@@ -769,29 +788,30 @@ func _physics_process(delta: float) -> void:
 		if multiplayer.has_multiplayer_peer():
 			rpc("_sync_transform", global_position, rotation, head.rotation)
 
-	var fs: int = fishing_mechanic.current_state
-	if fs != _last_fish_state:
-		_last_fish_state = fs
-		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_fishing_state", fs)
-
-	var ct: Vector3 = fishing_mechanic.cast_target_position
+	# cast_target must precede state
+	ct = fishing_mechanic.cast_target_position
 	if ct != _last_cast_target:
 		_last_cast_target = ct
 		if multiplayer.has_multiplayer_peer():
 			rpc("_sync_cast_target", ct)
 
-	var fd: float = fishing_mechanic._current_flight_duration
+	fd = fishing_mechanic._current_flight_duration
 	if fd != _last_flight_duration:
 		_last_flight_duration = fd
 		if multiplayer.has_multiplayer_peer():
 			rpc("_sync_flight_duration", fd)
 
-	var fsp: Vector3 = fishing_mechanic._flight_start_position
+	fsp = fishing_mechanic._flight_start_position
 	if fsp != _last_flight_start:
 		_last_flight_start = fsp
 		if multiplayer.has_multiplayer_peer():
 			rpc("_sync_flight_start", fsp)
+
+	fs = fishing_mechanic.current_state
+	if fs != _last_fish_state:
+		_last_fish_state = fs
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_fishing_state", fs)
 
 
 func _process_sitting(delta: float) -> void:
@@ -809,6 +829,10 @@ func _process_sitting(delta: float) -> void:
 
 
 func _process_fight(delta: float) -> void:
+	var ct: Vector3 = Vector3.ZERO
+	var fd: float = 0.0
+	var fsp: Vector3 = Vector3.ZERO
+	var fs: int = 0
 	if not is_on_floor():
 		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
 		velocity.y -= _gravity * mult * delta
@@ -849,7 +873,26 @@ func _process_fight(delta: float) -> void:
 		if multiplayer.has_multiplayer_peer():
 			rpc("_sync_transform", global_position, rotation, head.rotation)
 
-	var fs: int = fishing_mechanic.current_state
+	# cast_target must precede state
+	ct = fishing_mechanic.cast_target_position
+	if ct != _last_cast_target:
+		_last_cast_target = ct
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_cast_target", ct)
+
+	fd = fishing_mechanic._current_flight_duration
+	if fd != _last_flight_duration:
+		_last_flight_duration = fd
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_flight_duration", fd)
+
+	fsp = fishing_mechanic._flight_start_position
+	if fsp != _last_flight_start:
+		_last_flight_start = fsp
+		if multiplayer.has_multiplayer_peer():
+			rpc("_sync_flight_start", fsp)
+
+	fs = fishing_mechanic.current_state
 	if fs != _last_fish_state:
 		_last_fish_state = fs
 		if multiplayer.has_multiplayer_peer():
@@ -1092,6 +1135,12 @@ func _process_floating(delta: float) -> void:
 		_sync_tick = 0
 		if multiplayer.has_multiplayer_peer() and _is_local_authority():
 			rpc("_sync_transform", global_position, rotation, head.rotation)
+
+	var ct: Vector3 = fishing_mechanic.cast_target_position
+	if ct != _last_cast_target:
+		_last_cast_target = ct
+		if multiplayer.has_multiplayer_peer() and _is_local_authority():
+			rpc("_sync_cast_target", ct)
 
 	var fs: int = fishing_mechanic.current_state
 	if fs != _last_fish_state:

@@ -169,6 +169,20 @@ func _stop_telegraph() -> void:
 
 
 func _complete_fight_catch() -> void:
+	if hook_type == HookType.PLAYER:
+		# TODO(274): inverted pull
+		_is_fighting = false
+		_escape_timer = 0.0
+		_telegraph_intensity = 0.0
+		_stop_telegraph()
+		_report_zone_leave()
+		_snap_bobber_to_rod()
+		$FishManager.cleanup()
+		current_state = State.IDLE
+		hook_type = HookType.NONE
+		_tether_target = null
+		return
+
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
@@ -277,9 +291,9 @@ func _get_bobber_position() -> Vector3:
 		return _flight_start_position \
 			+ _launch_velocity * elapsed \
 			+ 0.5 * Vector3(0, -gravity_strength, 0) * elapsed * elapsed
-	if hook_type == HookType.PLAYER and is_instance_valid(_tether_target):
-		return _tether_target.global_position
 	if current_state in [State.WAITING, State.BITE]:
+		if hook_type == HookType.PLAYER and is_instance_valid(_tether_target):
+			return _tether_target.global_position
 		return cast_target_position
 	if is_instance_valid(bobber_node):
 		return bobber_node.position
@@ -356,6 +370,8 @@ func _process(delta: float) -> void:
 					if _bite_time >= 1.0:
 						_report_zone_leave()
 						_snap_bobber_to_rod()
+						hook_type = HookType.NONE
+						_tether_target = null
 						current_state = State.IDLE
 						$FishManager.cleanup()
 						reel_failure.emit()
@@ -374,6 +390,8 @@ func _process(delta: float) -> void:
 				bite_timer.stop()
 				_report_zone_leave()
 				_snap_bobber_to_rod()
+				hook_type = HookType.NONE
+				_tether_target = null
 				current_state = State.IDLE
 
 		State.IDLE:
@@ -383,7 +401,7 @@ func _process(delta: float) -> void:
 
 
 func _detect_floating_player() -> Player:
-	# TODO(273-followup): max_tether_range is reserved for future pull slice.
+	# TODO(273-followup): max_tether_range is reserved for future pull slice. TODO(274): player-ID deferral.
 	var p := get_parent() as Player
 	if not p or not is_instance_valid(p):
 		return null

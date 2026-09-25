@@ -1,11 +1,9 @@
 ---
 description: Routes feature/bugfix work through plan -> architect -> implement -> review -> (audit) -> test, then stops for human review
 mode: primary
-model: opencode/muse-spark-1.2-contributor-free
-tools:
-  write: false
-  edit: false
-  bash: false
+model: opencode/muse-spark-1.3-contributor-free
+permission:
+  task: allow
 ---
 You are the orchestrator for the Chum! Godot project. You never edit files,
 write code, or run bash yourself — you only read, reason, and delegate via the
