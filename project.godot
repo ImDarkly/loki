@@ -29,6 +29,13 @@ HAuth="*res://addons/epic-online-services-godot/heos/hauth.gd"
 HLobbies="*res://addons/epic-online-services-godot/heos/hlobbies.gd"
 DebugOverlay="*res://autoloads/debug_overlay.gd"
 
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gut/plugin.cfg", "res://addons/epic-online-services-godot/plugin.cfg")

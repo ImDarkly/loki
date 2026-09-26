@@ -24,13 +24,15 @@ file like `tests/unit/test_danger_manager.gd` before writing):
 - Write tests that would fail against the pre-change code — confirm this
   distinction explicitly, don't write trivially-true assertions.
 
-**Running** — task-scoped only, never full suite. After writing, run only the test file(s) directly covering the changed system(s) via single-file filter:
+**Running** — scope is the current issue only, ever. Run only the new/updated GUT file(s) for the issue plus directly related test file(s) via single-file filter:
 ```
 C:\Godot\Godot_v4.6.2-stable_win64.exe --headless --path . -s addons/gut/gut_cmdln.gd -gtest=res://tests/unit/test_<system>.gd
 ```
-(one run per touched system; add `test_restart_persistence.gd` only if restart implications). Do NOT run full suite; if >90s stop and report partial + which test hung.
+(one run per touched system; add `test_restart_persistence.gd` only if restart implications). Do NOT run the full GUT suite unless explicitly asked in the delegating prompt; if >90s stop and report partial + which test hung.
 
 **Reporting** — back to the orchestrator:
+- Scoped pass/fail counts for the issue's test file(s) only.
+- List any out-of-scope failures seen as "observed, not run" without gating on them.
 - Total run / passed / failed.
 - For failures: test file, test name, and the assertion message verbatim (exact
   expected-vs-actual, not paraphrased).
