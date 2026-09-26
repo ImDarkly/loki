@@ -270,6 +270,7 @@ func test_player_tether_detection_and_direct_hook() -> void:
 	p1.name = "Player_1"
 	container.add_child(p1)
 	p1.global_position = Vector3(0, 0, 0)
+	(p1.get_node("SlapComponent") as SlapComponent)._players_container = container
 
 	var mech = p1.fishing_mechanic
 
@@ -278,6 +279,7 @@ func test_player_tether_detection_and_direct_hook() -> void:
 	container.add_child(p2)
 	p2.global_position = Vector3(0, 0, -5.0)
 	p2.player_state = Player.PlayerState.ALIVE
+	(p2.get_node("SlapComponent") as SlapComponent)._players_container = container
 	await get_tree().process_frame
 	await get_tree().physics_frame
 
@@ -455,6 +457,8 @@ func _spawn_hook_pair(target_pos: Vector3) -> Array:
 	target.player_state = Player.PlayerState.FLOATING
 	await get_tree().process_frame
 	await get_tree().physics_frame
+	(caster.get_node("SlapComponent") as SlapComponent)._players_container = container
+	(target.get_node("SlapComponent") as SlapComponent)._players_container = container
 	return [caster, target]
 
 
@@ -849,4 +853,144 @@ func test_hook_request_peer_round_trip() -> void:
 	server_root.queue_free()
 	client_root.queue_free()
 	multiplayer.multiplayer_peer = saved_peer
+
+
+func test_second_hook_rejected() -> void:
+	var container = autofree(Node3D.new())
+	add_child(container)
+	var caster_a = await _spawn_peer_player(container, "Player_1", Vector3(0, 0, 0), Player.PlayerState.ALIVE)
+	var caster_b = await _spawn_peer_player(container, "Player_3", Vector3(2, 0, 0), Player.PlayerState.ALIVE)
+	var victim = await _spawn_peer_player(container, "Player_2", Vector3(5, 0, 0), Player.PlayerState.FLOATING)
+
+	var mech_a = caster_a.fishing_mechanic
+	var mech_b = caster_b.fishing_mechanic
+	mech_a._cached_fishing_active = true
+	mech_b._cached_fishing_active = true
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+
+	mech_a.request_hook_player(2)
+	assert_eq(mech_a.hook_type, mech_a.HookType.PLAYER, "Caster A should hook victim")
+	assert_eq(victim.fishing_mechanic.hooked_by_caster_id, 1, "Victim should be reserved by caster 1")
+
+	mech_b.request_hook_player(2)
+	assert_eq(mech_b.hook_type, mech_b.HookType.NONE, "Caster B should be rejected")
+	assert_eq(victim.fishing_mechanic.hooked_by_caster_id, 1, "Victim reservation should remain with caster 1")
+
+	multiplayer.multiplayer_peer = saved_peer
+
+
+func test_rescue_clears_allows_rehook() -> void:
+	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER)
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	var caster_mech = caster.fishing_mechanic
+	caster_mech._cached_fishing_active = true
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+
+	caster_mech.request_hook_player(target._parse_owner_id())
+	assert_eq(target.fishing_mechanic.hooked_by_caster_id, caster._parse_owner_id(), "Target should be reserved")
+
+	caster_mech._physics_process(0.1)
+
+	assert_eq(target.fishing_mechanic.hooked_by_caster_id, 0, "Rescue should clear victim reservation (slot 0)")
+	assert_eq(caster_mech.hook_type, caster_mech.HookType.NONE, "Caster rod should be IDLE/NONE")
+
+	target.player_state = Player.PlayerState.FLOATING
+	target.global_position = Vector3(5, 0, 0)
+	await get_tree().process_frame
+	await get_tree().physics_frame
+
+	caster_mech.request_hook_player(target._parse_owner_id())
+	assert_eq(caster_mech.hook_type, caster_mech.HookType.PLAYER, "Fresh hook should be accepted after rescue cleared reservation")
+
+	multiplayer.multiplayer_peer = saved_peer
+
+
+func test_freed_victim_cleans_caster() -> void:
+	var pair = await _spawn_hook_pair(Vector3(5, 0, 0))
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	var caster_mech = caster.fishing_mechanic
+	caster_mech._cached_fishing_active = true
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+
+	watch_signals(caster_mech)
+	caster_mech.request_hook_player(target._parse_owner_id())
+
+	assert_eq(caster_mech.current_state, caster_mech.State.BITE)
+	assert_true(caster_mech._is_fighting)
+
+	target.queue_free()
+	await get_tree().process_frame
+
+	caster_mech._physics_process(0.1)
+
+	assert_eq(caster_mech.current_state, caster_mech.State.IDLE, "Invalid victim should return caster to IDLE")
+	assert_false(caster_mech._is_fighting, "Should not be stuck fighting")
+	assert_signal_emitted(caster_mech, "reel_failure")
+
+	multiplayer.multiplayer_peer = saved_peer
+
+
+func test_disconnect_clears() -> void:
+	var pair = await _spawn_hook_pair(Vector3(5, 0, 0))
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	var caster_mech = caster.fishing_mechanic
+	caster_mech._cached_fishing_active = true
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+
+	caster_mech.request_hook_player(target._parse_owner_id())
+
+	var target_id := target._parse_owner_id()
+	watch_signals(caster_mech)
+	caster_mech._on_peer_disconnected(target_id)
+
+	assert_eq(caster_mech.current_state, caster_mech.State.IDLE, "Victim disconnect should return caster to IDLE")
+	assert_signal_emitted(caster_mech, "reel_failure")
+
+	var container = autofree(Node3D.new())
+	add_child(container)
+	var victim_p = await _spawn_peer_player(container, "Player_2", Vector3(5, 0, 0), Player.PlayerState.FLOATING)
+	var victim_mech = victim_p.fishing_mechanic
+	victim_mech.hooked_by_caster_id = 1
+
+	watch_signals(victim_mech)
+	victim_mech._on_peer_disconnected(1)
+
+	assert_eq(victim_mech.hooked_by_caster_id, 0, "Reserver disconnect should clear victim slot (0)")
+	assert_signal_not_emitted(victim_mech, "reel_failure", "Victim-side clear should not emit reel_failure")
+
+	multiplayer.multiplayer_peer = saved_peer
+
+
+func test_direct_clear_regression() -> void:
+	var pair = await _spawn_hook_pair(Vector3(5, 0, 0))
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	var caster_mech = caster.fishing_mechanic
+	caster_mech._cached_fishing_active = true
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+
+	caster_mech.request_hook_player(target._parse_owner_id())
+	assert_eq(target.fishing_mechanic.hooked_by_caster_id, 1)
+
+	caster_mech._complete_fight_catch()
+
+	assert_eq(target.fishing_mechanic.hooked_by_caster_id, 0, "PLAYER catch-branch should release victim reservation slot")
+	assert_eq(caster_mech.current_state, caster_mech.State.IDLE)
+	assert_eq(caster_mech.hook_type, caster_mech.HookType.NONE)
+
+	multiplayer.multiplayer_peer = saved_peer
+
 
