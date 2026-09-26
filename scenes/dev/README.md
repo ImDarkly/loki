@@ -81,3 +81,27 @@
 **Full flow to watch:** Press **F5** → bird circles high (~10-15 sec) → dives to box → message “Seagull stole 1 fish!” + fish count drops by 1 → bird disappears → after ~5 sec it comes back.
 
 That’s the whole seagull, sped up for testing. Close the window when done — nothing changes in the real game.
+
+---
+
+## Rod Pull Test — Quick Guide (`dev_rod_pull_flow.tscn`)
+
+**What it does:** Shows the full rod-pull rescue story — the rescuer hooks a floating victim directly (no cast arc), the pull drags the victim toward the island, and crossing the shore revives them.
+
+**Prod values stay untouched:** `min_bite_delay` / `max_bite_delay` are `3.0` / `8.0` and `escape_time_threshold` is `1.8` in `systems/fishing/fishing_mechanic.gd`. This dev scene overrides them *in the dev script only* to `0.5` / `1.0` / `99.0` for fast testing (per Manual/Dev Testing convention — shorten in dev script, not `@export` defaults).
+
+**How to open and move:**
+1. Open Godot, in FileSystem go to `scenes/dev/dev_rod_pull_flow.tscn`
+2. Click **Play** (▶) at top right — no lobby, single instance, no peer.
+3. Click inside the game window to capture mouse, **W/A/S/D + Mouse** to look around (rescuer `Player_1` at `0,1,-2`, victim `Player_2` floating at `6,-0.5,-20`).
+
+**What you see:** Top-left text shows hook type (`NONE` / `FISH` / `PLAYER`), live tether distance, fight progress, victim float timer, and victim state (`ALIVE` / `FLOATING`).
+
+**Buttons & Controls:**
+- **F5** — Force hook the floating victim (`request_hook_player` — skips the arc, enters `BITE` with `PLAYER` hook; without scrolling, shows a static tether)
+- **Scroll Wheel Down (`reel_fight`)** — Trigger `notify_scroll` to activate `fighting_spike_pull` and reel in the victim
+- **F6** — Pop the tether (teleports the victim past `max_tether_range`, hook clears to `IDLE`)
+- **G** — Complete the rescue (moves the victim onto the island, victim becomes `ALIVE`)
+- **R** — Reset (clears the hook, victim back to floating at the start spot)
+
+**Full flow to watch:** Press **F5** → hook type flips to `PLAYER`, enters fight mode with static tether. Scroll wheel down (`reel_fight`) → spikes pull power, shrinking tether distance as the victim is dragged in. Victim crosses the shore → `ALIVE`, hook clears. Or press **F6** mid-pull → tether pops, victim stays `FLOATING`. Nothing changes in the real game.
