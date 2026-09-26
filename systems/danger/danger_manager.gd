@@ -5,6 +5,8 @@ enum State { INACTIVE, APPROACHING, ATTACKING, RETREATING, WAITING }
 signal fish_fled
 signal quota_penalty(amount: int)
 
+@export var respawn_interval_min: float = 45.0
+@export var respawn_interval_max: float = 90.0
 @export var initial_swim_speed: float = 3.0
 @export var attack_range: float = 2.0
 @export var repel_radius: float = 2.0

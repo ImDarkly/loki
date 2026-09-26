@@ -18,6 +18,7 @@ func _ready() -> void:
 	setup_ground()
 	setup_ground_collision()
 	setup_water()
+	_setup_danger_system()
 	_add_fps_counter()
 	_setup_moon_arc()
 
@@ -116,6 +117,10 @@ func setup_water() -> void:
 	water.material_override = _water_mat
 	water.position = Vector3(0, -0.5, MapConfig.MAP_CENTER.z)
 	add_child(water)
+
+
+func _setup_danger_system() -> void:
+	pass
 
 
 func _add_fps_counter() -> void:
