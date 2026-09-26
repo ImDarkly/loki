@@ -1358,6 +1358,63 @@ func test_sync_apply_slap_direct_call() -> void:
 	assert_true(player.is_slapped, "_sync_apply_slap direct call should apply slap state")
 
 
+func test_complete_water_rescue_restores_alive_and_clears_flags() -> void:
+	get_tree().get_multiplayer().multiplayer_peer = null
+	player.player_state = Player.PlayerState.FLOATING
+	player._float_time = 29.0
+	player._entered_water_reported = true
+	player._water_report_retry = 7
+	player._fell_off_island_reported = true
+
+	player.complete_water_rescue()
+
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Rescue should restore ALIVE")
+	assert_eq(player._float_time, 0.0, "Rescue should reset _float_time")
+	assert_false(player._entered_water_reported, "Rescue should clear entered water flag")
+	assert_eq(player._water_report_retry, 0, "Rescue should reset water retry counter")
+	assert_false(player._fell_off_island_reported, "Rescue should clear fall flag")
+
+
+func test_complete_water_rescue_noop_when_not_floating() -> void:
+	get_tree().get_multiplayer().multiplayer_peer = null
+	player.player_state = Player.PlayerState.ALIVE
+	player._float_time = 5.0
+
+	player.complete_water_rescue()
+
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Non-floating rescue should stay ALIVE")
+	assert_eq(player._float_time, 5.0, "Non-floating rescue should not touch _float_time")
+
+
+func test_complete_water_rescue_snaps_victim_onto_deck() -> void:
+	get_tree().get_multiplayer().multiplayer_peer = null
+	player.player_state = Player.PlayerState.FLOATING
+	player.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 0.5, 0, 0)
+	player.global_position.y = Player.WATER_SURFACE_Y - 0.01
+	player.velocity = Vector3(3.0, 0.0, 3.0)
+
+	player.complete_water_rescue()
+
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Rescue should restore ALIVE")
+	var flat := Vector2(player.global_position.x - MapConfig.MAP_CENTER.x, player.global_position.z - MapConfig.MAP_CENTER.z)
+	assert_true(flat.length() <= MapConfig.ISLAND_RADIUS - 0.4, "Rescued victim should land inside ISLAND_RADIUS - 0.4")
+	assert_true(player.global_position.y >= 0.0, "Rescued victim should be at or above deck level")
+	assert_eq(player.velocity, Vector3.ZERO, "Rescue snap should zero victim velocity")
+
+
+func test_rescued_victim_does_not_reenter_water() -> void:
+	get_tree().get_multiplayer().multiplayer_peer = null
+	player.player_state = Player.PlayerState.FLOATING
+	player.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 0.5, 0, 0)
+	player.global_position.y = Player.WATER_SURFACE_Y - 0.01
+	player.velocity = Vector3.ZERO
+
+	player.complete_water_rescue()
+	player._check_fell_off_island()
+
+	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Rescued victim on deck should stay ALIVE after fall check")
+
+
 
 
 
