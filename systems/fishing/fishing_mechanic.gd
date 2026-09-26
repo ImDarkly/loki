@@ -63,6 +63,7 @@ var _fight_target: float = 0.0
 var _rod_tip_ref: Node3D = null
 var _cached_fishing_active: bool = true
 var _escape_timer: float = 0.0
+var _pull_spike_timer: float = 0.0
 var _telegraph_intensity: float = 0.0
 var _escape_telegraph_audio: AudioStreamPlayer = null
 
@@ -78,7 +79,7 @@ func can_cast() -> bool:
 
 
 func _is_fishing_active() -> bool:
-	if _round_manager_ref:
+	if _round_manager_ref and is_instance_valid(_round_manager_ref):
 		_cached_fishing_active = _round_manager_ref.fishing_active
 	return _cached_fishing_active
 
@@ -106,20 +107,172 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 func advance_fight(delta: float) -> void:
 	if not _is_fighting:
 		return
+	if hook_type == HookType.PLAYER:
+		return
 	_fight_progress += delta
 
-	_escape_timer += delta
-	_update_telegraph()
-	if _escape_timer >= escape_time_threshold:
-		_trigger_escape_launch()
-		return
+	if hook_type != HookType.PLAYER:
+		_escape_timer += delta
+		_update_telegraph()
+		if _escape_timer >= escape_time_threshold:
+			_trigger_escape_launch()
+			return
 
 	if _fight_progress >= _fight_target:
 		_complete_fight_catch()
 
 
+@rpc("any_peer", "reliable", "call_remote")
 func notify_scroll() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if multiplayer.has_multiplayer_peer():
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id != 0 and sender_id != 1 and sender_id != _get_owner_client_id():
+			return
 	_escape_timer = 0.0
+	_pull_spike_timer = 0.3
+
+
+func _process_pull(delta: float) -> void:
+	var p := get_parent() as Player
+	if not p or not is_instance_valid(p) or not is_instance_valid(_tether_target):
+		return
+	var to_caster := p.global_position - _tether_target.global_position
+	to_caster.y = 0.0
+	var dist := to_caster.length()
+	if dist < 1.5:
+		return
+	var dir := to_caster.normalized() if dist > 0.001 else Vector3.ZERO
+	var initial_dist: float = max(_fight_initial_distance, 0.01)
+	var pull_mult: float = clamp(dist / initial_dist, 0.1, 1.0)
+	var is_spiked := _pull_spike_timer > 0
+	var current_pull := fighting_spike_pull if is_spiked else 0.0
+	var pull_displacement: Vector3 = dir * current_pull * pull_mult * 10.0 * delta
+	var victim_id := _tether_target._parse_owner_id()
+	if multiplayer.has_multiplayer_peer():
+		if victim_id == 1:
+			_tether_target._do_apply_hook_pull(pull_displacement)
+		else:
+			_tether_target._apply_hook_pull.rpc_id(victim_id, pull_displacement)
+	else:
+		_tether_target._do_apply_hook_pull(pull_displacement)
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func request_hook_player(target_id: int) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	var reject_id := multiplayer.get_remote_sender_id() if multiplayer.has_multiplayer_peer() else 1
+	if reject_id == 0:
+		reject_id = multiplayer.get_unique_id()
+	var p := get_parent() as Player
+	if not p or not is_instance_valid(p):
+		return
+	var attacker: Player = null
+	if multiplayer.has_multiplayer_peer():
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id == 0:
+			sender_id = multiplayer.get_unique_id()
+		attacker = p._find_player_by_id(sender_id)
+	else:
+		attacker = p
+	if not attacker or not is_instance_valid(attacker):
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
+		return
+	if attacker != p:
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
+		return
+	if attacker.player_state != Player.PlayerState.ALIVE:
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
+		return
+	if not _is_fishing_active():
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
+		return
+	if current_state != State.IDLE or hook_type != HookType.NONE or _is_fighting:
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
+		return
+	var target := attacker._find_player_by_id(target_id)
+	if not target or not is_instance_valid(target) or target.player_state != Player.PlayerState.FLOATING or target == attacker or (target.fishing_mechanic and target.fishing_mechanic.hook_type == HookType.PLAYER):
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
+		return
+	var dist := attacker.global_position.distance_to(target.global_position)
+	if dist > attacker.max_cast_range:
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
+		return
+
+	_apply_predicted_player_hook(target)
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var client_id := multiplayer.get_remote_sender_id()
+		if client_id != 0 and client_id != 1 and p and is_instance_valid(p):
+			p.rpc_id(client_id, "_sync_cast_target", cast_target_position)
+			p.rpc_id(client_id, "_sync_fishing_state", current_state)
+
+
+func _apply_predicted_player_hook(target: Player) -> void:
+	_report_zone_leave()
+	_active_zone_index = -1
+	_cleanup_all()
+	hook_type = HookType.PLAYER
+	_tether_target = target
+	cast_target_position = target.global_position
+	current_state = State.BITE
+	_bite_time = 0.0
+	_is_fighting = true
+	_start_telegraph()
+	var player := get_parent() as Node3D
+	if player and is_instance_valid(player):
+		_fight_initial_distance = player.global_position.distance_to(cast_target_position)
+	_fight_target = randf_range(2.0, 8.0)
+	_fight_progress = 0.0
+	if bite_timer:
+		bite_timer.stop()
+	if casting_timer:
+		casting_timer.stop()
+	_create_bobber(target.global_position)
+	_create_line_node()
+	_rebuild_line()
+	_play_bite_feedback()
+
+
+func _on_hook_rejected() -> void:
+	if bite_timer:
+		bite_timer.stop()
+	if casting_timer:
+		casting_timer.stop()
+	_is_fighting = false
+	_escape_timer = 0.0
+	_telegraph_intensity = 0.0
+	_pull_spike_timer = 0.0
+	_stop_telegraph()
+	_report_zone_leave()
+	_snap_bobber_to_rod()
+	$FishManager.cleanup()
+	current_state = State.IDLE
+	hook_type = HookType.NONE
+	_tether_target = null
+	reel_failure.emit()
 
 
 func _update_telegraph() -> void:
@@ -332,6 +485,7 @@ func _handle_remote_transition(to_state: int) -> void:
 			if floating_player:
 				hook_type = HookType.PLAYER
 				_tether_target = floating_player
+				_is_fighting = true
 			if is_instance_valid(bobber_node):
 				bobber_node.visible = true
 			else:
@@ -346,16 +500,25 @@ func _handle_remote_transition(to_state: int) -> void:
 				$FishManager.spawn(cast_target_position)
 
 		State.IDLE, State.SUCCESS:
+			_is_fighting = false
 			_snap_bobber_to_rod()
 			$FishManager.cleanup()
 			hook_type = HookType.NONE
 			_tether_target = null
 
 
+func _physics_process(delta: float) -> void:
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+		if hook_type == HookType.PLAYER and _is_fighting and is_instance_valid(_tether_target):
+			_process_pull(delta)
+
+
 func _process(delta: float) -> void:
 	if not is_local_render and current_state != _prev_remote_state:
 		_handle_remote_transition(current_state)
 		_prev_remote_state = current_state
+
+	_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
 
 	match current_state:
 		State.CASTING, State.WAITING, State.BITE:
@@ -440,23 +603,15 @@ func try_cast_with_detection(target: Vector3, flight_time: float) -> void:
 		return
 	var floating_player := _detect_floating_player()
 	if floating_player and is_instance_valid(floating_player):
-		_report_zone_leave()
-		_active_zone_index = -1
-		_cleanup_all()
-		hook_type = HookType.PLAYER
-		_tether_target = floating_player
-		cast_target_position = floating_player.global_position
-		current_state = State.BITE
-		_bite_time = 0.0
-		_is_fighting = false
-		if bite_timer:
-			bite_timer.stop()
-		if casting_timer:
-			casting_timer.stop()
-		_create_bobber(floating_player.global_position)
-		_create_line_node()
-		_rebuild_line()
-		_play_bite_feedback()
+		var target_id := floating_player._parse_owner_id()
+		if multiplayer.has_multiplayer_peer():
+			if multiplayer.is_server():
+				request_hook_player(target_id)
+			else:
+				request_hook_player.rpc_id(1, target_id)
+				_apply_predicted_player_hook(floating_player)
+		else:
+			request_hook_player(target_id)
 	else:
 		hook_type = HookType.FISH
 		_tether_target = null

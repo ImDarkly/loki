@@ -837,6 +837,60 @@ func _process_fight(delta: float) -> void:
 		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
 		velocity.y -= _gravity * mult * delta
 
+	if fishing_mechanic.hook_type == 2:
+		_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
+		if Input.is_action_just_pressed("reel_fight"):
+			_pull_spike_timer = 0.3
+			if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+				fishing_mechanic.notify_scroll.rpc_id(1)
+			else:
+				fishing_mechanic.notify_scroll()
+
+		fishing_mechanic.advance_fight(delta)
+		if not fishing_mechanic._is_fighting:
+			return
+
+		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+		var wasd_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+		var wasd_force := wasd_dir * move_speed
+
+		velocity.x = wasd_force.x
+		velocity.z = wasd_force.z
+
+		move_and_slide()
+		_check_fell_off_island()
+
+		_sync_tick += 1
+		if _sync_tick >= 2:
+			_sync_tick = 0
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_transform", global_position, rotation, head.rotation)
+
+		ct = fishing_mechanic.cast_target_position
+		if ct != _last_cast_target:
+			_last_cast_target = ct
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_cast_target", ct)
+
+		fd = fishing_mechanic._current_flight_duration
+		if fd != _last_flight_duration:
+			_last_flight_duration = fd
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_flight_duration", fd)
+
+		fsp = fishing_mechanic._flight_start_position
+		if fsp != _last_flight_start:
+			_last_flight_start = fsp
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_flight_start", fsp)
+
+		fs = fishing_mechanic.current_state
+		if fs != _last_fish_state:
+			_last_fish_state = fs
+			if multiplayer.has_multiplayer_peer():
+				rpc("_sync_fishing_state", fs)
+		return
+
 	var fish_pos: Vector3 = fishing_mechanic.cast_target_position
 	var to_fish: Vector3 = fish_pos - global_position
 	var dist: float = to_fish.length()
@@ -1469,13 +1523,55 @@ func _sync_transform(pos: Vector3, rot: Vector3, head_rot: Vector3) -> void:
 	head.rotation = head_rot
 
 
-@rpc("authority", "reliable", "call_remote")
+@rpc("any_peer", "reliable", "call_remote")
+func _apply_hook_pull(pull_displacement: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer():
+		if multiplayer.is_server():
+			return
+		if multiplayer.get_remote_sender_id() != 1:
+			return
+	_do_apply_hook_pull(pull_displacement)
+
+
+func _do_apply_hook_pull(pull_displacement: Vector3) -> void:
+	if player_state != PlayerState.FLOATING:
+		return
+	var y := global_position.y
+	global_position.x += pull_displacement.x
+	global_position.z += pull_displacement.z
+	global_position.y = y
+
+
+@rpc("any_peer", "reliable", "call_remote")
+func _reject_hook_request() -> void:
+	if multiplayer.has_multiplayer_peer():
+		if multiplayer.is_server():
+			return
+		if multiplayer.get_remote_sender_id() != 1:
+			return
+	if fishing_mechanic:
+		fishing_mechanic._on_hook_rejected()
+
+
+@rpc("any_peer", "reliable", "call_remote")
 func _sync_fishing_state(state: int) -> void:
+	if multiplayer.has_multiplayer_peer():
+		if multiplayer.is_server():
+			return
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id != 1 and sender_id != get_multiplayer_authority():
+			return
 	fishing_mechanic.current_state = state
 
 
-@rpc("authority", "reliable", "call_remote")
+@rpc("any_peer", "reliable", "call_remote")
 func _sync_cast_target(pos: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer():
+		if multiplayer.is_server():
+			return
+		var sender_id := multiplayer.get_remote_sender_id()
+		if sender_id != 1 and sender_id != get_multiplayer_authority():
+			return
 	fishing_mechanic.cast_target_position = pos
 
 
