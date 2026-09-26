@@ -107,6 +107,8 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 func advance_fight(delta: float) -> void:
 	if not _is_fighting:
 		return
+	if hook_type == HookType.PLAYER:
+		return
 	_fight_progress += delta
 
 	if hook_type != HookType.PLAYER:
@@ -146,15 +148,15 @@ func _process_pull(delta: float) -> void:
 	var pull_mult: float = clamp(dist / initial_dist, 0.1, 1.0)
 	var is_spiked := _pull_spike_timer > 0
 	var current_pull := fighting_spike_pull if is_spiked else 0.0
-	var pull_vel: Vector3 = dir * current_pull * pull_mult * 10.0
+	var pull_displacement: Vector3 = dir * current_pull * pull_mult * 10.0 * delta
 	var victim_id := _tether_target._parse_owner_id()
 	if multiplayer.has_multiplayer_peer():
 		if victim_id == 1:
-			_tether_target._do_apply_hook_pull(pull_vel)
+			_tether_target._do_apply_hook_pull(pull_displacement)
 		else:
-			_tether_target._apply_hook_pull.rpc_id(victim_id, pull_vel)
+			_tether_target._apply_hook_pull.rpc_id(victim_id, pull_displacement)
 	else:
-		_tether_target._do_apply_hook_pull(pull_vel)
+		_tether_target._do_apply_hook_pull(pull_displacement)
 
 
 @rpc("any_peer", "reliable", "call_remote")
@@ -188,6 +190,12 @@ func request_hook_player(target_id: int) -> void:
 			p._reject_hook_request()
 		return
 	if attacker.player_state != Player.PlayerState.ALIVE:
+		if multiplayer.has_multiplayer_peer():
+			p.rpc_id(reject_id, "_reject_hook_request")
+		else:
+			p._reject_hook_request()
+		return
+	if not _is_fishing_active():
 		if multiplayer.has_multiplayer_peer():
 			p.rpc_id(reject_id, "_reject_hook_request")
 		else:
@@ -499,15 +507,18 @@ func _handle_remote_transition(to_state: int) -> void:
 			_tether_target = null
 
 
+func _physics_process(delta: float) -> void:
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+		if hook_type == HookType.PLAYER and _is_fighting and is_instance_valid(_tether_target):
+			_process_pull(delta)
+
+
 func _process(delta: float) -> void:
 	if not is_local_render and current_state != _prev_remote_state:
 		_handle_remote_transition(current_state)
 		_prev_remote_state = current_state
 
 	_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
-	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
-		if hook_type == HookType.PLAYER and _is_fighting and is_instance_valid(_tether_target):
-			_process_pull(delta)
 
 	match current_state:
 		State.CASTING, State.WAITING, State.BITE:

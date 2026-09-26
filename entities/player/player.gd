@@ -1524,22 +1524,21 @@ func _sync_transform(pos: Vector3, rot: Vector3, head_rot: Vector3) -> void:
 
 
 @rpc("any_peer", "reliable", "call_remote")
-func _apply_hook_pull(pull_velocity: Vector3) -> void:
+func _apply_hook_pull(pull_displacement: Vector3) -> void:
 	if multiplayer.has_multiplayer_peer():
 		if multiplayer.is_server():
 			return
 		if multiplayer.get_remote_sender_id() != 1:
 			return
-	_do_apply_hook_pull(pull_velocity)
+	_do_apply_hook_pull(pull_displacement)
 
 
-func _do_apply_hook_pull(pull_velocity: Vector3) -> void:
+func _do_apply_hook_pull(pull_displacement: Vector3) -> void:
 	if player_state != PlayerState.FLOATING:
 		return
 	var y := global_position.y
-	var tick := get_process_delta_time()
-	global_position.x += pull_velocity.x * tick
-	global_position.z += pull_velocity.z * tick
+	global_position.x += pull_displacement.x
+	global_position.z += pull_displacement.z
 	global_position.y = y
 
 

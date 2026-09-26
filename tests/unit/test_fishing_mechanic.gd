@@ -348,9 +348,11 @@ func test_player_hook_catches_despite_elapsed_escape_time() -> void:
 	watch_signals(mechanic)
 	mechanic.advance_fight(0.2)
 
-	assert_eq(mechanic.current_state, 0, "PLAYER hook catch should settle to IDLE")
-	assert_eq(mechanic.hook_type, mechanic.HookType.NONE, "hook_type should clear after PLAYER catch")
-	assert_false(mechanic._is_fighting, "_is_fighting should be false after PLAYER catch")
+	assert_eq(mechanic._fight_progress, 1.9, "PLAYER hook should freeze _fight_progress (no auto-catch)")
+	assert_true(mechanic._is_fighting, "_is_fighting should stay true for PLAYER hook")
+	assert_eq(mechanic.current_state, 3, "PLAYER hook should remain in BITE")
+	assert_eq(mechanic.hook_type, mechanic.HookType.PLAYER, "hook_type should stay PLAYER")
+	assert_signal_not_emitted(mechanic, "reel_success")
 	assert_signal_not_emitted(mechanic, "reel_failure")
 	assert_signal_not_emitted(mechanic, "escape_launch")
 
@@ -400,6 +402,31 @@ func test_request_hook_rejects_when_attacker_not_alive() -> void:
 
 	assert_eq(mech.current_state, mech.State.IDLE, "Non-ALIVE attacker should stay IDLE after reject")
 	assert_eq(mech.hook_type, mech.HookType.NONE, "Non-ALIVE attacker reject should keep hook_type NONE")
+	assert_signal_emitted(mech, "reel_failure")
+
+
+func test_request_hook_rejects_when_fishing_inactive() -> void:
+	var container = autofree(Node3D.new())
+	add_child(container)
+	var p1 = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	p1.name = "Player_1"
+	container.add_child(p1)
+	await get_tree().process_frame
+	p1.player_state = Player.PlayerState.ALIVE
+	var mech = p1.fishing_mechanic
+	mech.current_state = mech.State.IDLE
+	mech.hook_type = mech.HookType.NONE
+	mech._is_fighting = false
+	mech._cached_fishing_active = false
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+	watch_signals(mech)
+	mech.request_hook_player(2)
+	multiplayer.multiplayer_peer = saved_peer
+
+	assert_eq(mech.current_state, mech.State.IDLE, "Inactive fishing should stay IDLE after reject")
+	assert_eq(mech.hook_type, mech.HookType.NONE, "Inactive fishing reject should keep hook_type NONE")
 	assert_signal_emitted(mech, "reel_failure")
 
 
