@@ -68,6 +68,7 @@ var _telegraph_intensity: float = 0.0
 var _escape_telegraph_audio: AudioStreamPlayer = null
 
 const LINE_SEGMENTS: int = 4
+const SHORE_CONTACT_TOLERANCE: float = 0.75
 
 
 func is_fighting() -> bool:
@@ -109,6 +110,11 @@ func advance_fight(delta: float) -> void:
 		return
 	if hook_type == HookType.PLAYER:
 		return
+	var caster := get_parent() as Player
+	if caster and is_instance_valid(caster):
+		if caster.global_position.distance_to(cast_target_position) > max_tether_range:
+			_on_hook_rejected()
+			return
 	_fight_progress += delta
 
 	if hook_type != HookType.PLAYER:
@@ -507,9 +513,52 @@ func _handle_remote_transition(to_state: int) -> void:
 			_tether_target = null
 
 
+func _check_rescue_complete() -> bool:
+	# SHORE_CONTACT rescue: the hook pull teleport is not blocked, the following
+	# floating-physics tick ejects the victim out of the island wall, so a towed
+	# victim equilibrates just outside ISLAND_RADIUS and never crosses it.
+	# SHORE_CONTACT_TOLERANCE covers capsule radius 0.3 + pull step + sync jitter.
+	# complete_water_rescue snaps the victim radially onto the deck
+	# (ISLAND_RADIUS - inset, deck rest height, velocity zeroed); without the snap
+	# the victim would stay at water level and instantly re-enter FLOATING.
+	if not MapConfig.is_within_radius(_tether_target.global_position, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS + SHORE_CONTACT_TOLERANCE):
+		return false
+	_tether_target.complete_water_rescue()
+	_on_hook_rejected()
+	_notify_hook_end()
+	return true
+
+
+func _check_tether_pop() -> bool:
+	var caster := get_parent() as Player
+	if not caster or not is_instance_valid(caster):
+		return false
+	if caster.global_position.distance_to(_tether_target.global_position) <= max_tether_range:
+		return false
+	_on_hook_rejected()
+	_notify_hook_end()
+	return true
+
+
+func _notify_hook_end() -> void:
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+		return
+	var caster := get_parent() as Player
+	if not caster or not is_instance_valid(caster):
+		return
+	var caster_id := caster._parse_owner_id()
+	if caster_id == multiplayer.get_unique_id():
+		return
+	caster.rpc_id(caster_id, "_reject_hook_request")
+
+
 func _physics_process(delta: float) -> void:
 	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		if hook_type == HookType.PLAYER and _is_fighting and is_instance_valid(_tether_target):
+			if _check_rescue_complete():
+				return
+			if _check_tether_pop():
+				return
 			_process_pull(delta)
 
 
@@ -564,7 +613,7 @@ func _process(delta: float) -> void:
 
 
 func _detect_floating_player() -> Player:
-	# TODO(273-followup): max_tether_range is reserved for future pull slice. TODO(274): player-ID deferral.
+	# TODO(274): player-ID deferral.
 	var p := get_parent() as Player
 	if not p or not is_instance_valid(p):
 		return null
