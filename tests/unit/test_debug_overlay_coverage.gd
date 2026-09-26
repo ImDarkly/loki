@@ -7,7 +7,8 @@ const COVERED: Array[String] = [
 	"res://systems/rocks/rock_manager.gd",
 	"res://systems/zones/zone_manager.gd",
 	"res://systems/quota/quota_manager.gd",
-	"res://systems/quota/coin_manager.gd"
+	"res://systems/quota/coin_manager.gd",
+	"res://systems/fishing/fishing_mechanic.gd"
 ]
 
 
@@ -27,7 +28,11 @@ func test_all_covered_managers_implement_debug_contract() -> void:
 		assert_true(method_names.has("get_debug_actions"), path + " missing get_debug_actions")
 		assert_true(method_names.has("debug_action"), path + " missing debug_action")
 
-		var inst = script.new()
+		var inst = null
+		if path == "res://systems/fishing/fishing_mechanic.gd":
+			inst = (load("res://systems/fishing/fishing_mechanic.tscn") as PackedScene).instantiate()
+		else:
+			inst = script.new()
 		if is_instance_valid(inst):
 			autofree(inst)
 			if inst.has_method("get_debug_state"):
@@ -51,7 +56,11 @@ func test_debug_actions_client_noop_coverage() -> void:
 		if not script:
 			continue
 
-		var inst = script.new()
+		var inst = null
+		if path == "res://systems/fishing/fishing_mechanic.gd":
+			inst = (load("res://systems/fishing/fishing_mechanic.tscn") as PackedScene).instantiate()
+		else:
+			inst = script.new()
 		if is_instance_valid(inst):
 			autofree(inst)
 			for t_name in ["Timer", "SpawnTimer", "ReturnTimer", "RoamTimer", "RespawnTimer", "ReshuffleTimer", "YellScareTimer"]:
@@ -62,8 +71,11 @@ func test_debug_actions_client_noop_coverage() -> void:
 
 			if inst.has_method("get_debug_actions") and inst.has_method("get_debug_state") and inst.has_method("debug_action"):
 				var acts = inst.get_debug_actions()
-				if not acts.is_empty():
-					var action_id = acts[0]["id"]
+				for act in acts:
+					var action_id = act["id"]
+					if path == "res://systems/fishing/fishing_mechanic.gd" and action_id == "pop_tether":
+						inst.hook_type = inst.HookType.PLAYER
+						inst._is_fighting = true
 					var state_before = inst.get_debug_state()
 					var _saved_multiplayer_peer = inst.multiplayer.multiplayer_peer
 					var client_peer := ENetMultiplayerPeer.new()
@@ -76,3 +88,15 @@ func test_debug_actions_client_noop_coverage() -> void:
 					assert_eq(state_after, state_before, path + " state must remain unchanged when debug_action called on client")
 
 					inst.multiplayer.multiplayer_peer = _saved_multiplayer_peer
+
+
+func test_fishing_mechanic_registers_with_debug_overlay() -> void:
+	var container = autofree(Node3D.new())
+	add_child(container)
+	var caster = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	caster.name = "Player_1"
+	container.add_child(caster)
+	await get_tree().process_frame
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	assert_not_null(dbg, "DebugOverlay autoload missing")
+	assert_true(dbg._systems.has("FishingMechanic_Player_1"), "FishingMechanic should register per-player with DebugOverlay")
