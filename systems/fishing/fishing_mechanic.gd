@@ -378,6 +378,13 @@ func _try_find_round_manager() -> void:
 
 
 func _ready() -> void:
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	if dbg:
+		var sys_name := name
+		var caster := get_parent() as Player
+		if caster and is_instance_valid(caster):
+			sys_name = "FishingMechanic_" + caster.name
+		dbg.register_system(sys_name, self)
 	_try_find_zone_manager()
 	_try_find_round_manager()
 	bite_timer.one_shot = true
@@ -972,3 +979,62 @@ func _report_zone_leave() -> void:
 	else:
 		_zone_manager_ref.leave_zone.rpc(_active_zone_index)
 	_active_zone_index = -1
+
+
+func get_debug_state() -> Dictionary:
+	var hook_name: String = HookType.keys()[hook_type] if hook_type < HookType.size() else str(hook_type)
+	var dist_text := "(none)"
+	var caster := get_parent() as Player
+	if hook_type == HookType.PLAYER and caster and is_instance_valid(caster) and is_instance_valid(_tether_target):
+		dist_text = "%.2f" % caster.global_position.distance_to(_tether_target.global_position)
+	return {
+		"hook_type": hook_name,
+		"tether_distance": dist_text,
+		"fight_progress": round(_fight_progress * 100) / 100.0,
+		"target_name": _tether_target.name if _tether_target and is_instance_valid(_tether_target) else "none"
+	}
+
+
+func get_debug_actions() -> Array[Dictionary]:
+	return [
+		{"id": "force_hook_player", "label": "Force Hook Player"},
+		{"id": "pop_tether", "label": "Pop Tether"},
+		{"id": "reset_fight", "label": "Reset Fight"}
+	]
+
+
+func debug_action(action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	match action_id:
+		"force_hook_player":
+			_debug_force_hook_player()
+		"pop_tether":
+			_debug_pop_tether()
+		"reset_fight":
+			reset_for_restart()
+
+
+func _debug_force_hook_player() -> void:
+	if current_state != State.IDLE or hook_type != HookType.NONE or _is_fighting:
+		return
+	var caster := get_parent() as Player
+	if not caster or not is_instance_valid(caster):
+		return
+	var root := get_tree().root.get_node_or_null("/root/main/Players")
+	if not root:
+		root = get_tree().root.find_child("Players", true, false)
+	if not root:
+		return
+	for child in root.get_children():
+		if child is Player:
+			var candidate := child as Player
+			if candidate != caster and is_instance_valid(candidate) and candidate.player_state == Player.PlayerState.FLOATING:
+				_apply_predicted_player_hook(candidate)
+				return
+
+
+func _debug_pop_tether() -> void:
+	if hook_type == HookType.NONE and not _is_fighting:
+		return
+	_on_hook_rejected()

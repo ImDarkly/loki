@@ -3,6 +3,9 @@ extends GutTest
 var mechanic: Node3D
 var zone_manager: Node3D
 
+# Victim id 1 keeps the server pull on the local branch instead of rpc_id to a peer that never connects.
+const VICTIM_ID := 1
+
 
 func before_each() -> void:
 	var scene = load("res://systems/fishing/fishing_mechanic.tscn")
@@ -645,4 +648,197 @@ func test_shore_contact_outside_tolerance_keeps_fighting() -> void:
 	assert_eq(target.player_state, Player.PlayerState.FLOATING, "Victim outside SHORE_CONTACT tolerance should stay FLOATING")
 	assert_true(caster_mech._is_fighting, "Hook outside tolerance should keep fighting")
 	assert_eq(caster_mech.hook_type, caster_mech.HookType.PLAYER, "Hook outside tolerance should stay PLAYER")
+
+
+func test_pull_inversion_reduces_target_to_caster_distance() -> void:
+	var pair = await _spawn_hook_pair(Vector3(10, 0, -20))
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	caster.global_position = Vector3(0, 0, -20)
+	var caster_mech = caster.fishing_mechanic
+	_start_player_hook(caster_mech, target)
+	var initial := caster.global_position.distance_to(target.global_position)
+	caster_mech._fight_initial_distance = initial
+	caster_mech._pull_spike_timer = 0.3
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+	var caster_pos := caster.global_position
+	caster_mech._physics_process(0.1)
+	multiplayer.multiplayer_peer = saved_peer
+
+	var after := caster.global_position.distance_to(target.global_position)
+	assert_lt(after, initial, "PLAYER hook pull should shrink target-to-caster distance")
+	assert_eq(caster.global_position, caster_pos, "PLAYER hook pull should move the target, not the caster")
+
+
+func test_water_fallback_sets_zone_and_bite_timer() -> void:
+	mechanic.try_cast_with_detection(Vector3(0, 0, 0), 0.5)
+	assert_eq(mechanic.hook_type, mechanic.HookType.FISH, "Water fallback should set hook_type to FISH")
+	assert_eq(mechanic.current_state, mechanic.State.CASTING, "Water fallback should enter CASTING")
+
+	mechanic._on_casting_timer_timeout()
+
+	assert_eq(mechanic.current_state, mechanic.State.WAITING, "Water fallback should enter WAITING after flight")
+	assert_eq(mechanic._active_zone_index, 0, "Water fallback inside a zone should record _active_zone_index")
+	assert_true(mechanic.bite_timer.time_left > 0.0, "Water fallback inside a zone should start the BiteTimer")
+
+
+func test_rescue_cancels_float_timeout() -> void:
+	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER)
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	target._float_time = 29.0
+	target._water_report_retry = 7
+	target._fell_off_island_reported = true
+	var caster_mech = caster.fishing_mechanic
+	_start_player_hook(caster_mech, target)
+
+	caster_mech._physics_process(0.1)
+
+	assert_eq(target.player_state, Player.PlayerState.ALIVE, "Rescue should revive the victim before the float timeout")
+	assert_eq(target._float_time, 0.0, "Rescue should cancel the float timer")
+	assert_eq(target._water_report_retry, 0, "Rescue should clear water report retries")
+	assert_false(target._fell_off_island_reported, "Rescue should clear the fell-off-island flag")
+
+
+func test_hooked_floating_player_is_shark_target() -> void:
+	var container = autofree(Node3D.new())
+	add_child(container)
+	var players = Node3D.new()
+	players.name = "Players"
+	container.add_child(players)
+	var caster = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	caster.name = "Player_1"
+	players.add_child(caster)
+	caster.global_position = Vector3(0, 0, -20)
+	var target = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	target.name = "Player_2"
+	players.add_child(target)
+	target.global_position = Vector3(8, 0, -20)
+	target.player_state = Player.PlayerState.FLOATING
+	var danger = autofree(load("res://systems/danger/danger_manager.tscn").instantiate())
+	danger.name = "DangerManager"
+	container.add_child(danger)
+	await get_tree().process_frame
+	await get_tree().physics_frame
+
+	_start_player_hook(caster.fishing_mechanic, target)
+
+	var nodes = danger._get_player_nodes()
+	assert_has(nodes, target, "Hooked FLOATING victim should stay a shark target")
+	assert_not_null(danger._get_nearest_player(), "Shark should find a target while a victim is hooked")
+
+
+func _spawn_peer_player(parent: Node, node_name: String, pos: Vector3, state: Player.PlayerState) -> Player:
+	var p = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	p.name = node_name
+	parent.add_child(p)
+	p.global_position = pos
+	p.player_state = state
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	(p.get_node("SlapComponent") as SlapComponent)._players_container = parent
+	return p
+
+
+func test_hook_request_peer_round_trip() -> void:
+	var saved_peer = multiplayer.multiplayer_peer
+	var server_peer := ENetMultiplayerPeer.new()
+	var client_peer := ENetMultiplayerPeer.new()
+	var chosen_port := -1
+	for port in [37971, 37972, 37973, 37974]:
+		if server_peer.create_server(port, 2) == OK:
+			chosen_port = port
+			break
+		server_peer = ENetMultiplayerPeer.new()
+	assert_ne(chosen_port, -1, "should bind an ENet server port")
+	client_peer.create_client("127.0.0.1", chosen_port)
+
+	var server_root := Node3D.new()
+	server_root.name = "ServerRoot"
+	add_child(server_root)
+	var client_root := Node3D.new()
+	client_root.name = "ClientRoot"
+	add_child(client_root)
+
+	var server_mp := SceneMultiplayer.new()
+	server_mp.multiplayer_peer = server_peer
+	var client_mp := SceneMultiplayer.new()
+	client_mp.multiplayer_peer = client_peer
+	get_tree().set_multiplayer(server_mp, server_root.get_path())
+	get_tree().set_multiplayer(client_mp, client_root.get_path())
+
+	var server_players := Node3D.new()
+	server_players.name = "Players"
+	server_root.add_child(server_players)
+	var client_players := Node3D.new()
+	client_players.name = "Players"
+	client_root.add_child(client_players)
+
+	var frames := 0
+	while frames < 120 and (client_mp.get_unique_id() == 1 or server_mp.get_peers().is_empty()):
+		await get_tree().process_frame
+		frames += 1
+	assert_ne(client_mp.get_unique_id(), 1, "client should obtain a unique id from server handshake")
+	assert_true(server_mp.get_peers().has(client_mp.get_unique_id()), "server should see the connected client")
+
+	var client_id := client_mp.get_unique_id()
+	# Spawn the client copies before the server victim: the server holds
+	# Player_1's authority, so its sync broadcasts need the client's Player_1
+	# to exist first, otherwise the engine logs "Failed to get path from RPC".
+	var server_caster := await _spawn_peer_player(server_players, "Player_%d" % client_id, Vector3(0, 0, -20), Player.PlayerState.ALIVE)
+	var client_caster := await _spawn_peer_player(client_players, "Player_%d" % client_id, Vector3(0, 0, -20), Player.PlayerState.ALIVE)
+	var client_victim := await _spawn_peer_player(client_players, "Player_%d" % VICTIM_ID, Vector3(5, 0, -20), Player.PlayerState.FLOATING)
+	var server_victim := await _spawn_peer_player(server_players, "Player_%d" % VICTIM_ID, Vector3(5, 0, -20), Player.PlayerState.FLOATING)
+
+	# The void has no floor, so everyone fell while spawning: re-pin positions
+	# and states right before the request so the caster is ALIVE on execution.
+	server_caster.global_position = Vector3(0, 0, -20)
+	server_victim.global_position = Vector3(5, 0, -20)
+	client_caster.global_position = Vector3(0, 0, -20)
+	client_victim.global_position = Vector3(5, 0, -20)
+	server_caster.velocity = Vector3.ZERO
+	server_victim.velocity = Vector3.ZERO
+	client_caster.velocity = Vector3.ZERO
+	client_victim.velocity = Vector3.ZERO
+	server_caster.player_state = Player.PlayerState.ALIVE
+	client_caster.player_state = Player.PlayerState.ALIVE
+	server_victim.player_state = Player.PlayerState.FLOATING
+	client_victim.player_state = Player.PlayerState.FLOATING
+	# Remote ALIVE players run with physics off; without this the server copy
+	# broadcasts authority-mode _sync_transform the server may not send.
+	server_caster.set_physics_process(false)
+
+	var server_mech = server_caster.fishing_mechanic
+	var client_mech = client_caster.fishing_mechanic
+	server_mech._cached_fishing_active = true
+	assert_eq(server_mech.hook_type, server_mech.HookType.NONE, "server rod should start unhooked")
+
+	client_mech.request_hook_player.rpc_id(1, VICTIM_ID)
+
+	frames = 0
+	while frames < 120 and server_mech.hook_type != server_mech.HookType.PLAYER:
+		await get_tree().process_frame
+		frames += 1
+
+	assert_eq(server_mech.hook_type, server_mech.HookType.PLAYER, "server should hook the floating victim on valid request")
+	assert_eq(server_mech._tether_target, server_victim, "server tether should point at the victim")
+	assert_true(server_mech._is_fighting, "server should be fighting after hook")
+	assert_eq(server_mech.current_state, server_mech.State.BITE, "server should enter BITE after hook")
+
+	frames = 0
+	while frames < 120 and client_mech.current_state != client_mech.State.BITE:
+		await get_tree().process_frame
+		frames += 1
+	assert_eq(client_mech.current_state, client_mech.State.BITE, "client should converge via _sync_fishing_state")
+	assert_eq(client_mech.cast_target_position, server_mech.cast_target_position, "client should converge via _sync_cast_target")
+
+	server_peer.close()
+	client_peer.close()
+	get_tree().set_multiplayer(null, server_root.get_path())
+	get_tree().set_multiplayer(null, client_root.get_path())
+	server_root.queue_free()
+	client_root.queue_free()
+	multiplayer.multiplayer_peer = saved_peer
 
