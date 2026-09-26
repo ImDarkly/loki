@@ -146,6 +146,7 @@ var _entered_water_reported: bool = false
 var _water_report_retry: int = 0
 var _float_time: float = 0.0
 var _float_base_y: float = -0.5
+var _rescue_snap_msec: int = 0
 @export var interact_range: float = 3.0
 @export var rock_pickup_range: float = 3.0
 
@@ -153,6 +154,9 @@ const PLAYERS_LAYER = 1 << 1
 const INTERACTABLE_LAYER: int = 1 << 5
 const FALL_DEATH_Y: float = -3.0
 const WATER_SURFACE_Y: float = -0.5
+const RESCUE_DECK_INSET: float = 0.5
+const RESCUE_REST_HEIGHT: float = 0.05
+const RESCUE_TRANSFORM_GRACE_MSEC: int = 250
 
 
 func _ready() -> void:
@@ -1518,6 +1522,8 @@ func _hide_held_bait_remote() -> void:
 
 @rpc("authority", "unreliable", "call_remote")
 func _sync_transform(pos: Vector3, rot: Vector3, head_rot: Vector3) -> void:
+	if Time.get_ticks_msec() - _rescue_snap_msec < RESCUE_TRANSFORM_GRACE_MSEC:
+		return
 	global_position = pos
 	rotation = rot
 	head.rotation = head_rot
@@ -1606,6 +1612,11 @@ func _sync_player_state(state: int) -> void:
 		_water_report_retry = 0
 		_enter_floating()
 	elif state == PlayerState.ALIVE:
+		# Reliable rescue delivery: _sync_transform is unreliable and can drop the
+		# snapped position, so re-apply the deck clamp here. Only below-deck bodies
+		# snap; restart spawns at deck level pass through untouched.
+		if global_position.y < 0.0:
+			_snap_rescue_to_deck()
 		player_state = PlayerState.ALIVE
 		_entered_water_reported = false
 		_water_report_retry = 0
@@ -1613,3 +1624,32 @@ func _sync_player_state(state: int) -> void:
 		_float_time = 0.0
 	elif state == PlayerState.SPECTATE:
 		player_state = PlayerState.SPECTATE
+
+
+func complete_water_rescue() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if player_state != PlayerState.FLOATING:
+		return
+	# Caster overlap is left to physics resolution; the snap zeroes velocity.
+	_snap_rescue_to_deck()
+	player_state = PlayerState.ALIVE
+	_entered_water_reported = false
+	_water_report_retry = 0
+	_fell_off_island_reported = false
+	_float_time = 0.0
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		_sync_player_state.rpc(PlayerState.ALIVE)
+
+
+func _snap_rescue_to_deck() -> void:
+	var limit := MapConfig.ISLAND_RADIUS - RESCUE_DECK_INSET
+	var flat := Vector2(global_position.x - MapConfig.MAP_CENTER.x, global_position.z - MapConfig.MAP_CENTER.z)
+	if flat.length() > limit:
+		if flat.length_squared() <= 0.0001:
+			flat = Vector2(limit, 0.0)
+		else:
+			flat = flat.normalized() * limit
+	global_position = Vector3(MapConfig.MAP_CENTER.x + flat.x, RESCUE_REST_HEIGHT, MapConfig.MAP_CENTER.z + flat.y)
+	velocity = Vector3.ZERO
+	_rescue_snap_msec = Time.get_ticks_msec()

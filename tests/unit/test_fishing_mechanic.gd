@@ -437,3 +437,212 @@ func test_remote_transition_to_idle_clears_fighting() -> void:
 	assert_false(mechanic._is_fighting, "Remote IDLE transition should clear _is_fighting")
 	assert_eq(mechanic.hook_type, mechanic.HookType.NONE, "Remote IDLE transition should clear hook_type")
 
+
+func _spawn_hook_pair(target_pos: Vector3) -> Array:
+	var container = autofree(Node3D.new())
+	add_child(container)
+	var caster = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	caster.name = "Player_1"
+	container.add_child(caster)
+	caster.global_position = Vector3(0, 0, 0)
+	var target = (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	target.name = "Player_2"
+	container.add_child(target)
+	target.global_position = target_pos
+	target.player_state = Player.PlayerState.FLOATING
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	return [caster, target]
+
+
+func _start_fish_fight(caster_mech: Node3D, target_pos: Vector3) -> void:
+	caster_mech.current_state = caster_mech.State.BITE
+	caster_mech.hook_type = caster_mech.HookType.FISH
+	caster_mech._is_fighting = true
+	caster_mech._fight_target = 99.0
+	caster_mech._fight_progress = 0.0
+	caster_mech._escape_timer = 0.0
+	caster_mech.cast_target_position = target_pos
+
+
+func _start_player_hook(caster_mech: Node3D, target: Player) -> void:
+	caster_mech.current_state = caster_mech.State.BITE
+	caster_mech.hook_type = caster_mech.HookType.PLAYER
+	caster_mech._tether_target = target
+	caster_mech._is_fighting = true
+	caster_mech._fight_target = 99.0
+	caster_mech._fight_progress = 0.0
+
+
+func test_tether_pop_fish_beyond_range() -> void:
+	var pair = await _spawn_hook_pair(Vector3.ZERO)
+	var caster: Player = pair[0]
+	var caster_mech = caster.fishing_mechanic
+	caster_mech.escape_time_threshold = 99.0
+	_start_fish_fight(caster_mech, Vector3(caster_mech.max_tether_range + 5.0, 0, 0))
+
+	watch_signals(caster_mech)
+	caster_mech.advance_fight(0.1)
+
+	assert_eq(caster_mech.current_state, caster_mech.State.IDLE, "Fish pop should return to IDLE")
+	assert_eq(caster_mech.hook_type, caster_mech.HookType.NONE, "Fish pop should clear hook_type")
+	assert_false(caster_mech._is_fighting, "_is_fighting should be false after fish pop")
+	assert_signal_emitted(caster_mech, "reel_failure")
+	assert_signal_not_emitted(caster_mech, "escape_launch", "Pop should not launch the fish")
+
+
+func test_tether_pop_player_beyond_range() -> void:
+	var pair = await _spawn_hook_pair(Vector3(30, 0, 0))
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	var caster_mech = caster.fishing_mechanic
+	_start_player_hook(caster_mech, target)
+
+	watch_signals(caster_mech)
+	caster_mech._physics_process(0.1)
+
+	assert_eq(caster_mech.current_state, caster_mech.State.IDLE, "Player pop should return to IDLE")
+	assert_eq(caster_mech.hook_type, caster_mech.HookType.NONE, "Player pop should clear hook_type")
+	assert_false(caster_mech._is_fighting, "_is_fighting should be false after player pop")
+	assert_eq(target.player_state, Player.PlayerState.FLOATING, "Popped target should stay FLOATING")
+	assert_signal_emitted(caster_mech, "reel_failure")
+
+
+func test_tether_pop_retryable() -> void:
+	var pair = await _spawn_hook_pair(Vector3.ZERO)
+	var caster: Player = pair[0]
+	var caster_mech = caster.fishing_mechanic
+	caster_mech.escape_time_threshold = 99.0
+	_start_fish_fight(caster_mech, Vector3(caster_mech.max_tether_range + 5.0, 0, 0))
+
+	caster_mech.advance_fight(0.1)
+
+	assert_true(caster_mech.can_cast(), "Pop should leave the rod immediately retryable")
+
+
+func test_no_tether_pop_within_range() -> void:
+	var pair = await _spawn_hook_pair(Vector3.ZERO)
+	var caster: Player = pair[0]
+	var caster_mech = caster.fishing_mechanic
+	caster_mech.escape_time_threshold = 99.0
+	_start_fish_fight(caster_mech, Vector3(10, 0, 0))
+
+	watch_signals(caster_mech)
+	caster_mech.advance_fight(0.5)
+
+	assert_eq(caster_mech.current_state, caster_mech.State.BITE, "In-range fight should stay in BITE")
+	assert_true(caster_mech._is_fighting, "In-range fight should keep _is_fighting")
+	assert_signal_not_emitted(caster_mech, "reel_failure")
+
+
+func test_escape_timer_regression_with_parent() -> void:
+	var pair = await _spawn_hook_pair(Vector3.ZERO)
+	var caster: Player = pair[0]
+	var caster_mech = caster.fishing_mechanic
+	caster_mech.escape_time_threshold = 0.5
+	_start_fish_fight(caster_mech, Vector3(10, 0, 0))
+
+	watch_signals(caster_mech)
+	caster_mech.advance_fight(0.6)
+
+	assert_eq(caster_mech.current_state, caster_mech.State.IDLE, "Escape should still return to IDLE")
+	assert_signal_emitted(caster_mech, "reel_failure")
+	assert_signal_emitted(caster_mech, "escape_launch", "In-range escape should still launch")
+
+
+func test_rescue_complete_on_land() -> void:
+	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER)
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	target._float_time = 29.0
+	var caster_mech = caster.fishing_mechanic
+	_start_player_hook(caster_mech, target)
+
+	caster_mech._physics_process(0.1)
+
+	assert_eq(target.player_state, Player.PlayerState.ALIVE, "Target on land should become ALIVE")
+	assert_eq(target._float_time, 0.0, "Rescue should cancel the float timer")
+	assert_false(target._entered_water_reported, "Rescue should clear water flags")
+	assert_eq(caster_mech.current_state, caster_mech.State.IDLE, "Rescue should clear the hook to IDLE")
+	assert_eq(caster_mech.hook_type, caster_mech.HookType.NONE, "Rescue should clear hook_type")
+
+
+func test_no_rescue_in_water() -> void:
+	var pair = await _spawn_hook_pair(Vector3(0, 0, -20))
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	var caster_mech = caster.fishing_mechanic
+	_start_player_hook(caster_mech, target)
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+	caster_mech._physics_process(0.1)
+	multiplayer.multiplayer_peer = saved_peer
+
+	assert_eq(target.player_state, Player.PlayerState.FLOATING, "Target in water should stay FLOATING")
+	assert_true(caster_mech._is_fighting, "Hook in water should keep fighting")
+	assert_eq(caster_mech.hook_type, caster_mech.HookType.PLAYER, "Hook in water should stay PLAYER")
+
+
+func test_rescue_clears_hook_fighting_state() -> void:
+	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER)
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	var caster_mech = caster.fishing_mechanic
+	_start_player_hook(caster_mech, target)
+
+	watch_signals(caster_mech)
+	caster_mech._physics_process(0.1)
+
+	assert_false(caster_mech._is_fighting, "_is_fighting should be false after rescue")
+	assert_null(caster_mech._tether_target, "_tether_target should be null after rescue")
+	assert_signal_emitted(caster_mech, "reel_failure")
+
+
+func test_hooked_victim_shore_contact_stuck_rescues() -> void:
+	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 0.5, 0, 0))
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	var caster_mech = caster.fishing_mechanic
+	_start_player_hook(caster_mech, target)
+
+	caster_mech._physics_process(0.1)
+
+	assert_eq(target.player_state, Player.PlayerState.ALIVE, "SHORE_CONTACT victim should become ALIVE")
+	assert_eq(caster_mech.current_state, caster_mech.State.IDLE, "SHORE_CONTACT rescue should clear the hook to IDLE")
+	assert_eq(caster_mech.hook_type, caster_mech.HookType.NONE, "SHORE_CONTACT rescue should clear hook_type")
+	var flat := Vector2(target.global_position.x - MapConfig.MAP_CENTER.x, target.global_position.z - MapConfig.MAP_CENTER.z)
+	assert_true(flat.length() <= MapConfig.ISLAND_RADIUS - 0.4, "SHORE_CONTACT rescue should snap the victim onto the deck")
+	assert_true(target.global_position.y >= 0.0, "SHORE_CONTACT rescue should lift the victim to deck level")
+	assert_eq(target.velocity, Vector3.ZERO, "SHORE_CONTACT rescue should zero victim velocity")
+
+
+func test_shore_contact_inside_tolerance_rescues() -> void:
+	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 0.5, 0, 0))
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	var caster_mech = caster.fishing_mechanic
+	_start_player_hook(caster_mech, target)
+
+	caster_mech._physics_process(0.1)
+
+	assert_eq(target.player_state, Player.PlayerState.ALIVE, "Victim inside SHORE_CONTACT tolerance should become ALIVE")
+	assert_eq(caster_mech.hook_type, caster_mech.HookType.NONE, "Rescue inside tolerance should clear hook_type")
+
+
+func test_shore_contact_outside_tolerance_keeps_fighting() -> void:
+	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 2.0, 0, 0))
+	var caster: Player = pair[0]
+	var target: Player = pair[1]
+	var caster_mech = caster.fishing_mechanic
+	_start_player_hook(caster_mech, target)
+
+	var saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = null
+	caster_mech._physics_process(0.1)
+	multiplayer.multiplayer_peer = saved_peer
+
+	assert_eq(target.player_state, Player.PlayerState.FLOATING, "Victim outside SHORE_CONTACT tolerance should stay FLOATING")
+	assert_true(caster_mech._is_fighting, "Hook outside tolerance should keep fighting")
+	assert_eq(caster_mech.hook_type, caster_mech.HookType.PLAYER, "Hook outside tolerance should stay PLAYER")
+
