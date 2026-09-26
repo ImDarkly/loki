@@ -101,9 +101,9 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ### Manual/Dev Testing (Isolated System Scenes)
 
-Every system with timers, state transitions, or player-triggered feedback (spawn/attack/return
-cycles, shop purchases, interactables) gets a standalone dev scene under `scenes/dev/`, so its
-feel/timing/visuals can be checked without booting lobby → host → full round flow.
+Add a standalone dev scene under `scenes/dev/` only when a unit test genuinely cannot judge an
+important behavior, such as timing, feel, movement, or visual feedback, without booting the full
+lobby → host → round flow. See `.opencode/plans/workflow-simplification.md` for the scope.
 
 **This is not a substitute for GUT tests.** Correctness (did the quota actually decrease, did the
 signal actually fire) is proven in `tests/unit/`. Dev scenes are only for judging things tests
@@ -127,9 +127,9 @@ that's a sign the dev scene isn't needed for that check.
   `dev_seagull_flow.gd`), and document them in a sibling `README.md` (see
   `scenes/dev/README.md`).
 
-**When to add one:** when a new `systems/<name>/<name>_manager.gd` is introduced with its own
-state machine or timers, add its `dev_<name>_flow.tscn` in the same slice/PR — don't defer it to
-"later" once it becomes annoying to test.
+**When to add one:** when a unit test genuinely cannot judge the behavior (timing, feel, movement,
+or visual feedback). A state machine or timer alone does not require a dev scene; see
+`.opencode/plans/workflow-simplification.md`.
 
 ### Testing (GUT)
 - `.gutconfig.json`: dirs `["res://tests/unit"]`, prefix `test_`, suffix `.gd`
@@ -146,7 +146,7 @@ state machine or timers, add its `dev_<name>_flow.tscn` in the same slice/PR —
 
 ### Debug Overlay Integration
 
-Every system manager (`systems/<name>/<name>_manager.gd`) must implement the Debug Overlay three-method contract:
+Managers selected for live F3 inspection under `.opencode/plans/workflow-simplification.md` must implement the Debug Overlay three-method contract:
 - `get_debug_state() -> Dictionary`
 - `get_debug_actions() -> Array[Dictionary]` (`{id, label}`)
 - `debug_action(action_id: String) -> void` (server-gated: `if multiplayer.has_multiplayer_peer() and not multiplayer.is_server(): return`)
@@ -166,10 +166,12 @@ Before implementing any task:
 4. Switch to `master` branch: `git checkout master`
 5. Fetch remote: `git fetch origin`
 6. Create a new branch from master with a descriptive name, following the Branch naming convention above: `git checkout -b <branch-name>`
-7. If the feature adds a new `systems/<name>/<name>_manager.gd` with its own state machine or
-   timers, include a `scenes/dev/dev_<name>_flow.tscn` per the Manual/Dev Testing convention
-   above as part of the same slice.
-8. If the feature introduces a new `systems/<name>/<name>_manager.gd`, ensure it implements the Debug Overlay contract (`get_debug_state`, `get_debug_actions`, `debug_action`, and registration) and add its script path to `COVERED` in `tests/unit/test_debug_overlay_coverage.gd`.
+7. Add a `scenes/dev/dev_<name>_flow.tscn` only when a unit test genuinely cannot judge the
+   behavior (timing, feel, movement, or visual feedback), per the Manual/Dev Testing convention
+   and `.opencode/plans/workflow-simplification.md`.
+8. Apply the Debug Overlay contract and add a new manager's script path to `COVERED` in
+   `tests/unit/test_debug_overlay_coverage.gd` only when it is selected for live F3 inspection,
+   per `.opencode/plans/workflow-simplification.md`.
 
 If anything is unclear — ambiguous requirements, missing acceptance criteria, conflicting instructions — stop and ask before proceeding. Do not guess and continue.
 
