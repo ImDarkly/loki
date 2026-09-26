@@ -14,6 +14,7 @@ signal personal_catch_changed(count: int)
 enum HookType { NONE, FISH, PLAYER }
 var hook_type: HookType = HookType.NONE
 var _tether_target: Player = null
+var hooked_by_caster_id: int = 0
 
 @export var min_bite_delay: float = 3.0
 @export var max_bite_delay: float = 8.0
@@ -214,7 +215,7 @@ func request_hook_player(target_id: int) -> void:
 			p._reject_hook_request()
 		return
 	var target := attacker._find_player_by_id(target_id)
-	if not target or not is_instance_valid(target) or target.player_state != Player.PlayerState.FLOATING or target == attacker or (target.fishing_mechanic and target.fishing_mechanic.hook_type == HookType.PLAYER):
+	if not target or not is_instance_valid(target) or target.player_state != Player.PlayerState.FLOATING or target == attacker or (target.fishing_mechanic and (target.fishing_mechanic.hook_type == HookType.PLAYER or target.fishing_mechanic.hooked_by_caster_id != 0)):
 		if multiplayer.has_multiplayer_peer():
 			p.rpc_id(reject_id, "_reject_hook_request")
 		else:
@@ -227,6 +228,12 @@ func request_hook_player(target_id: int) -> void:
 		else:
 			p._reject_hook_request()
 		return
+
+	if target.fishing_mechanic and is_instance_valid(target.fishing_mechanic):
+		var caster_owner_id := multiplayer.get_remote_sender_id() if multiplayer.has_multiplayer_peer() else 0
+		if caster_owner_id == 0:
+			caster_owner_id = p._parse_owner_id()
+		target.fishing_mechanic.hooked_by_caster_id = caster_owner_id
 
 	_apply_predicted_player_hook(target)
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
@@ -277,6 +284,7 @@ func _on_hook_rejected() -> void:
 	$FishManager.cleanup()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
+	_clear_victim_reservation()
 	_tether_target = null
 	reel_failure.emit()
 
@@ -309,6 +317,7 @@ func _trigger_escape_launch() -> void:
 	$FishManager.cleanup()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
+	_clear_victim_reservation()
 	_tether_target = null
 	reel_failure.emit()
 	escape_launch.emit(direction, escape_launch_strength)
@@ -339,6 +348,7 @@ func _complete_fight_catch() -> void:
 		$FishManager.cleanup()
 		current_state = State.IDLE
 		hook_type = HookType.NONE
+		_clear_victim_reservation()
 		_tether_target = null
 		return
 
@@ -348,6 +358,7 @@ func _complete_fight_catch() -> void:
 	_stop_telegraph()
 	current_state = State.SUCCESS
 	hook_type = HookType.NONE
+	_clear_victim_reservation()
 	_tether_target = null
 	personal_catch_count += 1
 	personal_catch_changed.emit(personal_catch_count)
@@ -387,6 +398,9 @@ func _ready() -> void:
 		dbg.register_system(sys_name, self)
 	_try_find_zone_manager()
 	_try_find_round_manager()
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+		if not multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+			multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	bite_timer.one_shot = true
 	bite_timer.timeout.connect(_on_bite_timer_timeout)
 	bite_audio.stream = _generate_rumble_stream()
@@ -517,6 +531,7 @@ func _handle_remote_transition(to_state: int) -> void:
 			_snap_bobber_to_rod()
 			$FishManager.cleanup()
 			hook_type = HookType.NONE
+			_clear_victim_reservation()
 			_tether_target = null
 
 
@@ -559,6 +574,28 @@ func _notify_hook_end() -> void:
 	caster.rpc_id(caster_id, "_reject_hook_request")
 
 
+func _clear_victim_reservation() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	var target := _tether_target
+	if target and is_instance_valid(target):
+		if target.fishing_mechanic and is_instance_valid(target.fishing_mechanic):
+			target.fishing_mechanic.hooked_by_caster_id = 0
+
+
+func _on_peer_disconnected(id: int) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if hook_type == HookType.PLAYER and is_instance_valid(_tether_target):
+		var target_owner_id := _tether_target._parse_owner_id()
+		if target_owner_id == id:
+			_on_hook_rejected()
+			_notify_hook_end()
+			return
+	if hooked_by_caster_id != 0 and hooked_by_caster_id == id:
+		hooked_by_caster_id = 0
+
+
 func _physics_process(delta: float) -> void:
 	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		if hook_type == HookType.PLAYER and _is_fighting and is_instance_valid(_tether_target):
@@ -567,6 +604,9 @@ func _physics_process(delta: float) -> void:
 			if _check_tether_pop():
 				return
 			_process_pull(delta)
+		elif hook_type == HookType.PLAYER and _is_fighting:
+			_on_hook_rejected()
+			_notify_hook_end()
 
 
 func _process(delta: float) -> void:
@@ -590,6 +630,7 @@ func _process(delta: float) -> void:
 						_report_zone_leave()
 						_snap_bobber_to_rod()
 						hook_type = HookType.NONE
+						_clear_victim_reservation()
 						_tether_target = null
 						current_state = State.IDLE
 						$FishManager.cleanup()
@@ -610,6 +651,7 @@ func _process(delta: float) -> void:
 				_report_zone_leave()
 				_snap_bobber_to_rod()
 				hook_type = HookType.NONE
+				_clear_victim_reservation()
 				_tether_target = null
 				current_state = State.IDLE
 
@@ -850,6 +892,7 @@ func reset_for_restart() -> void:
 	bite_timer.stop()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
+	_clear_victim_reservation()
 	_tether_target = null
 	_is_fighting = false
 	_escape_timer = 0.0
@@ -991,7 +1034,8 @@ func get_debug_state() -> Dictionary:
 		"hook_type": hook_name,
 		"tether_distance": dist_text,
 		"fight_progress": round(_fight_progress * 100) / 100.0,
-		"target_name": _tether_target.name if _tether_target and is_instance_valid(_tether_target) else "none"
+		"target_name": _tether_target.name if _tether_target and is_instance_valid(_tether_target) else "none",
+		"hooked_by": hooked_by_caster_id
 	}
 
 

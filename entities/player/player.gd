@@ -841,7 +841,7 @@ func _process_fight(delta: float) -> void:
 		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
 		velocity.y -= _gravity * mult * delta
 
-	if fishing_mechanic.hook_type == 2:
+	if fishing_mechanic.hook_type == fishing_mechanic.HookType.PLAYER:
 		_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
 		if Input.is_action_just_pressed("reel_fight"):
 			_pull_spike_timer = 0.3
