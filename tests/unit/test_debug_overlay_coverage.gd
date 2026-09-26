@@ -71,8 +71,11 @@ func test_debug_actions_client_noop_coverage() -> void:
 
 			if inst.has_method("get_debug_actions") and inst.has_method("get_debug_state") and inst.has_method("debug_action"):
 				var acts = inst.get_debug_actions()
-				if not acts.is_empty():
-					var action_id = acts[0]["id"]
+				for act in acts:
+					var action_id = act["id"]
+					if path == "res://systems/fishing/fishing_mechanic.gd" and action_id == "pop_tether":
+						inst.hook_type = inst.HookType.PLAYER
+						inst._is_fighting = true
 					var state_before = inst.get_debug_state()
 					var _saved_multiplayer_peer = inst.multiplayer.multiplayer_peer
 					var client_peer := ENetMultiplayerPeer.new()

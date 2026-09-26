@@ -1038,3 +1038,4 @@ func _debug_pop_tether() -> void:
 	if hook_type == HookType.NONE and not _is_fighting:
 		return
 	_on_hook_rejected()
+	_notify_hook_end()

@@ -98,9 +98,10 @@ That’s the whole seagull, sped up for testing. Close the window when done — 
 **What you see:** Top-left text shows hook type (`NONE` / `FISH` / `PLAYER`), live tether distance, fight progress, victim float timer, and victim state (`ALIVE` / `FLOATING`).
 
 **Buttons & Controls:**
-- **F5** — Force hook the floating victim (`request_hook_player` — skips the arc, enters `BITE` with `PLAYER` hook)
+- **F5** — Force hook the floating victim (`request_hook_player` — skips the arc, enters `BITE` with `PLAYER` hook; without scrolling, shows a static tether)
+- **Scroll Wheel Down (`reel_fight`)** — Trigger `notify_scroll` to activate `fighting_spike_pull` and reel in the victim
 - **F6** — Pop the tether (teleports the victim past `max_tether_range`, hook clears to `IDLE`)
 - **G** — Complete the rescue (moves the victim onto the island, victim becomes `ALIVE`)
 - **R** — Reset (clears the hook, victim back to floating at the start spot)
 
-**Full flow to watch:** Press **F5** → hook type flips to `PLAYER`, tether distance shrinks as the pull drags the victim in → victim crosses the shore → `ALIVE`, hook clears. Press **F6** mid-pull → tether pops, victim stays `FLOATING`. Nothing changes in the real game.
+**Full flow to watch:** Press **F5** → hook type flips to `PLAYER`, enters fight mode with static tether. Scroll wheel down (`reel_fight`) → spikes pull power, shrinking tether distance as the victim is dragged in. Victim crosses the shore → `ALIVE`, hook clears. Or press **F6** mid-pull → tether pops, victim stays `FLOATING`. Nothing changes in the real game.

@@ -834,6 +834,14 @@ func test_hook_request_peer_round_trip() -> void:
 	assert_eq(client_mech.current_state, client_mech.State.BITE, "client should converge via _sync_fishing_state")
 	assert_eq(client_mech.cast_target_position, server_mech.cast_target_position, "client should converge via _sync_cast_target")
 
+	server_victim.global_position = Vector3(5.5, 0, -18.5)
+	frames = 0
+	while frames < 60 and client_victim.global_position.distance_to(server_victim.global_position) > 0.5:
+		await get_tree().process_frame
+		frames += 1
+	assert_almost_eq(client_victim.global_position.x, server_victim.global_position.x, 1.0, "client victim X should converge to server transform")
+	assert_almost_eq(client_victim.global_position.z, server_victim.global_position.z, 1.0, "client victim Z should converge to server transform")
+
 	server_peer.close()
 	client_peer.close()
 	get_tree().set_multiplayer(null, server_root.get_path())

@@ -14,12 +14,19 @@ func _ready() -> void:
 	_zone_manager = get_node_or_null("ZoneManager")
 	_label = get_node_or_null("HUD/Label") as Label
 	if _rescuer:
+		_rescuer.global_position = Vector3(3, 0, -10)
 		_mechanic = _rescuer.fishing_mechanic
+		var rescuer_cam := _rescuer.get_node_or_null("Head/Camera3D") as Camera3D
+		if rescuer_cam:
+			rescuer_cam.current = true
 
 	if _victim:
 		_victim.global_position = _victim_start
 		_victim.player_state = Player.PlayerState.FLOATING
 		_victim._float_time = 0.0
+		var victim_cam := _victim.get_node_or_null("Head/Camera3D") as Camera3D
+		if victim_cam:
+			victim_cam.current = false
 
 	if _mechanic:
 		_mechanic.min_bite_delay = 0.5
@@ -46,7 +53,7 @@ func _process(_delta: float) -> void:
 		tether_text = "%.1fm" % _rescuer.global_position.distance_to(_mechanic._tether_target.global_position)
 	var fight_text := "%.1f/%.1f" % [_mechanic._fight_progress, _mechanic._fight_target]
 	var float_text := "%.1fs" % _victim._float_time if _victim and is_instance_valid(_victim) else "?"
-	var victim_state := str(_victim.player_state) if _victim and is_instance_valid(_victim) else "?"
+	var victim_state := str(Player.PlayerState.keys()[_victim.player_state]) if _victim and is_instance_valid(_victim) and _victim.player_state < Player.PlayerState.keys().size() else "?"
 	_label.text = "Hook: %s | Tether: %s | Fight: %s | Float: %s | Victim: %s\n[F5] Force hook  [F6] Pop tether  [G] Complete rescue  [R] Reset" % [hook_name, tether_text, fight_text, float_text, victim_state]
 
 
