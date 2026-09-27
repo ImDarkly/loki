@@ -43,6 +43,7 @@ func open_menu() -> void:
 		return
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_update_mute_button_text()
 	var gm := get_node_or_null("/root/game_manager")
 	if gm:
 		gm.pause_toggled.emit(true)
@@ -61,8 +62,37 @@ func _on_resume_pressed() -> void:
 
 
 func _on_mute_pressed() -> void:
-	# TODO: Implement in #279/#280
-	pass
+	var vc := _get_local_voice_chat_manager()
+	if vc != null and vc.has_method("set_muted") and "is_muted" in vc:
+		var new_muted: bool = not vc.is_muted
+		vc.set_muted(new_muted)
+		_update_mute_button_text()
+
+
+func _get_local_voice_chat_manager() -> Node:
+	var peer_id := multiplayer.get_unique_id()
+	var path := "/root/main/Players/Player_%d/VoiceChatManager" % peer_id
+	var manager := get_node_or_null(path)
+	if manager != null:
+		return manager
+	var players := get_node_or_null("/root/main/Players")
+	if players != null:
+		for child in players.get_children():
+			var vc := child.get_node_or_null("VoiceChatManager")
+			if vc != null:
+				return vc
+	return null
+
+
+func _update_mute_button_text() -> void:
+	var vc := _get_local_voice_chat_manager()
+	if vc != null and "is_muted" in vc:
+		if vc.is_muted:
+			mute_button.text = "Unmute Voice Chat"
+		else:
+			mute_button.text = "Mute Voice Chat"
+	else:
+		mute_button.text = "Mute Voice Chat"
 
 
 func _on_fullscreen_pressed() -> void:

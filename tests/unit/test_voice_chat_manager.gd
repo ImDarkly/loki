@@ -36,6 +36,7 @@ func _create_test_bus() -> void:
 
 func test_bus_not_found_logs_warning_once() -> void:
 	await get_tree().process_frame
+	await get_tree().process_frame
 	assert_eq(manager._bus_error_logged, true, "Warning flag should be set after first _process")
 	assert_eq(manager._bus_index, -1, "_bus_index should remain -1 when bus not found")
 
@@ -262,3 +263,55 @@ func test_mic_failure_is_yelling_stays_false() -> void:
 	add_child(manager)
 	await get_tree().process_frame
 	assert_false(manager.is_yelling, "is_yelling should remain false when mic fails")
+
+
+func test_default_is_muted_false() -> void:
+	assert_false(manager.is_muted, "is_muted should default to false")
+
+
+func test_muted_process_emits_mic_level_negative_inf() -> void:
+	_create_test_bus()
+	manager.set_muted(true)
+	watch_signals(manager)
+	await get_tree().process_frame
+	assert_signal_emitted_with_parameters(manager, "mic_level_updated", [-INF])
+
+
+func test_muted_update_yelling_state_deactivates_and_never_sets_true() -> void:
+	manager._update_yelling_state(-5.0)
+	assert_true(manager.is_yelling, "Should be yelling initially")
+
+	watch_signals(manager)
+	manager.set_muted(true)
+	manager._update_yelling_state(-INF)
+	assert_false(manager.is_yelling, "Should deactivate yelling when muted")
+	assert_signal_emitted(manager, "yelling_state_changed", "Should emit yelling_state_changed on deactivation")
+
+	manager._update_yelling_state(-INF)
+	assert_signal_emit_count(manager, "yelling_state_changed", 1, "Should not emit duplicate yelling signal")
+	assert_false(manager.is_yelling)
+
+
+func test_unmute_restores_yelling_activation() -> void:
+	manager.set_muted(true)
+	manager._update_yelling_state(-INF)
+	assert_false(manager.is_yelling)
+
+	manager.set_muted(false)
+	watch_signals(manager)
+	manager._update_yelling_state(-5.0)
+	assert_true(manager.is_yelling, "Unmute should allow yelling activation again")
+	assert_signal_emitted(manager, "yelling_state_changed")
+
+
+func test_mute_state_changed_fires_only_on_change() -> void:
+	watch_signals(manager)
+	manager.set_muted(true)
+	assert_signal_emitted(manager, "mute_state_changed")
+	assert_signal_emit_count(manager, "mute_state_changed", 1)
+
+	manager.set_muted(true)
+	assert_signal_emit_count(manager, "mute_state_changed", 1, "Should not emit when setting same mute state")
+
+	manager.set_muted(false)
+	assert_signal_emit_count(manager, "mute_state_changed", 2, "Should emit when changing mute state")

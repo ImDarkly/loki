@@ -61,3 +61,38 @@ func test_captured_to_send_frames_pads_with_silence() -> void:
 	assert_eq(frames.size(), 4, "Output size should match requested count")
 	assert_eq(frames[0], 16384, "Mono mix of 0.5 scales to 16384 (int16)")
 	assert_eq(frames[3], 0, "Missing frames pad with silence")
+
+
+func test_send_audio_chunk_muted_drains_buffer() -> void:
+	var parent := Node3D.new()
+	autofree(parent)
+	get_tree().root.add_child(parent)
+
+	var scene := load("res://systems/voice_chat/eos_voice_network.tscn")
+	var net: Node = scene.instantiate()
+	parent.add_child(net)
+
+	var stub_mic := Node.new()
+	stub_mic.name = "VoiceChatManager"
+	var scr := GDScript.new()
+	scr.source_code = """
+extends Node
+var is_muted := true
+var drained := false
+func get_frames_available() -> int:
+	return 10 if not drained else 0
+func get_captured_frames(max_frames: int) -> PackedVector2Array:
+	drained = true
+	return PackedVector2Array([Vector2.ONE])
+"""
+	scr.reload()
+	stub_mic.set_script(scr)
+	parent.add_child(stub_mic)
+
+	await get_tree().process_frame
+	net._configured_authoritative = true
+	net._room_name = "test_room"
+
+	net._send_audio_chunk(0.01)
+	assert_true(stub_mic.drained, "_send_audio_chunk should drain captured frames when muted")
+	parent.queue_free()

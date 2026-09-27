@@ -63,6 +63,10 @@ func _send_audio_chunk(_delta: float) -> void:
 	var mic := get_parent().get_node_or_null("VoiceChatManager")
 	if mic == null or not mic.has_method("get_frames_available"):
 		return
+	if "is_muted" in mic and mic.is_muted:
+		while mic.get_frames_available() > 0:
+			mic.get_captured_frames(mic.get_frames_available())
+		return
 	# Manual audio input has no SDK capture pipeline, so AddNotifyAudioBeforeSend never fires.
 	# Poll the capture in fixed 10 ms chunks (matching the EOSG reference sample) instead.
 	while mic.get_frames_available() >= FRAMES_PER_CHUNK:

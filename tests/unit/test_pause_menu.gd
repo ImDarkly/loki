@@ -104,3 +104,72 @@ func test_all_buttons_exist() -> void:
 	assert_not_null(pause_menu.mute_button, "mute_button must exist")
 	assert_not_null(pause_menu.fullscreen_button, "fullscreen_button must exist")
 	assert_not_null(pause_menu.exit_button, "exit_button must exist")
+
+
+func test_mute_button_toggles_voice_chat_and_updates_text() -> void:
+	var players_node := Node3D.new()
+	players_node.name = "Players"
+	_main.add_child(players_node)
+
+	var peer_id := multiplayer.get_unique_id()
+	var player_node := Node3D.new()
+	player_node.name = "Player_%d" % peer_id
+	players_node.add_child(player_node)
+
+	var vc := Node.new()
+	vc.name = "VoiceChatManager"
+	vc.set_script(load("res://systems/voice_chat/voice_chat_manager.gd"))
+	vc.auto_create_bus = false
+	player_node.add_child(vc)
+
+	pause_menu.open_menu()
+	assert_eq(pause_menu.mute_button.text, "Mute Voice Chat")
+	assert_false(vc.is_muted)
+
+	pause_menu.mute_button.pressed.emit()
+	assert_true(vc.is_muted, "Pressing mute button should set is_muted to true")
+	assert_eq(pause_menu.mute_button.text, "Unmute Voice Chat", "Button text should flip to Unmute Voice Chat")
+
+	pause_menu.mute_button.pressed.emit()
+	assert_false(vc.is_muted, "Pressing mute button again should unmute")
+	assert_eq(pause_menu.mute_button.text, "Mute Voice Chat", "Button text should flip back to Mute Voice Chat")
+
+
+func test_open_menu_refreshes_mute_label() -> void:
+	var players_node := Node3D.new()
+	players_node.name = "Players"
+	_main.add_child(players_node)
+
+	var player_node := Node3D.new()
+	player_node.name = "Player_999"
+	players_node.add_child(player_node)
+
+	var vc := Node.new()
+	vc.name = "VoiceChatManager"
+	vc.set_script(load("res://systems/voice_chat/voice_chat_manager.gd"))
+	vc.auto_create_bus = false
+	vc.is_muted = true
+	player_node.add_child(vc)
+
+	pause_menu.open_menu()
+	assert_eq(pause_menu.mute_button.text, "Unmute Voice Chat", "open_menu should refresh button text using fallback scan")
+
+
+func test_single_player_fallback_scan_path() -> void:
+	var players_node := Node3D.new()
+	players_node.name = "Players"
+	_main.add_child(players_node)
+
+	var player_node := Node3D.new()
+	player_node.name = "SomeArbitraryPlayerName"
+	players_node.add_child(player_node)
+
+	var vc := Node.new()
+	vc.name = "VoiceChatManager"
+	vc.set_script(load("res://systems/voice_chat/voice_chat_manager.gd"))
+	vc.auto_create_bus = false
+	vc.is_muted = false
+	player_node.add_child(vc)
+
+	var found: Node = pause_menu._get_local_voice_chat_manager()
+	assert_eq(found, vc, "Should find VoiceChatManager via fallback loop over players children")
