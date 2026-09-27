@@ -2,6 +2,7 @@ extends Node
 
 signal yelling_state_changed(is_yelling: bool)
 signal mic_level_updated(level_db: float)
+signal mute_state_changed(is_muted: bool)
 
 @export var voice_bus_name: String = "GDRecord"
 @export var amplitude_threshold_on: float = -6.0
@@ -10,6 +11,7 @@ signal mic_level_updated(level_db: float)
 @export var preferred_input_device: String = ""
 
 var is_yelling: bool = false
+var is_muted: bool = false
 
 var _bus_index: int = -1
 var _bus_error_logged: bool = false
@@ -30,6 +32,13 @@ func get_captured_frames(max_frames: int) -> PackedVector2Array:
 	return _capture.get_buffer(count)
 
 
+func set_muted(value: bool) -> void:
+	if is_muted == value:
+		return
+	is_muted = value
+	mute_state_changed.emit(is_muted)
+
+
 func _process(_delta: float) -> void:
 	if _bus_index == -1:
 		_bus_index = AudioServer.get_bus_index(voice_bus_name)
@@ -44,7 +53,7 @@ func _process(_delta: float) -> void:
 		if _bus_index == -1:
 			return
 
-	var peak := _get_peak_volume_db()
+	var peak := -INF if is_muted else _get_peak_volume_db()
 	_update_yelling_state(peak)
 	mic_level_updated.emit(peak)
 

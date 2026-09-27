@@ -6,6 +6,7 @@ extends CanvasLayer
 var _target_db: float = -INF
 var _display_db: float = -INF
 var _is_yelling: bool = false
+var _is_muted: bool = false
 
 @onready var meter_fill: ColorRect = %MeterFill
 @onready var meter_frame: Control = %MeterFrame
@@ -24,8 +25,15 @@ func _ready() -> void:
 		voice_chat.mic_level_updated.connect(_on_mic_level_updated)
 	if voice_chat.has_signal("yelling_state_changed"):
 		voice_chat.yelling_state_changed.connect(_on_yelling_state_changed)
+	if voice_chat.has_signal("mute_state_changed"):
+		voice_chat.mute_state_changed.connect(_on_mute_state_changed)
 
-	mic_dot.color = Color(0.3, 0.8, 0.3)
+	mic_dot.mouse_filter = Control.MOUSE_FILTER_STOP
+	mic_dot.gui_input.connect(_on_mic_dot_gui_input)
+
+	var initial_muted: bool = voice_chat.get("is_muted") if voice_chat != null and "is_muted" in voice_chat else false
+	_is_muted = initial_muted
+	_update_mute_visual(initial_muted)
 
 	_read_thresholds_and_add_zones()
 
@@ -72,6 +80,25 @@ func _on_yelling_state_changed(is_yelling: bool) -> void:
 	yell_label.visible = is_yelling
 
 
+func _on_mute_state_changed(is_muted: bool) -> void:
+	_is_muted = is_muted
+	_update_mute_visual(is_muted)
+
+
+func _update_mute_visual(is_muted: bool) -> void:
+	if is_muted:
+		mic_dot.color = Color(1.0, 0.2, 0.0)
+	else:
+		mic_dot.color = Color(0.3, 0.8, 0.3) if _display_db > -INF else Color(0.4, 0.4, 0.4)
+
+
+func _on_mic_dot_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if voice_chat != null and voice_chat.has_method("set_muted"):
+			var current_muted: bool = voice_chat.get("is_muted") if "is_muted" in voice_chat else false
+			voice_chat.set_muted(not current_muted)
+
+
 func _process(delta: float) -> void:
 	if _target_db == -INF:
 		_display_db = -INF
@@ -94,28 +121,31 @@ func _update_display() -> void:
 	var fill_h := frame_h * normalized
 	meter_fill.offset_top = frame_h - fill_h
 
-	db_label.text = "%+.1f dB" % _display_db if _display_db > -INF else "-∞ dB"
-
-	mic_dot.color = Color(0.3, 0.8, 0.3) if _display_db > -INF else Color(0.4, 0.4, 0.4)
-
-	if _is_yelling:
-		meter_fill.color = Color(1.0, 0.2, 0.0)
-		return
-
-	var on_threshold: float = -6.0
-	var off_threshold: float = -8.0
-	if voice_chat != null:
-		if "amplitude_threshold_on" in voice_chat:
-			on_threshold = voice_chat.amplitude_threshold_on
-		if "amplitude_threshold_off" in voice_chat:
-			off_threshold = voice_chat.amplitude_threshold_off
-
-	if _display_db >= on_threshold:
-		meter_fill.color = Color(1.0, 0.2, 0.0)
-	elif _display_db >= off_threshold:
-		meter_fill.color = Color(1.0, 0.8, 0.0)
+	if _is_muted:
+		db_label.text = "MUTED"
+		mic_dot.color = Color(1.0, 0.2, 0.0)
 	else:
-		meter_fill.color = Color(0.0, 0.8, 0.0)
+		db_label.text = "%+.1f dB" % _display_db if _display_db > -INF else "-∞ dB"
+		mic_dot.color = Color(0.3, 0.8, 0.3) if _display_db > -INF else Color(0.4, 0.4, 0.4)
+
+		if _is_yelling:
+			meter_fill.color = Color(1.0, 0.2, 0.0)
+			return
+
+		var on_threshold: float = -6.0
+		var off_threshold: float = -8.0
+		if voice_chat != null:
+			if "amplitude_threshold_on" in voice_chat:
+				on_threshold = voice_chat.amplitude_threshold_on
+			if "amplitude_threshold_off" in voice_chat:
+				off_threshold = voice_chat.amplitude_threshold_off
+
+		if _display_db >= on_threshold:
+			meter_fill.color = Color(1.0, 0.2, 0.0)
+		elif _display_db >= off_threshold:
+			meter_fill.color = Color(1.0, 0.8, 0.0)
+		else:
+			meter_fill.color = Color(0.0, 0.8, 0.0)
 
 
 func _db_to_normalized(db: float) -> float:
