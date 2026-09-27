@@ -3,6 +3,7 @@ extends Node
 signal player_list_changed()
 signal all_players_loaded()
 signal shop_toggled(is_open: bool)
+signal pause_toggled(is_open: bool)
 
 var players: Array = []
 var local_player_id: int = -1

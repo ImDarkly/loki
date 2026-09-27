@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://systems/quota/quota_manager.tscn" id="5_2ihsm"]
 [ext_resource type="PackedScene" path="res://systems/round/round_manager.tscn" id="6_0f4gj"]
 [ext_resource type="PackedScene" path="res://ui/end_screen.tscn" id="7_7tkbk"]
+[ext_resource type="PackedScene" path="res://ui/pause_menu.tscn" id="pause_menu_scene"]
 [ext_resource type="PackedScene" path="res://systems/rocks/rock_manager.tscn" id="8_rock"]
 [ext_resource type="PackedScene" path="res://systems/quota/coin_manager.tscn" id="coin_man_scene"]
 [ext_resource type="PackedScene" path="res://entities/fireplace.tscn" id="fireplace_scene"]
@@ -38,6 +39,8 @@ spawn_path = NodePath("..")
 [node name="RoundManager" parent="." unique_id=273981928 instance=ExtResource("6_0f4gj")]
 
 [node name="EndScreen" parent="." unique_id=174325840 instance=ExtResource("7_7tkbk")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("pause_menu_scene")]
 
 [node name="NotificationLabel" parent="." unique_id=1777638729 instance=ExtResource("notif_scene")]
 

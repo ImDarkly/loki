@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/pause_menu.gd" id="1_pause"]
+
+[node name="PauseMenu" type="CanvasLayer"]
+visible = false
+layer = 135
+script = ExtResource("1_pause")
+
+[node name="Overlay" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+color = Color(0, 0, 0, 0.6)
+
+[node name="CenterPanel" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="CenterPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ResumeButton" type="Button" parent="CenterPanel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Resume"
+
+[node name="MuteButton" type="Button" parent="CenterPanel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Mute Voice Chat"
+
+[node name="FullscreenButton" type="Button" parent="CenterPanel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Fullscreen"
+
+[node name="ExitButton" type="Button" parent="CenterPanel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Exit to Lobby"

@@ -1415,6 +1415,56 @@ func test_rescued_victim_does_not_reenter_water() -> void:
 	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Rescued victim on deck should stay ALIVE after fall check")
 
 
+func test_pause_toggled_hides_and_restores_prompts() -> void:
+	player.is_carrying = false
+	player._ray_hit_box = true
+	var interactable: InteractableComponent = autofree(InteractableComponent.new())
+	interactable.show_prompt_without_carrying = true
+	interactable.prompt_text = "Interact"
+	player._update_prompt_visibility(interactable)
+	var label := player._interact_prompt.get_node("PromptLabel") as Label
+	assert_true(label.visible, "Prompt should be visible initially")
+
+	player._on_pause_toggled(true)
+	assert_false(label.visible, "Prompt should be hidden when pause is opened")
+
+	player._on_pause_toggled(false)
+	player._update_prompt_visibility(interactable)
+	assert_true(label.visible, "Prompt should be restored when pause is closed")
+
+
+func test_pause_open_does_not_freeze_floating_timer() -> void:
+	player.player_state = Player.PlayerState.FLOATING
+	player._float_time = 1.0
+	player._on_pause_toggled(true)
+	player._physics_process(0.5)
+	assert_gt(player._float_time, 1.0, "_float_time should advance while pause is open")
+	player._on_pause_toggled(false)
+
+
+func test_pause_open_zeroes_alive_locomotion_input() -> void:
+	player.player_state = Player.PlayerState.ALIVE
+	player._is_pause_open = true
+	Input.action_press("move_right")
+	player.velocity = Vector3.ZERO
+	player._physics_process(0.016)
+	Input.action_release("move_right")
+	assert_eq(player.velocity.x, 0.0, "Velocity x should be zero when pause open even with move input")
+	assert_eq(player.velocity.z, 0.0, "Velocity z should be zero when pause open even with move input")
+	player._is_pause_open = false
+
+
+func test_pause_open_blocks_sitting_standup() -> void:
+	player._sitting_heal.set_sitting(true)
+	player._is_pause_open = true
+	Input.action_press("move_right")
+	player._physics_process(0.016)
+	Input.action_release("move_right")
+	assert_true(player._sitting_heal.is_sitting, "Pause open should prevent WASD press from standing player up")
+	player._is_pause_open = false
+
+
+
 
 
 
