@@ -80,7 +80,7 @@ extends Node
 var is_muted := true
 var drained := false
 func get_frames_available() -> int:
-	return 10 if not drained else 0
+	return 500 if not drained else 0
 func get_captured_frames(max_frames: int) -> PackedVector2Array:
 	drained = true
 	return PackedVector2Array([Vector2.ONE])

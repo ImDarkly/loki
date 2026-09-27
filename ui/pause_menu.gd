@@ -78,6 +78,8 @@ func _get_local_voice_chat_manager() -> Node:
 	var players := get_node_or_null("/root/main/Players")
 	if players != null:
 		for child in players.get_children():
+			if child.get_multiplayer_authority() != peer_id:
+				continue
 			var vc := child.get_node_or_null("VoiceChatManager")
 			if vc != null:
 				return vc
