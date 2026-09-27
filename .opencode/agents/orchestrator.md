@@ -34,8 +34,7 @@ Standard flow for a feature or bugfix request:
    reference to a scene-local node, delegate to **multiplayer-auditor**. Skip
    this step if nothing networking- or autoload-lifecycle-related changed —
    don't spend the gate where it has no signal.
-6. Delegate to **test-agent** to write tests, run the suite, and report
-   results.
+6. Delegate to **test-agent** to write tests, run tests (scoped default, full-suite passthrough), and report results.
 7. If tests fail, `reviewer` sent it back, or the auditor flagged a blocking
    issue, loop back to **implementer** with the specific failure and restart
    at step 4 (`reviewer` → `multiplayer-auditor` if applicable → `test-agent`)

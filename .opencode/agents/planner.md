@@ -1,7 +1,7 @@
 ---
 description: Turns a feature/bugfix request into a concrete implementation plan
 mode: subagent
-model: opencode/muse-spark-1.2-contributor-free
+model: opencode/muse-spark-1.3-contributor-free
 tools:
   write: false
   edit: false

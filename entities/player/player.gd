@@ -141,6 +141,7 @@ var _rock_manager_ref: Node = null
 var _danger_manager_ref: Node = null
 var _seagull_manager_ref: Node = null
 var _is_shop_open: bool = false
+var _is_pause_open: bool = false
 var _fell_off_island_reported: bool = false
 var _entered_water_reported: bool = false
 var _water_report_retry: int = 0
@@ -187,6 +188,7 @@ func _ready() -> void:
 	var gm := get_node_or_null("/root/game_manager")
 	if gm:
 		gm.shop_toggled.connect(_on_shop_toggled)
+		gm.pause_toggled.connect(_on_pause_toggled)
 
 	_setup_interact_prompt()
 
@@ -440,7 +442,7 @@ func _update_prompt_visibility(interactable = null) -> void:
 	if not label:
 		return
 	
-	if _ray_hit_box and interactable and not _is_shop_open and (is_carrying or interactable.show_prompt_without_carrying):
+	if _ray_hit_box and interactable and not _is_shop_open and not _is_pause_open and (is_carrying or interactable.show_prompt_without_carrying):
 		label.text = interactable.prompt_text
 		label.add_theme_color_override("font_color", interactable.prompt_color)
 		label.visible = true
@@ -481,7 +483,7 @@ func _update_rock_prompt_visibility() -> void:
 	var label := _interact_prompt.get_node_or_null("RockPromptLabel") as Label
 	if not label:
 		return
-	label.visible = _ray_rock and not _is_shop_open
+	label.visible = _ray_rock and not _is_shop_open and not _is_pause_open
 
 
 func _try_pickup_rock() -> bool:
@@ -581,6 +583,8 @@ func _try_place_shark_bait() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _is_pause_open:
+		return
 	if player_state == PlayerState.SPECTATE:
 		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			_spectate_yaw -= event.relative.x * mouse_sensitivity
@@ -733,15 +737,15 @@ func _physics_process(delta: float) -> void:
 		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
 		velocity.y -= _gravity * mult * delta
 
-	if Input.is_action_just_pressed("jump") and is_on_floor():
+	if not _is_pause_open and Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = _jump_velocity
 		_bounce_vel = -jump_bounce_impulse
 		_hand_bounce = hand_jump_raise
 
-	if Input.is_action_just_released("jump") and velocity.y > 0.0:
+	if not _is_pause_open and Input.is_action_just_released("jump") and velocity.y > 0.0:
 		velocity.y *= jump_cut_multiplier
 
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input_dir := Vector2.ZERO if _is_pause_open else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 
 	if direction != Vector3.ZERO:
@@ -819,7 +823,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _process_sitting(delta: float) -> void:
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input_dir := Vector2.ZERO if _is_pause_open else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if input_dir != Vector2.ZERO:
 		if assigned_fireplace and assigned_fireplace.has_method("release_seat_for_player"):
 			assigned_fireplace.release_seat_for_player(self)
@@ -843,7 +847,7 @@ func _process_fight(delta: float) -> void:
 
 	if fishing_mechanic.hook_type == fishing_mechanic.HookType.PLAYER:
 		_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
-		if Input.is_action_just_pressed("reel_fight"):
+		if not _is_pause_open and Input.is_action_just_pressed("reel_fight"):
 			_pull_spike_timer = 0.3
 			if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 				fishing_mechanic.notify_scroll.rpc_id(1)
@@ -854,7 +858,7 @@ func _process_fight(delta: float) -> void:
 		if not fishing_mechanic._is_fighting:
 			return
 
-		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+		var input_dir := Vector2.ZERO if _is_pause_open else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 		var wasd_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 		var wasd_force := wasd_dir * move_speed
 
@@ -903,7 +907,7 @@ func _process_fight(delta: float) -> void:
 	var initial_dist: float = max(fishing_mechanic._fight_initial_distance, 0.01)
 	var pull_mult: float = clamp(dist / initial_dist, 0.1, 1.0)
 	_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
-	if Input.is_action_just_pressed("reel_fight"):
+	if not _is_pause_open and Input.is_action_just_pressed("reel_fight"):
 		_pull_spike_timer = 0.3
 		fishing_mechanic.notify_scroll()
 	var is_spiked: bool = _pull_spike_timer > 0
@@ -914,7 +918,7 @@ func _process_fight(delta: float) -> void:
 	if not fishing_mechanic._is_fighting:
 		return
 
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input_dir := Vector2.ZERO if _is_pause_open else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var wasd_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	var wasd_scale: float = 0.2 if is_spiked else 1.0
 	var wasd_force := wasd_dir * move_speed * wasd_scale
@@ -1301,6 +1305,12 @@ func _on_escape_telegraph_changed(intensity: float) -> void:
 
 func _on_shop_toggled(is_open: bool) -> void:
 	_is_shop_open = is_open
+	_update_prompt_visibility()
+	_update_rock_prompt_visibility()
+
+
+func _on_pause_toggled(is_open: bool) -> void:
+	_is_pause_open = is_open
 	_update_prompt_visibility()
 	_update_rock_prompt_visibility()
 

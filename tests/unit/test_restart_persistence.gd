@@ -102,4 +102,23 @@ func test_fishing_mechanic_reset_on_restart() -> void:
 	assert_eq(player.fishing_mechanic.current_state, player.fishing_mechanic.State.IDLE, "Fishing mechanic state should reset to IDLE on restart")
 
 
+func test_restart_closes_pause_menu_and_emits_pause_toggled_false() -> void:
+	var pause_scene = load("res://ui/pause_menu.tscn")
+	var pause_menu = pause_scene.instantiate()
+	pause_menu.name = "PauseMenu"
+	_main.add_child(pause_menu)
+	pause_menu.open_menu()
+	await get_tree().process_frame
+
+	var gm = get_node("/root/game_manager")
+	watch_signals(gm)
+
+	_round_manager._apply_restart()
+
+	assert_false(pause_menu.visible, "Pause menu should be closed on restart")
+	assert_signal_emitted_with_parameters(gm, "pause_toggled", [false])
+	pause_menu.queue_free()
+
+
+
 

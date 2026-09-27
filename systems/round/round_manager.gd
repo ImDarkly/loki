@@ -84,6 +84,8 @@ func restart_round() -> void:
 
 	if multiplayer.has_multiplayer_peer():
 		_apply_restart.rpc()
+	else:
+		_apply_restart()
 
 
 @rpc("authority", "call_local", "reliable")
@@ -98,9 +100,18 @@ func _apply_restart() -> void:
 	if es:
 		es.visible = false
 
+	var pm := get_node_or_null("/root/main/PauseMenu")
+	if pm:
+		pm.visible = false
+
+	var gm := get_node_or_null("/root/game_manager")
+	if gm:
+		gm.pause_toggled.emit(false)
+
 	for child in get_tree().root.get_children():
 		if child.get_script() == _shop_ui_script:
-			get_node("/root/game_manager").shop_toggled.emit(false)
+			if gm:
+				gm.shop_toggled.emit(false)
 			child.queue_free()
 
 	var players_node := get_node_or_null("/root/main/Players")
