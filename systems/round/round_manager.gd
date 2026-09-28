@@ -7,9 +7,12 @@ signal round_ended(success: bool)
 
 @export var round_duration: float = 900.0
 
+const WIPE_GRACE_SECONDS := 2.0
+
 var round_active: bool = false
 var round_success: bool = false
 var fishing_active: bool = true
+var _wipe_generation: int = 0
 
 @onready var timer: Timer = $Timer
 
@@ -22,11 +25,66 @@ func _ready() -> void:
 	timer.one_shot = true
 	timer.timeout.connect(_on_timer_timeout)
 
+	var gm := get_node_or_null("/root/game_manager")
+	if gm and gm.has_signal("all_players_loaded"):
+		gm.all_players_loaded.connect(_scan_and_wire)
+	_scan_and_wire()
+
 	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		timer.start(round_duration)
 		round_active = true
 		fishing_active = true
 		_sync_state_to_clients()
+
+
+func _scan_and_wire() -> void:
+	var players_node := get_node_or_null("/root/main/Players")
+	if players_node == null:
+		return
+	for child in players_node.get_children():
+		var hp := child.get_node_or_null("HealthComponent") as HealthComponent
+		if hp != null and not hp.died.is_connected(_on_player_died):
+			hp.died.connect(_on_player_died)
+
+
+func _is_team_wiped() -> bool:
+	var players_node := get_node_or_null("/root/main/Players")
+	if players_node == null:
+		return false
+	var children := players_node.get_children()
+	if children.is_empty():
+		return false
+	var found_any := false
+	for child in children:
+		var hp := child.get_node_or_null("HealthComponent") as HealthComponent
+		if hp != null:
+			found_any = true
+			if hp.is_alive():
+				return false
+	return found_any
+
+
+func _on_player_died() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if not round_active:
+		return
+	if _is_team_wiped():
+		_wipe_generation += 1
+		var gen := _wipe_generation
+		await get_tree().create_timer(WIPE_GRACE_SECONDS).timeout
+		_on_wipe_grace_elapsed(gen)
+
+
+func _on_wipe_grace_elapsed(gen: int) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if gen != _wipe_generation:
+		return
+	if not round_active:
+		return
+	if _is_team_wiped():
+		_end_round(false)
 
 
 func _on_timer_timeout() -> void:
@@ -56,6 +114,7 @@ func _sync_state_to_clients() -> void:
 func restart_round() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
+	_wipe_generation += 1
 	round_active = true
 	round_success = false
 	fishing_active = true
@@ -140,7 +199,8 @@ func get_debug_state() -> Dictionary:
 		"round_active": round_active,
 		"round_success": round_success,
 		"fishing_active": fishing_active,
-		"time_left": max(0, int(ceil(timer.time_left))) if is_instance_valid(timer) else 0
+		"time_left": max(0, int(ceil(timer.time_left))) if is_instance_valid(timer) else 0,
+		"wipe_generation": _wipe_generation
 	}
 
 

@@ -47,7 +47,12 @@ func _on_connection_failed_reset() -> void:
 
 
 func _on_disconnected() -> void:
+	disconnect_to_lobby()
+
+
+func disconnect_to_lobby() -> void:
 	NetworkManager.disconnect_from_game()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().change_scene_to_file("res://scenes/lobby.tscn")
 
 

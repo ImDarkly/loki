@@ -173,3 +173,139 @@ func test_single_player_fallback_scan_path() -> void:
 
 	var found: Node = pause_menu._get_local_voice_chat_manager()
 	assert_eq(found, vc, "Should find VoiceChatManager via fallback loop over players children")
+
+
+func test_toggle_fullscreen_action_exists() -> void:
+	assert_true(InputMap.has_action("toggle_fullscreen"), "toggle_fullscreen action must exist")
+	var found := false
+	for ev in InputMap.action_get_events("toggle_fullscreen"):
+		if ev is InputEventKey and (ev.keycode == KEY_F11 or ev.physical_keycode == KEY_F11):
+			found = true
+	assert_true(found, "toggle_fullscreen should be bound to F11")
+
+
+func test_fullscreen_button_toggles_mode_both_ways() -> void:
+	if DisplayServer.get_name() == "headless":
+		pause_menu.fullscreen_button.text = "STALE"
+		pause_menu._on_fullscreen_pressed()
+		var headless_expected := "Windowed" if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN else "Fullscreen"
+		assert_eq(pause_menu.fullscreen_button.text, headless_expected, "Fullscreen button label must track window mode")
+		return
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	await get_tree().process_frame
+	pause_menu._on_fullscreen_pressed()
+	assert_eq(DisplayServer.window_get_mode(), DisplayServer.WINDOW_MODE_FULLSCREEN)
+	assert_eq(pause_menu.fullscreen_button.text, "Windowed")
+	pause_menu._on_fullscreen_pressed()
+	assert_eq(DisplayServer.window_get_mode(), DisplayServer.WINDOW_MODE_WINDOWED)
+	assert_eq(pause_menu.fullscreen_button.text, "Fullscreen")
+
+
+func test_open_menu_refreshes_fullscreen_label() -> void:
+	var peer := _bind_test_peer()
+	pause_menu.fullscreen_button.text = "STALE"
+	pause_menu.open_menu()
+	var expected := "Windowed" if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN else "Fullscreen"
+	assert_eq(pause_menu.fullscreen_button.text, expected)
+	_unbind_test_peer(peer)
+
+
+func _bind_test_peer() -> ENetMultiplayerPeer:
+	var srv := ENetMultiplayerPeer.new()
+	var err := srv.create_server(45731)
+	assert_eq(err, OK, "test peer should bind")
+	multiplayer.multiplayer_peer = srv
+	return srv
+
+
+func _unbind_test_peer(peer: ENetMultiplayerPeer) -> void:
+	multiplayer.multiplayer_peer = null
+	peer.close()
+
+
+func _make_f11_event() -> InputEventKey:
+	var ev := InputEventKey.new()
+	ev.pressed = true
+	ev.keycode = KEY_F11
+	ev.physical_keycode = KEY_F11
+	return ev
+
+
+func test_f11_fullscreen_works_when_menu_blocked() -> void:
+	var end_screen := Control.new()
+	end_screen.name = "EndScreen"
+	end_screen.visible = true
+	_main.add_child(end_screen)
+	await get_tree().process_frame
+	assert_false(pause_menu._can_open(), "EndScreen should block menu opening")
+
+	if DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		await get_tree().process_frame
+		pause_menu._unhandled_input(_make_f11_event())
+		assert_eq(DisplayServer.window_get_mode(), DisplayServer.WINDOW_MODE_FULLSCREEN, "F11 should toggle fullscreen even when menu cannot open")
+		assert_false(pause_menu.visible, "Menu must stay hidden when blocked")
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	else:
+		pause_menu._unhandled_input(_make_f11_event())
+		assert_false(pause_menu.visible, "Menu must stay hidden when blocked")
+	end_screen.free()
+
+
+func _swap_game_manager_stub(calls: Array) -> Array:
+	var gm := get_node("/root/game_manager")
+	gm.name = "game_manager_under_test"
+	var stub := Node.new()
+	stub.name = "game_manager"
+	var scr := GDScript.new()
+	scr.source_code = "extends Node\nsignal pause_toggled(is_open: bool)\nvar calls: Array = []\nfunc disconnect_to_lobby() -> void:\n\tcalls.append(\"disconnect_to_lobby\")\n\tInput.mouse_mode = Input.MOUSE_MODE_VISIBLE\n"
+	scr.reload()
+	stub.set_script(scr)
+	stub.set("calls", calls)
+	get_node("/root").add_child(stub)
+	return [gm, stub]
+
+
+func _restore_game_manager(handle: Array) -> void:
+	var gm: Node = handle[0]
+	var stub: Node = handle[1]
+	if is_instance_valid(stub):
+		stub.free()
+	if is_instance_valid(gm):
+		gm.name = "game_manager"
+
+
+func test_exit_confirmed_disconnects_to_lobby() -> void:
+	var calls: Array = []
+	var handle := _swap_game_manager_stub(calls)
+	var peer := _bind_test_peer()
+	pause_menu.open_menu()
+	assert_true(pause_menu.visible, "Menu should be open before confirming exit")
+	pause_menu._exit_dialog.confirmed.emit()
+	assert_false(pause_menu.visible, "Confirming exit should close the menu")
+	assert_eq(calls, ["disconnect_to_lobby"], "Confirming exit should call disconnect_to_lobby once")
+	if DisplayServer.get_name() != "headless":
+		assert_eq(Input.mouse_mode, Input.MOUSE_MODE_VISIBLE, "Exit to lobby must leave mouse VISIBLE (close_menu captures, disconnect restores)")
+	_unbind_test_peer(peer)
+	_restore_game_manager(handle)
+
+
+func test_disconnect_to_lobby_restores_visible_mouse() -> void:
+	var src := FileAccess.get_file_as_string("res://autoloads/game_manager.gd")
+	var idx := src.find("func disconnect_to_lobby")
+	assert_true(idx >= 0, "game_manager must define disconnect_to_lobby")
+	var body := src.substr(idx, 512)
+	assert_true(body.find("MOUSE_MODE_VISIBLE") >= 0, "Real disconnect_to_lobby must restore MOUSE_MODE_VISIBLE (no scene-change call in test)")
+
+
+func test_exit_cancel_changes_nothing() -> void:
+	var calls: Array = []
+	var handle := _swap_game_manager_stub(calls)
+	var peer := _bind_test_peer()
+	pause_menu.open_menu()
+	pause_menu._on_exit_pressed()
+	pause_menu._exit_dialog.canceled.emit()
+	assert_true(pause_menu.visible, "Canceling exit should keep the menu open")
+	assert_true(calls.is_empty(), "Canceling exit should not disconnect")
+	_unbind_test_peer(peer)
+	_restore_game_manager(handle)

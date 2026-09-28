@@ -6,12 +6,22 @@ extends CanvasLayer
 @onready var exit_button: Button = $CenterPanel/VBox/ExitButton
 
 
+var _exit_dialog: ConfirmationDialog
+
+
 func _ready() -> void:
 	visible = false
 	resume_button.pressed.connect(_on_resume_pressed)
 	mute_button.pressed.connect(_on_mute_pressed)
 	fullscreen_button.pressed.connect(_on_fullscreen_pressed)
 	exit_button.pressed.connect(_on_exit_pressed)
+
+	_exit_dialog = ConfirmationDialog.new()
+	_exit_dialog.name = "ExitDialog"
+	_exit_dialog.title = "Exit to Lobby"
+	_exit_dialog.dialog_text = "Exit to lobby?"
+	_exit_dialog.confirmed.connect(_on_exit_confirmed)
+	add_child(_exit_dialog)
 
 	# Optionally connect round_ended (dormant for Night-phase future-proofing only)
 	var rm := get_node_or_null("/root/main/RoundManager")
@@ -20,6 +30,10 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_fullscreen"):
+		get_viewport().set_input_as_handled()
+		_on_fullscreen_pressed()
+		return
 	if event.is_action_pressed("ui_cancel"):
 		if visible:
 			get_viewport().set_input_as_handled()
@@ -44,6 +58,7 @@ func open_menu() -> void:
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_update_mute_button_text()
+	_update_fullscreen_button_text()
 	var gm := get_node_or_null("/root/game_manager")
 	if gm:
 		gm.pause_toggled.emit(true)
@@ -97,14 +112,31 @@ func _update_mute_button_text() -> void:
 		mute_button.text = "Mute Voice Chat"
 
 
+func _update_fullscreen_button_text() -> void:
+	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
+		fullscreen_button.text = "Windowed"
+	else:
+		fullscreen_button.text = "Fullscreen"
+
+
 func _on_fullscreen_pressed() -> void:
-	# TODO: Implement in #279/#280
-	pass
+	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	_update_fullscreen_button_text()
 
 
 func _on_exit_pressed() -> void:
-	# TODO: Implement in #279/#280
-	pass
+	if _exit_dialog:
+		_exit_dialog.popup_centered()
+
+
+func _on_exit_confirmed() -> void:
+	close_menu()
+	var gm := get_node_or_null("/root/game_manager")
+	if gm and gm.has_method("disconnect_to_lobby"):
+		gm.disconnect_to_lobby()
 
 
 func _on_round_ended(_success: bool) -> void:

@@ -14,7 +14,8 @@ func _ready() -> void:
 
 
 func _on_round_ended(success: bool) -> void:
-	outcome_label.text = "SUCCESS" if success else "QUOTA FAILED"
+	# TODO: Future quota/wipe caller must re-split SUCCESS vs TEAM WIPED vs QUOTA FAILED
+	outcome_label.text = "SUCCESS" if success else "TEAM WIPED"
 
 	var qm := get_node_or_null("/root/main/QuotaManager")
 	if qm:
