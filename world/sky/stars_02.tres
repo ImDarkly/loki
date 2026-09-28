@@ -2,8 +2,8 @@
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_stars2"]
 noise_type = 0
-frequency = 0.02
-fractal_octaves = 2
+frequency = 0.4
+fractal_octaves = 3
 
 [resource]
 width = 1024

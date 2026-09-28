@@ -87,3 +87,17 @@ func test_toggling_mock_snaps_ground_water_albedos_while_light_unchanged() -> vo
 func test_no_procedural_sky_material_remains() -> void:
 	var world_env := world_setup.get_node_or_null("WorldEnvironment") as WorldEnvironment
 	assert_false(world_env.environment.sky.sky_material is ProceduralSkyMaterial, "No ProceduralSkyMaterial should remain")
+
+
+func test_star_noise_tuned_to_fine_grain_not_blotches() -> void:
+	var stars_1 := load("res://world/sky/stars_01.tres") as NoiseTexture2D
+	var stars_2 := load("res://world/sky/stars_02.tres") as NoiseTexture2D
+	assert_true(is_instance_valid(stars_1), "stars_01.tres should load")
+	assert_true(is_instance_valid(stars_2), "stars_02.tres should load")
+	var noise_1 := stars_1.noise as FastNoiseLite
+	var noise_2 := stars_2.noise as FastNoiseLite
+	assert_true(is_instance_valid(noise_1), "stars_01 noise should be FastNoiseLite")
+	assert_true(is_instance_valid(noise_2), "stars_02 noise should be FastNoiseLite")
+	assert_eq(noise_1.noise_type, FastNoiseLite.TYPE_CELLULAR, "stars_01 should use cellular noise for sparse points")
+	assert_true(noise_1.frequency >= 0.3, "stars_01 frequency should be high-frequency (got %s)" % noise_1.frequency)
+	assert_true(noise_2.frequency >= 0.3, "stars_02 frequency should be fine grain, not low-freq blotches (got %s)" % noise_2.frequency)
