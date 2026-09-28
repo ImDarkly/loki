@@ -38,7 +38,7 @@ func setup_environment() -> void:
 	_sky_material.set_shader_parameter("cloud_tex_02", load("res://world/sky/clouds_02.tres"))
 	_sky_material.set_shader_parameter("night_noise_01", load("res://world/sky/stars_01.tres"))
 	_sky_material.set_shader_parameter("night_noise_02", load("res://world/sky/stars_02.tres"))
-	_sky_material.set_shader_parameter("wind_speed", Vector2(0.08, 0.08))
+	_sky_material.set_shader_parameter("wind_speed", Vector2(0.025, 0.025))
 
 	var sky := Sky.new()
 	sky.sky_material = _sky_material

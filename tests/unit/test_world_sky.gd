@@ -117,7 +117,7 @@ func test_star_noise_tuned_to_sparse_points_not_blotches() -> void:
 
 func test_wind_speed_tuned_slower_than_shader_default() -> void:
 	var wind: Vector2 = world_setup._sky_material.get_shader_parameter("wind_speed")
-	assert_almost_eq(wind.x, 0.08, 0.001, "wind_speed.x tuned slower than 0.5 default")
-	assert_almost_eq(wind.y, 0.08, 0.001, "wind_speed.y tuned slower than 0.5 default")
+	assert_almost_eq(wind.x, 0.025, 0.001, "wind_speed.x tuned slower than 0.5 default")
+	assert_almost_eq(wind.y, 0.025, 0.001, "wind_speed.y tuned slower than 0.5 default")
 	var tiling = world_setup._sky_material.get_shader_parameter("cloud_tiling")
 	assert_null(tiling, "cloud_tiling should keep shader default (no override)")
