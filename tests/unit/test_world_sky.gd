@@ -92,8 +92,10 @@ func test_no_procedural_sky_material_remains() -> void:
 	assert_false(world_env.environment.sky.sky_material is ProceduralSkyMaterial, "No ProceduralSkyMaterial should remain")
 
 
-func test_star_noise_tuned_to_sparse_points_not_blotches() -> void:
+func test_star_noise_matches_b9a5709_baseline() -> void:
 	# b9a5709 baseline star noise parameters with wind-only deviation.
+	# NoiseTexture2D.generate_mipmaps defaults to true in Godot 4.6, and
+	# b9a5709 .tres files have no explicit generate_mipmaps line.
 	var stars_1 := load("res://world/sky/stars_01.tres") as NoiseTexture2D
 	var stars_2 := load("res://world/sky/stars_02.tres") as NoiseTexture2D
 	assert_true(is_instance_valid(stars_1), "stars_01.tres should load")
@@ -108,8 +110,8 @@ func test_star_noise_tuned_to_sparse_points_not_blotches() -> void:
 	assert_almost_eq(noise_2.frequency, 0.02, 0.001, "stars_02 frequency at b9a5709 baseline 0.02")
 	assert_eq(noise_1.fractal_octaves, 4, "stars_01 octaves at b9a5709 baseline 4")
 	assert_eq(noise_2.fractal_octaves, 2, "stars_02 octaves at b9a5709 baseline 2")
-	assert_true(stars_1.generate_mipmaps, "stars_01 mipmaps enabled at b9a5709 baseline")
-	assert_true(stars_2.generate_mipmaps, "stars_02 mipmaps enabled at b9a5709 baseline")
+	assert_true(stars_1.generate_mipmaps, "stars_01 generate_mipmaps inherits engine default true at b9a5709 baseline")
+	assert_true(stars_2.generate_mipmaps, "stars_02 generate_mipmaps inherits engine default true at b9a5709 baseline")
 
 
 func test_wind_speed_tuned_slower_than_shader_default() -> void:
