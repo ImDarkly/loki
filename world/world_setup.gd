@@ -3,7 +3,7 @@ extends Node3D
 
 const MOON_SCENE: PackedScene = preload("res://world/moon_arc.tscn")
 
-var _sky_material: ProceduralSkyMaterial
+var _sky_material: ShaderMaterial
 var _directional_light: DirectionalLight3D
 var _ground_mat: ORMMaterial3D
 var _water_mat: ORMMaterial3D
@@ -31,13 +31,13 @@ func _setup_moon_arc() -> void:
 
 
 func setup_environment() -> void:
-	_sky_material = ProceduralSkyMaterial.new()
-	_sky_material.sky_top_color = Color(0.30, 0.61, 0.90)
-	_sky_material.sky_horizon_color = Color(0.56, 0.83, 1.0)
-	_sky_material.sky_curve = 0.15
-	_sky_material.ground_horizon_color = Color(0.04, 0.54, 0.56)
-	_sky_material.ground_bottom_color = Color(0.02, 0.25, 0.30)
-	_sky_material.ground_curve = 0.4
+	var shader := load("res://world/sky/main.gdshader") as Shader
+	_sky_material = ShaderMaterial.new()
+	_sky_material.shader = shader
+	_sky_material.set_shader_parameter("cloud_tex_01", load("res://world/sky/clouds_01.tres"))
+	_sky_material.set_shader_parameter("cloud_tex_02", load("res://world/sky/clouds_02.tres"))
+	_sky_material.set_shader_parameter("night_noise_01", load("res://world/sky/stars_01.tres"))
+	_sky_material.set_shader_parameter("night_noise_02", load("res://world/sky/stars_02.tres"))
 
 	var sky := Sky.new()
 	sky.sky_material = _sky_material
@@ -53,6 +53,7 @@ func setup_environment() -> void:
 	env.fog_sky_affect = 0.05
 
 	var world_env := WorldEnvironment.new()
+	world_env.name = "WorldEnvironment"
 	world_env.environment = env
 	add_child(world_env)
 
@@ -150,23 +151,10 @@ func _process(_delta: float) -> void:
 
 
 func _apply_night() -> void:
-	_sky_material.sky_top_color = Color(0.18, 0.13, 0.18)
-	_sky_material.sky_horizon_color = Color(0.27, 0.16, 0.25)
-	_sky_material.ground_horizon_color = Color(0.22, 0.31, 0.29)
-	_sky_material.ground_bottom_color = Color(0.18, 0.13, 0.18)
-	_directional_light.light_energy = 0.15
-	_directional_light.light_color = Color(0.20, 0.20, 0.33)
 	_ground_mat.albedo_color = Color(0.24, 0.21, 0.27)
 	_water_mat.albedo_color = Color(0.04, 0.37, 0.40)
 
 
 func _apply_day() -> void:
-	_sky_material.sky_top_color = Color(0.30, 0.61, 0.90)
-	_sky_material.sky_horizon_color = Color(0.56, 0.83, 1.0)
-	_sky_material.ground_horizon_color = Color(0.04, 0.54, 0.56)
-	_sky_material.ground_bottom_color = Color(0.02, 0.25, 0.30)
-	_sky_material.ground_curve = 0.4
-	_directional_light.light_energy = 1.0
-	_directional_light.light_color = Color.WHITE
 	_ground_mat.albedo_color = Color(0.90, 0.56, 0.31)
 	_water_mat.albedo_color = Color(0.04, 0.54, 0.56)
