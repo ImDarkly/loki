@@ -6,14 +6,17 @@ var _main: Node3D
 var round_manager: Node
 
 
+class MockRoundManager extends Node:
+	var fishing_active := false
+
+
 func before_each() -> void:
 	_main = Node3D.new()
 	_main.name = "main"
 	get_node("/root").add_child(_main)
 
-	round_manager = Node3D.new()
+	round_manager = MockRoundManager.new()
 	round_manager.name = "RoundManager"
-	round_manager.set("fishing_active", false)
 	_main.add_child(round_manager)
 
 	var world_setup_script = load("res://world/world_setup.gd")
@@ -99,5 +102,8 @@ func test_star_noise_tuned_to_fine_grain_not_blotches() -> void:
 	assert_true(is_instance_valid(noise_1), "stars_01 noise should be FastNoiseLite")
 	assert_true(is_instance_valid(noise_2), "stars_02 noise should be FastNoiseLite")
 	assert_eq(noise_1.noise_type, FastNoiseLite.TYPE_CELLULAR, "stars_01 should use cellular noise for sparse points")
+	assert_eq(noise_2.noise_type, FastNoiseLite.TYPE_SIMPLEX, "stars_02 should use simplex noise for fine grain")
 	assert_true(noise_1.frequency >= 0.3, "stars_01 frequency should be high-frequency (got %s)" % noise_1.frequency)
 	assert_true(noise_2.frequency >= 0.3, "stars_02 frequency should be fine grain, not low-freq blotches (got %s)" % noise_2.frequency)
+	assert_almost_eq(noise_1.frequency, 0.5, 0.001, "stars_01 frequency locked at 0.5")
+	assert_almost_eq(noise_2.frequency, 0.4, 0.001, "stars_02 frequency locked at 0.4")
