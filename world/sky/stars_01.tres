@@ -2,12 +2,11 @@
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_stars1"]
 noise_type = 0
-frequency = 0.8
-fractal_octaves = 2
+frequency = 0.08
+fractal_octaves = 4
 
 [resource]
 width = 1024
 height = 1024
-generate_mipmaps = false
 noise = SubResource("FastNoiseLite_stars1")
 seamless = true

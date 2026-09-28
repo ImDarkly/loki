@@ -93,11 +93,7 @@ func test_no_procedural_sky_material_remains() -> void:
 
 
 func test_star_noise_tuned_to_sparse_points_not_blotches() -> void:
-	# Night stars pass through smoothstep(0.9, 0.95) in main.gdshader, so the
-	# stars_01 texture must contain sparse pixels above 0.9. Cellular with the
-	# default distance return never clears 0.9 (flat 0.345 readback at 1024²),
-	# so stars_01 uses high-frequency simplex whose peaks clear the threshold.
-	# NOTE: in this Godot build TYPE_SIMPLEX == 0, TYPE_CELLULAR == 2.
+	# b9a5709 baseline star noise parameters with wind-only deviation.
 	var stars_1 := load("res://world/sky/stars_01.tres") as NoiseTexture2D
 	var stars_2 := load("res://world/sky/stars_02.tres") as NoiseTexture2D
 	assert_true(is_instance_valid(stars_1), "stars_01.tres should load")
@@ -106,22 +102,14 @@ func test_star_noise_tuned_to_sparse_points_not_blotches() -> void:
 	var noise_2 := stars_2.noise as FastNoiseLite
 	assert_true(is_instance_valid(noise_1), "stars_01 noise should be FastNoiseLite")
 	assert_true(is_instance_valid(noise_2), "stars_02 noise should be FastNoiseLite")
-	assert_eq(noise_1.noise_type, FastNoiseLite.TYPE_SIMPLEX, "stars_01 should use simplex noise for sparse peaks")
-	assert_eq(noise_2.noise_type, FastNoiseLite.TYPE_SIMPLEX, "stars_02 should use simplex noise for fine grain")
-	assert_true(noise_1.frequency >= 0.3, "stars_01 frequency should be high-frequency (got %s)" % noise_1.frequency)
-	assert_true(noise_2.frequency >= 0.3, "stars_02 frequency should be fine grain, not low-freq blotches (got %s)" % noise_2.frequency)
-	assert_almost_eq(noise_1.frequency, 0.8, 0.001, "stars_01 frequency locked at 0.8")
-	assert_almost_eq(noise_2.frequency, 0.4, 0.001, "stars_02 frequency locked at 0.4")
-	assert_eq(noise_1.fractal_octaves, 2, "stars_01 octaves locked at 2")
-	# Minified sky lookups average ~2 texels/px: with mipmaps on, mip1 peaks
-	# collapse to max 0.8696 and smoothstep(0.9, 0.95) yields zero stars on
-	# screen despite 1:1 texels passing. stars_01 must ship without mipmaps so
-	# the GPU samples the base level and sparse peaks survive as points.
-	assert_false(stars_1.generate_mipmaps, "stars_01 must disable mipmaps so minified lookups keep peaks above the star threshold")
-	# stars_02 is only a low-amplitude gradient (night_noise*0.01, night tint
-	# modulation) with no threshold: mip smoothing is beneficial there, so it
-	# intentionally keeps mipmaps. Do not "fix" it the same way.
-	assert_true(stars_2.generate_mipmaps, "stars_02 keeps mipmaps for smooth gradient sampling")
+	assert_eq(noise_1.noise_type, FastNoiseLite.TYPE_SIMPLEX, "stars_01 should use simplex noise")
+	assert_eq(noise_2.noise_type, FastNoiseLite.TYPE_SIMPLEX, "stars_02 should use simplex noise")
+	assert_almost_eq(noise_1.frequency, 0.08, 0.001, "stars_01 frequency at b9a5709 baseline 0.08")
+	assert_almost_eq(noise_2.frequency, 0.02, 0.001, "stars_02 frequency at b9a5709 baseline 0.02")
+	assert_eq(noise_1.fractal_octaves, 4, "stars_01 octaves at b9a5709 baseline 4")
+	assert_eq(noise_2.fractal_octaves, 2, "stars_02 octaves at b9a5709 baseline 2")
+	assert_true(stars_1.generate_mipmaps, "stars_01 mipmaps enabled at b9a5709 baseline")
+	assert_true(stars_2.generate_mipmaps, "stars_02 mipmaps enabled at b9a5709 baseline")
 
 
 func test_wind_speed_tuned_slower_than_shader_default() -> void:
