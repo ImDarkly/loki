@@ -92,7 +92,12 @@ func test_no_procedural_sky_material_remains() -> void:
 	assert_false(world_env.environment.sky.sky_material is ProceduralSkyMaterial, "No ProceduralSkyMaterial should remain")
 
 
-func test_star_noise_tuned_to_fine_grain_not_blotches() -> void:
+func test_star_noise_tuned_to_sparse_points_not_blotches() -> void:
+	# Night stars pass through smoothstep(0.9, 0.95) in main.gdshader, so the
+	# stars_01 texture must contain sparse pixels above 0.9. Cellular with the
+	# default distance return never clears 0.9 (flat 0.345 readback at 1024²),
+	# so stars_01 uses high-frequency simplex whose peaks clear the threshold.
+	# NOTE: in this Godot build TYPE_SIMPLEX == 0, TYPE_CELLULAR == 2.
 	var stars_1 := load("res://world/sky/stars_01.tres") as NoiseTexture2D
 	var stars_2 := load("res://world/sky/stars_02.tres") as NoiseTexture2D
 	assert_true(is_instance_valid(stars_1), "stars_01.tres should load")
@@ -101,9 +106,18 @@ func test_star_noise_tuned_to_fine_grain_not_blotches() -> void:
 	var noise_2 := stars_2.noise as FastNoiseLite
 	assert_true(is_instance_valid(noise_1), "stars_01 noise should be FastNoiseLite")
 	assert_true(is_instance_valid(noise_2), "stars_02 noise should be FastNoiseLite")
-	assert_eq(noise_1.noise_type, FastNoiseLite.TYPE_CELLULAR, "stars_01 should use cellular noise for sparse points")
+	assert_eq(noise_1.noise_type, FastNoiseLite.TYPE_SIMPLEX, "stars_01 should use simplex noise for sparse peaks")
 	assert_eq(noise_2.noise_type, FastNoiseLite.TYPE_SIMPLEX, "stars_02 should use simplex noise for fine grain")
 	assert_true(noise_1.frequency >= 0.3, "stars_01 frequency should be high-frequency (got %s)" % noise_1.frequency)
 	assert_true(noise_2.frequency >= 0.3, "stars_02 frequency should be fine grain, not low-freq blotches (got %s)" % noise_2.frequency)
-	assert_almost_eq(noise_1.frequency, 0.5, 0.001, "stars_01 frequency locked at 0.5")
+	assert_almost_eq(noise_1.frequency, 0.8, 0.001, "stars_01 frequency locked at 0.8")
 	assert_almost_eq(noise_2.frequency, 0.4, 0.001, "stars_02 frequency locked at 0.4")
+	assert_eq(noise_1.fractal_octaves, 2, "stars_01 octaves locked at 2")
+
+
+func test_wind_speed_tuned_slower_than_shader_default() -> void:
+	var wind: Vector2 = world_setup._sky_material.get_shader_parameter("wind_speed")
+	assert_almost_eq(wind.x, 0.08, 0.001, "wind_speed.x tuned slower than 0.5 default")
+	assert_almost_eq(wind.y, 0.08, 0.001, "wind_speed.y tuned slower than 0.5 default")
+	var tiling = world_setup._sky_material.get_shader_parameter("cloud_tiling")
+	assert_null(tiling, "cloud_tiling should keep shader default (no override)")

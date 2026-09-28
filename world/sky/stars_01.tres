@@ -1,9 +1,9 @@
 [gd_resource type="NoiseTexture2D" format=3]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_stars1"]
-noise_type = 2
-frequency = 0.5
-fractal_octaves = 4
+noise_type = 0
+frequency = 0.8
+fractal_octaves = 2
 
 [resource]
 width = 1024
