@@ -8,5 +8,6 @@ fractal_octaves = 2
 [resource]
 width = 1024
 height = 1024
+generate_mipmaps = false
 noise = SubResource("FastNoiseLite_stars1")
 seamless = true

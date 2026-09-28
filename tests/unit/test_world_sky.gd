@@ -113,6 +113,15 @@ func test_star_noise_tuned_to_sparse_points_not_blotches() -> void:
 	assert_almost_eq(noise_1.frequency, 0.8, 0.001, "stars_01 frequency locked at 0.8")
 	assert_almost_eq(noise_2.frequency, 0.4, 0.001, "stars_02 frequency locked at 0.4")
 	assert_eq(noise_1.fractal_octaves, 2, "stars_01 octaves locked at 2")
+	# Minified sky lookups average ~2 texels/px: with mipmaps on, mip1 peaks
+	# collapse to max 0.8696 and smoothstep(0.9, 0.95) yields zero stars on
+	# screen despite 1:1 texels passing. stars_01 must ship without mipmaps so
+	# the GPU samples the base level and sparse peaks survive as points.
+	assert_false(stars_1.generate_mipmaps, "stars_01 must disable mipmaps so minified lookups keep peaks above the star threshold")
+	# stars_02 is only a low-amplitude gradient (night_noise*0.01, night tint
+	# modulation) with no threshold: mip smoothing is beneficial there, so it
+	# intentionally keeps mipmaps. Do not "fix" it the same way.
+	assert_true(stars_2.generate_mipmaps, "stars_02 keeps mipmaps for smooth gradient sampling")
 
 
 func test_wind_speed_tuned_slower_than_shader_default() -> void:
