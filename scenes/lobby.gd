@@ -18,10 +18,12 @@ const CODE_DIGITS := "0123456789"
 @onready var player_list: ItemList = %PlayerList
 @onready var status_label: Label = %StatusLabel
 @onready var start_button: Button = %StartButton
+@onready var quit_button: Button = %QuitButton
 
 var _displayed_code: String = ""
 var _pending_candidates: Array[HLobby] = []
 var _joining: bool = false
+var _quit_dialog: ConfirmationDialog
 
 
 func _ready() -> void:
@@ -29,10 +31,18 @@ func _ready() -> void:
 	join_menu_button.pressed.connect(_on_join_menu_pressed)
 	join_confirm_button.pressed.connect(_on_join_confirm_pressed)
 	start_button.pressed.connect(_on_start_pressed)
+	quit_button.pressed.connect(_on_quit_pressed)
 	copy_code_button.pressed.connect(_on_copy_code_pressed)
 	code_input.text_changed.connect(_on_code_text_changed)
 	player_list.item_clicked.connect(_on_candidate_picked)
 	code_input.max_length = CODE_LENGTH
+
+	_quit_dialog = ConfirmationDialog.new()
+	_quit_dialog.name = "QuitDialog"
+	_quit_dialog.title = "Quit Game"
+	_quit_dialog.dialog_text = "Quit the game?"
+	_quit_dialog.confirmed.connect(_on_quit_confirmed)
+	add_child(_quit_dialog)
 
 	game_manager.player_list_changed.connect(_on_player_list_changed)
 	NetworkManager.host_started.connect(_on_host_started)
@@ -46,6 +56,7 @@ func _ready() -> void:
 
 
 func _show_main_menu(keep_join_row: bool = false) -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	main_menu.visible = true
 	lobby_view.visible = false
 	join_row.visible = keep_join_row
@@ -215,3 +226,17 @@ func _on_start_pressed() -> void:
 	start_button.text = "Starting..."
 	status_label.text = "Loading world..."
 	game_manager.start_game()
+
+
+func _on_quit_pressed() -> void:
+	if _quit_dialog:
+		_quit_dialog.popup_centered()
+
+
+func _on_quit_confirmed() -> void:
+	NetworkManager.disconnect_from_game()
+	_quit_app()
+
+
+func _quit_app() -> void:
+	get_tree().quit()

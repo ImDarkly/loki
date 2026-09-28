@@ -163,3 +163,87 @@ func test_resume_fishing_ignored_when_timer_stopped() -> void:
 	manager.fishing_active = false
 	manager.debug_action("resume_fishing")
 	assert_false(manager.fishing_active, "resume_fishing should not set fishing_active true when timer stopped")
+
+
+func after_each() -> void:
+	var main := get_node_or_null("/root/main")
+	if main:
+		var players := main.get_node_or_null("Players")
+		if players:
+			players.free()
+		if main.get_child_count() == 0:
+			main.free()
+
+
+func _spawn_team(alive_states: Array) -> Node3D:
+	var main := get_node_or_null("/root/main")
+	if main == null:
+		main = Node3D.new()
+		main.name = "main"
+		get_node("/root").add_child(main)
+	var old := main.get_node_or_null("Players")
+	if old:
+		old.free()
+	var players := Node3D.new()
+	players.name = "Players"
+	main.add_child(players)
+	for i in alive_states.size():
+		var p := Node3D.new()
+		p.name = "Player_%d" % (i + 1)
+		players.add_child(p)
+		var hp := HealthComponent.new()
+		hp.name = "HealthComponent"
+		p.add_child(hp)
+		if not alive_states[i]:
+			hp.current_health = 0
+	return players
+
+
+func test_full_wipe_ends_round_as_failure() -> void:
+	_spawn_team([false, false])
+	watch_signals(manager)
+	manager._on_wipe_grace_elapsed(manager._wipe_generation)
+	assert_false(manager.round_active, "round_active should be false after full wipe")
+	assert_false(manager.round_success, "round_success should be false after wipe")
+	assert_signal_emitted_with_parameters(manager, "round_ended", [false])
+
+
+func test_partial_death_does_not_end_round() -> void:
+	_spawn_team([false, true])
+	watch_signals(manager)
+	manager._on_wipe_grace_elapsed(manager._wipe_generation)
+	assert_true(manager.round_active, "round_active should stay true when a player is alive")
+	assert_signal_not_emitted(manager, "round_ended")
+
+
+func test_freed_player_excluded_from_wipe() -> void:
+	var players := _spawn_team([true, false])
+	players.get_child(1).free()
+	watch_signals(manager)
+	manager._on_wipe_grace_elapsed(manager._wipe_generation)
+	assert_true(manager.round_active, "Freed dead player must not count toward a wipe")
+	assert_signal_not_emitted(manager, "round_ended")
+
+
+func test_wipe_grace_is_client_noop() -> void:
+	_spawn_team([false, false])
+	var saved_peer = manager.multiplayer.multiplayer_peer
+	var peer := ENetMultiplayerPeer.new()
+	peer.create_client("127.0.0.1", 1)
+	manager.multiplayer.multiplayer_peer = peer
+	watch_signals(manager)
+	manager._on_wipe_grace_elapsed(manager._wipe_generation)
+	assert_true(manager.round_active, "Client must not end the round")
+	assert_signal_not_emitted(manager, "round_ended")
+	manager.multiplayer.multiplayer_peer = saved_peer
+
+
+func test_restart_invalidates_in_flight_grace() -> void:
+	_spawn_team([false, false])
+	var stale_gen: int = manager._wipe_generation
+	manager.restart_round()
+	assert_true(manager.round_active, "Round should be active after restart")
+	watch_signals(manager)
+	manager._on_wipe_grace_elapsed(stale_gen)
+	assert_true(manager.round_active, "Stale grace must not end the restarted round")
+	assert_signal_not_emitted(manager, "round_ended")

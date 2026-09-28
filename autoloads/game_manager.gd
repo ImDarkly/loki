@@ -47,7 +47,17 @@ func _on_connection_failed_reset() -> void:
 
 
 func _on_disconnected() -> void:
+	disconnect_to_lobby()
+
+
+func disconnect_to_lobby() -> void:
+	_players_dict.clear()
+	_player_order.clear()
+	_players_ready = 0
+	spawn_manager = null
+	_rebuild_players()
 	NetworkManager.disconnect_from_game()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().change_scene_to_file("res://scenes/lobby.tscn")
 
 
@@ -141,7 +151,7 @@ func _on_scene_loaded() -> void:
 	_players_ready += 1
 	if _players_ready >= _player_order.size():
 		_players_ready = 0
-		if spawn_manager:
+		if is_instance_valid(spawn_manager):
 			spawn_manager.trigger_spawn()
 		all_players_loaded.emit()
 
@@ -153,6 +163,6 @@ func _report_scene_loaded() -> void:
 	_players_ready += 1
 	if _players_ready >= _player_order.size():
 		_players_ready = 0
-		if spawn_manager:
+		if is_instance_valid(spawn_manager):
 			spawn_manager.trigger_spawn()
 		all_players_loaded.emit()

@@ -73,3 +73,63 @@ func test_copy_code_button_shows_feedback_without_error() -> void:
 	lobby._displayed_code = "123456"
 	lobby._on_copy_code_pressed()
 	assert_eq(lobby.copy_code_button.text, "Copied!", "Button should show feedback immediately")
+
+
+func _double_lobby_with_quit_stub(calls: Array) -> void:
+	var dbl := GDScript.new()
+	dbl.source_code = "extends \"res://scenes/lobby.gd\"\nvar calls: Array = []\nvar quit_saw_no_peer: bool = false\nfunc _quit_app() -> void:\n\tcalls.append(\"quit\")\n\tquit_saw_no_peer = multiplayer.multiplayer_peer == null\n"
+	dbl.reload()
+	lobby.set_script(dbl)
+	lobby.set("calls", calls)
+	var dlg := lobby.get_node_or_null("QuitDialog") as ConfirmationDialog
+	if dlg and not dlg.confirmed.is_connected(Callable(lobby, "_on_quit_confirmed")):
+		dlg.confirmed.connect(Callable(lobby, "_on_quit_confirmed"))
+
+
+func _bind_test_peer() -> ENetMultiplayerPeer:
+	var srv := ENetMultiplayerPeer.new()
+	var err := srv.create_server(45732)
+	assert_eq(err, OK, "test peer should bind")
+	multiplayer.multiplayer_peer = srv
+	return srv
+
+
+func _unbind_test_peer(peer: ENetMultiplayerPeer) -> void:
+	multiplayer.multiplayer_peer = null
+	peer.close()
+
+
+func test_quit_confirmed_disconnects_before_quit() -> void:
+	var calls: Array = []
+	_double_lobby_with_quit_stub(calls)
+	var srv := _bind_test_peer()
+	assert_not_null(multiplayer.multiplayer_peer, "test peer should be set before confirm")
+	var dlg := lobby.get_node_or_null("QuitDialog") as ConfirmationDialog
+	assert_not_null(dlg, "QuitDialog must exist")
+	dlg.confirmed.emit()
+	assert_null(multiplayer.multiplayer_peer, "Quit confirm must run disconnect_from_game (clears peer)")
+	assert_eq(calls, ["quit"], "Quit must be requested via stub, never real quit")
+	assert_true(lobby.get("quit_saw_no_peer"), "disconnect must run before quit")
+	_unbind_test_peer(srv)
+
+
+func test_quit_cancel_calls_neither() -> void:
+	var calls: Array = []
+	_double_lobby_with_quit_stub(calls)
+	var srv := _bind_test_peer()
+	lobby._on_quit_pressed()
+	var dlg := lobby.get_node_or_null("QuitDialog") as ConfirmationDialog
+	assert_not_null(dlg, "QuitDialog must exist")
+	dlg.canceled.emit()
+	assert_true(calls.is_empty(), "Canceling quit must never quit")
+	assert_not_null(multiplayer.multiplayer_peer, "Canceling quit must not disconnect")
+	_unbind_test_peer(srv)
+
+
+func test_show_main_menu_restores_visible_mouse() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	lobby._show_main_menu()
+	assert_true(lobby.main_menu.visible, "Main menu should be visible")
+	assert_false(lobby.lobby_view.visible, "Lobby view should be hidden")
+	if DisplayServer.get_name() != "headless":
+		assert_eq(Input.mouse_mode, Input.MOUSE_MODE_VISIBLE, "_show_main_menu must leave mouse VISIBLE for lobby buttons")
