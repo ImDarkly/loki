@@ -1,7 +1,7 @@
 ---
 description: Reviews a plan for architectural fit before any code is written
 mode: subagent
-model: opencode/muse-spark-1.2-contributor-free
+model: opencode/muse-spark-1.3-contributor-free
 tools:
   write: false
   edit: false
