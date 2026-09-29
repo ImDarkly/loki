@@ -3,6 +3,11 @@ extends Node3D
 
 const MOON_SCENE: PackedScene = preload("res://world/moon_arc.tscn")
 
+const DAY_PITCH: float = -1.0
+const NIGHT_PITCH: float = 0.8
+const SUNSET_PITCH: float = 0.0
+const SWEEP_YAW: float = 0.5
+
 var _sky_material: ShaderMaterial
 var _directional_light: DirectionalLight3D
 var _ground_mat: ORMMaterial3D
@@ -10,6 +15,7 @@ var _water_mat: ORMMaterial3D
 var _round_manager: Node = null
 var _fps_label: Label = null
 var _last_fishing_active: bool = false
+var _fishing_anchor_msec: int = 0
 
 
 func _ready() -> void:
@@ -67,7 +73,7 @@ func setup_lighting() -> void:
 	_directional_light.shadow_normal_bias = 0.1
 	_directional_light.directional_shadow_max_distance = 60.0
 	_directional_light.position = Vector3(0, 10, 0)
-	_directional_light.rotation = Vector3(-0.4, 0.5, 0)
+	_directional_light.rotation = Vector3(DAY_PITCH, SWEEP_YAW, 0)
 	add_child(_directional_light)
 
 
@@ -137,18 +143,39 @@ func _add_fps_counter() -> void:
 	_fps_label = label
 
 
+static func pitch_for_progress(progress: float) -> float:
+	var p: float = clampf(progress, 0.0, 1.0)
+	if p <= 0.5:
+		return lerpf(SUNSET_PITCH, NIGHT_PITCH, p / 0.5)
+	else:
+		return lerpf(NIGHT_PITCH, DAY_PITCH, (p - 0.5) / 0.5)
+
+
 func _process(_delta: float) -> void:
 	if _fps_label:
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
 	if _round_manager == null:
 		_round_manager = get_node_or_null("/root/main/RoundManager")
-	if _round_manager and _round_manager.fishing_active != _last_fishing_active:
-		_last_fishing_active = _round_manager.fishing_active
-		if _round_manager.fishing_active:
+	if _round_manager:
+		var current_fishing: bool = _round_manager.fishing_active
+		if current_fishing and not _last_fishing_active:
+			_fishing_anchor_msec = Time.get_ticks_msec()
 			_apply_night()
-		else:
+		elif not current_fishing and _last_fishing_active:
+			_fishing_anchor_msec = 0
 			_apply_day()
+			if _directional_light:
+				_directional_light.rotation = Vector3(DAY_PITCH, SWEEP_YAW, 0)
+
+		_last_fishing_active = current_fishing
+
+		if current_fishing:
+			var duration_sec: float = float(_round_manager.get("round_duration")) if _round_manager.has_method("get") and "round_duration" in _round_manager else 900.0
+			var duration_msec: float = duration_sec * 1000.0
+			var progress: float = float(Time.get_ticks_msec() - _fishing_anchor_msec) / duration_msec if duration_msec > 0.0 else 0.0
+			if _directional_light:
+				_directional_light.rotation = Vector3(pitch_for_progress(progress), SWEEP_YAW, 0)
 
 
 func _apply_night() -> void:

@@ -122,11 +122,12 @@ That’s the whole seagull, sped up for testing. Close the window when done — 
 **What you see:** Top HUD shows mode (`GAME-TRUTH` vs `SHADER-PREVIEW`), renderer (`gl_compatibility`), light rotation, derived `LIGHT0_DIRECTION.y`, wind speed, day/night mix, and time scale.
 
 **Controls:**
-- **F5** — Game-Truth Day (`_apply_day()` + production rotation `(-0.4, 0.5, 0)`)
+- **F5** — Game-Truth Day (`_apply_day()` + production rotation `(-1.0, 0.5, 0)`)
 - **F6** — Shader-Preview Sunset (pitches light to horizon to inspect sunset band)
 - **F7** — Shader-Preview Night (pitches light below horizon to inspect night stars and night colors)
+- **F8** — Sweep Preview (auto-play / scrub across sunset-sunrise sweep calling `pitch_for_progress` with progress and pitch in HUD Label)
 - **G** — Toggle Wind Drift (`Vector2(0.025)` ↔ faster drift `Vector2(0.2)`)
 - **H** — 1x / 2x time scale toggle
 - **R** — Reset to production defaults
 
-**Full flow to watch:** Press **F5** (day gradient with clouds) → **F6** (sunset band at horizon) → **F7** (night stars and darker ambient) → **G** (faster cloud drift) → **R** (reset). Close window when done.
+**Full flow to watch:** Press **F5** (day gradient with clouds) → **F6** (sunset band at horizon) → **F7** (night stars and darker ambient) → **F8** (sweep preview auto-play) → **G** (faster cloud drift) → **R** (reset). Close window when done.

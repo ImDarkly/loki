@@ -8,6 +8,7 @@ var round_manager: Node
 
 class MockRoundManager extends Node:
 	var fishing_active := false
+	var round_duration := 10.0
 
 
 func before_each() -> void:
@@ -46,7 +47,7 @@ func test_light_holds_daytime_rotation_across_frames() -> void:
 	var light: DirectionalLight3D = world_setup._directional_light
 	assert_true(is_instance_valid(light), "DirectionalLight3D should exist")
 	
-	assert_almost_eq(light.rotation.x, -0.4, 0.001, "Light rotation X should be -0.4")
+	assert_almost_eq(light.rotation.x, -1.0, 0.001, "Light rotation X should be -1.0")
 	assert_almost_eq(light.rotation.y, 0.5, 0.001, "Light rotation Y should be 0.5")
 	assert_almost_eq(light.rotation.z, 0.0, 0.001, "Light rotation Z should be 0.0")
 	assert_eq(light.light_energy, 1.0, "Light energy should be 1.0")
@@ -54,7 +55,7 @@ func test_light_holds_daytime_rotation_across_frames() -> void:
 
 	round_manager.fishing_active = false
 	world_setup._process(0.01)
-	assert_almost_eq(light.rotation.x, -0.4, 0.001, "Light rotation X should hold across frames")
+	assert_almost_eq(light.rotation.x, -1.0, 0.001, "Light rotation X should hold across frames")
 	assert_eq(light.light_energy, 1.0, "Light energy should hold across frames")
 	assert_eq(light.light_color, Color.WHITE, "Light color should hold across frames")
 
@@ -120,3 +121,64 @@ func test_wind_speed_tuned_slower_than_shader_default() -> void:
 	assert_almost_eq(wind.y, 0.025, 0.001, "wind_speed.y tuned slower than 0.5 default")
 	var tiling = world_setup._sky_material.get_shader_parameter("cloud_tiling")
 	assert_null(tiling, "cloud_tiling should keep shader default (no override)")
+
+
+func test_pitch_for_progress_values() -> void:
+	var world_setup_script = load("res://world/world_setup.gd")
+	assert_almost_eq(world_setup_script.pitch_for_progress(0.0), 0.0, 0.001, "0 -> 0.0")
+	assert_almost_eq(world_setup_script.pitch_for_progress(0.25), 0.4, 0.001, "0.25 -> 0.4")
+	assert_almost_eq(world_setup_script.pitch_for_progress(0.5), 0.8, 0.001, "0.5 -> 0.8")
+	assert_almost_eq(world_setup_script.pitch_for_progress(0.75), -0.1, 0.001, "0.75 -> -0.1")
+	assert_almost_eq(world_setup_script.pitch_for_progress(1.0), -1.0, 0.001, "1.0 -> -1.0")
+	assert_almost_eq(world_setup_script.pitch_for_progress(-0.5), 0.0, 0.001, "clamping negative -> 0.0")
+	assert_almost_eq(world_setup_script.pitch_for_progress(1.5), -1.0, 0.001, "clamping positive -> -1.0")
+	var slope_sunset = (world_setup_script.pitch_for_progress(0.5) - world_setup_script.pitch_for_progress(0.0)) / 0.5
+	var slope_sunrise = (world_setup_script.pitch_for_progress(1.0) - world_setup_script.pitch_for_progress(0.5)) / 0.5
+	assert_almost_eq(slope_sunset, 1.6, 0.001, "Sunset slope is 1.6")
+	assert_almost_eq(slope_sunrise, -3.6, 0.001, "Sunrise slope is -3.6")
+	assert_true(slope_sunset != slope_sunrise, "Sweep is asymmetric")
+
+
+func test_fishing_sweep_and_shop_snapback() -> void:
+	var light: DirectionalLight3D = world_setup._directional_light
+	round_manager.round_duration = 10.0
+
+	round_manager.fishing_active = true
+	world_setup._process(0.01)
+	assert_almost_eq(light.rotation.x, 0.0, 0.001, "Pitch at start should be 0.0")
+	assert_almost_eq(light.rotation.y, 0.5, 0.001, "Yaw should be 0.5")
+	assert_almost_eq(light.rotation.z, 0.0, 0.001, "Z should be 0.0")
+
+	world_setup._fishing_anchor_msec = Time.get_ticks_msec() - 5000
+	world_setup._process(0.01)
+	assert_almost_eq(light.rotation.x, 0.8, 0.001, "Pitch at 50% should be 0.8")
+	assert_almost_eq(light.rotation.y, 0.5, 0.001, "Yaw stays 0.5")
+
+	world_setup._fishing_anchor_msec = Time.get_ticks_msec() - 10000
+	world_setup._process(0.01)
+	assert_almost_eq(light.rotation.x, -1.0, 0.001, "Pitch at 100% should be -1.0")
+	assert_almost_eq(light.rotation.y, 0.5, 0.001, "Yaw stays 0.5")
+
+	round_manager.fishing_active = false
+	world_setup._process(0.01)
+	assert_almost_eq(light.rotation.x, -1.0, 0.001, "Snaps back to DAY_PITCH (-1.0)")
+	assert_almost_eq(light.rotation.y, 0.5, 0.001, "Yaw stays SWEEP_YAW (0.5)")
+	assert_almost_eq(light.rotation.z, 0.0, 0.001, "Z stays 0.0")
+
+
+class MockNoDurationManager extends Node:
+	var fishing_active := false
+
+
+func test_fishing_sweep_round_duration_fallback() -> void:
+	var no_dur_manager = MockNoDurationManager.new()
+	no_dur_manager.name = "RoundManager"
+	_main.remove_child(round_manager)
+	round_manager.free()
+	round_manager = no_dur_manager
+	_main.add_child(round_manager)
+
+	var light: DirectionalLight3D = world_setup._directional_light
+	no_dur_manager.fishing_active = true
+	world_setup._process(0.01)
+	assert_almost_eq(light.rotation.x, 0.0, 0.001, "Fallback 900s duration uses 0.0 at start")
