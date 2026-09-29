@@ -36,7 +36,7 @@ func _process(_delta: float) -> void:
 		wind_val = sky_mat.get_shader_parameter("wind_speed")
 
 	var day_night_mix = 0.8
-	if sky_mat and sky_mat.has_shader_parameter("day_night_mix"):
+	if sky_mat:
 		day_night_mix = sky_mat.get_shader_parameter("day_night_mix")
 
 	var mode_label = "GAME-TRUTH" if not _is_shader_preview else "SHADER-PREVIEW"
