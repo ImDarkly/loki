@@ -1,7 +1,7 @@
 ---
 description: Triages CodeRabbit review comments on a PR and delegates real fixes back through the pipeline. Invoke manually after a review lands — never auto-triggered.
 mode: subagent
-model: opencode/muse-spark-1.2-contributor-free
+model: opencode/muse-spark-1.3-contributor-free
 tools:
   write: false
   edit: false
