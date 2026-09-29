@@ -105,3 +105,28 @@ That’s the whole seagull, sped up for testing. Close the window when done — 
 - **R** — Reset (clears the hook, victim back to floating at the start spot)
 
 **Full flow to watch:** Press **F5** → hook type flips to `PLAYER`, enters fight mode with static tether. Scroll wheel down (`reel_fight`) → spikes pull power, shrinking tether distance as the victim is dragged in. Victim crosses the shore → `ALIVE`, hook clears. Or press **F6** mid-pull → tether pops, victim stays `FLOATING`. Nothing changes in the real game.
+
+---
+
+## Sky & Daytime Test — Quick Guide (`dev_sky_flow.tscn`)
+
+**What it does:** Isolated sky/world setup scene without lobby → host → round. Tests daytime gradient, sunset band, night stars, cloud drift, and `gl_compatibility` rendering profile.
+
+**Prod values stay untouched:** `wind_speed` default (`Vector2(0.025, 0.025)`) in `world/world_setup.gd:41` and shader defaults remain untouched. This dev scene overrides them *in the dev script only* for shader visual QA (per Manual/Dev Testing convention).
+
+**How to open and move:**
+1. In Godot FileSystem go to `scenes/dev/dev_sky_flow.tscn`
+2. Click **Play** (▶) — no lobby, single instance, no peer.
+3. Camera is positioned looking up at the sky and horizon.
+
+**What you see:** Top HUD shows mode (`GAME-TRUTH` vs `SHADER-PREVIEW`), renderer (`gl_compatibility`), light rotation, derived `LIGHT0_DIRECTION.y`, wind speed, day/night mix, and time scale.
+
+**Controls:**
+- **F5** — Game-Truth Day (`_apply_day()` + production rotation `(-0.4, 0.5, 0)`)
+- **F6** — Shader-Preview Sunset (pitches light to horizon to inspect sunset band)
+- **F7** — Shader-Preview Night (pitches light below horizon to inspect night stars and night colors)
+- **G** — Toggle Wind Drift (`Vector2(0.025)` ↔ faster drift `Vector2(0.2)`)
+- **H** — 1x / 2x time scale toggle
+- **R** — Reset to production defaults
+
+**Full flow to watch:** Press **F5** (day gradient with clouds) → **F6** (sunset band at horizon) → **F7** (night stars and darker ambient) → **G** (faster cloud drift) → **R** (reset). Close window when done.
