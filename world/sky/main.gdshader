@@ -91,7 +91,7 @@ void sky() {
 	float night_noise = texture(night_noise_02, (EYEDIR / ((1.0 - abs(t) * 0.05))).xz).r;
 	float stars = smoothstep(0.9, .95, texture(night_noise_01, (EYEDIR / ((1.0 - abs(t) * 0.05))).xz).r);
 	float night_blend = clamp(0.0,1.0,0.0 - blend);
-	stars = clamp(clamp((stars - cloud_value * 2.0), 0.0, 1.0) * night_blend, 0.0, 1.0) + (night_noise*0.01);
+	stars = clamp(clamp((stars - cloud_value * 2.0), 0.0, 1.0) * night_blend, 0.0, 1.0) + (night_noise*0.01*night_blend);
 
 	horizon_color = mix(horizon_sunset, horizon_day, clamp(blend,0.0,1.0)).rgb;
 	horizon_color = mix(horizon_night.rgb, horizon_color, pow(clamp(1.0+blend,0.0,1.0), 4.0)).rgb;
