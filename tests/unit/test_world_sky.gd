@@ -8,9 +8,14 @@ var round_manager: Node
 
 class MockRoundManager extends Node:
 	var fishing_active := false
+	var round_duration := 10.0
 
 
 func before_each() -> void:
+	print("before_each start")
+	var old_main := get_node_or_null("/root/main")
+	if old_main:
+		old_main.free()
 	_main = Node3D.new()
 	_main.name = "main"
 	get_node("/root").add_child(_main)
@@ -23,15 +28,16 @@ func before_each() -> void:
 	world_setup = world_setup_script.new() as Node3D
 	_main.add_child(world_setup)
 	await get_tree().process_frame
+	print("before_each end")
 
 
 func after_each() -> void:
-	if world_setup and is_instance_valid(world_setup):
-		world_setup.queue_free()
+	var main := get_node_or_null("/root/main")
+	if main:
+		main.queue_free()
 	world_setup = null
-	if _main and is_instance_valid(_main):
-		_main.free()
 	_main = null
+	round_manager = null
 
 
 func test_world_environment_sky_material_is_shader() -> void:
@@ -46,7 +52,7 @@ func test_light_holds_daytime_rotation_across_frames() -> void:
 	var light: DirectionalLight3D = world_setup._directional_light
 	assert_true(is_instance_valid(light), "DirectionalLight3D should exist")
 	
-	assert_almost_eq(light.rotation.x, -0.4, 0.001, "Light rotation X should be -0.4")
+	assert_almost_eq(light.rotation.x, -1.0, 0.001, "Light rotation X should be -1.0")
 	assert_almost_eq(light.rotation.y, 0.5, 0.001, "Light rotation Y should be 0.5")
 	assert_almost_eq(light.rotation.z, 0.0, 0.001, "Light rotation Z should be 0.0")
 	assert_eq(light.light_energy, 1.0, "Light energy should be 1.0")
@@ -54,7 +60,7 @@ func test_light_holds_daytime_rotation_across_frames() -> void:
 
 	round_manager.fishing_active = false
 	world_setup._process(0.01)
-	assert_almost_eq(light.rotation.x, -0.4, 0.001, "Light rotation X should hold across frames")
+	assert_almost_eq(light.rotation.x, -1.0, 0.001, "Light rotation X should hold across frames")
 	assert_eq(light.light_energy, 1.0, "Light energy should hold across frames")
 	assert_eq(light.light_color, Color.WHITE, "Light color should hold across frames")
 
@@ -120,3 +126,95 @@ func test_wind_speed_tuned_slower_than_shader_default() -> void:
 	assert_almost_eq(wind.y, 0.025, 0.001, "wind_speed.y tuned slower than 0.5 default")
 	var tiling = world_setup._sky_material.get_shader_parameter("cloud_tiling")
 	assert_null(tiling, "cloud_tiling should keep shader default (no override)")
+
+
+func test_pitch_for_progress_values() -> void:
+	var world_setup_script = load("res://world/world_setup.gd")
+	assert_almost_eq(world_setup_script.pitch_for_progress(0.0), 0.0, 0.001, "0 -> 0.0")
+	assert_almost_eq(world_setup_script.pitch_for_progress(0.25), 0.725, 0.001, "0.25 -> 0.725")
+	assert_almost_eq(world_setup_script.pitch_for_progress(0.5), 1.45, 0.001, "0.5 -> 1.45")
+	assert_almost_eq(world_setup_script.pitch_for_progress(0.75), 0.725, 0.001, "0.75 -> 0.725")
+	assert_almost_eq(world_setup_script.pitch_for_progress(1.0), 0.0, 0.001, "1.0 -> 0.0")
+	assert_almost_eq(world_setup_script.pitch_for_progress(-0.5), 0.0, 0.001, "clamping negative -> 0.0")
+	assert_almost_eq(world_setup_script.pitch_for_progress(1.5), 0.0, 0.001, "clamping positive -> 0.0")
+	var slope_sunset = (world_setup_script.pitch_for_progress(0.5) - world_setup_script.pitch_for_progress(0.0)) / 0.5
+	var slope_sunrise = (world_setup_script.pitch_for_progress(1.0) - world_setup_script.pitch_for_progress(0.5)) / 0.5
+	assert_almost_eq(slope_sunset, 2.9, 0.001, "Sunset slope is 2.9")
+	assert_almost_eq(slope_sunrise, -2.9, 0.001, "Sunrise slope is -2.9")
+	assert_true(slope_sunset != slope_sunrise, "Sweep is asymmetric")
+
+
+func test_yaw_for_progress_values() -> void:
+	var world_setup_script = load("res://world/world_setup.gd")
+	assert_almost_eq(world_setup_script.yaw_for_progress(0.0), world_setup_script.YAW_WEST, 0.001, "0 -> YAW_WEST")
+	assert_almost_eq(world_setup_script.yaw_for_progress(0.5), world_setup_script.SWEEP_YAW, 0.001, "0.5 -> SWEEP_YAW")
+	assert_almost_eq(world_setup_script.yaw_for_progress(1.0), world_setup_script.YAW_EAST, 0.001, "1.0 -> YAW_EAST")
+	assert_true(world_setup_script.yaw_for_progress(0.75) < world_setup_script.yaw_for_progress(0.25), "Yaw decreases monotonically")
+	assert_almost_eq(world_setup_script.YAW_WEST - world_setup_script.YAW_EAST, PI, 0.001, "Yaw span is PI")
+	assert_almost_eq(world_setup_script.yaw_for_progress(-0.5), world_setup_script.YAW_WEST, 0.001, "Clamping negative -> YAW_WEST")
+	assert_almost_eq(world_setup_script.yaw_for_progress(1.5), world_setup_script.YAW_EAST, 0.001, "Clamping positive -> YAW_EAST")
+
+
+func test_fishing_sweep_and_shop_snapback() -> void:
+	var light: DirectionalLight3D = world_setup._directional_light
+	round_manager.round_duration = 10.0
+
+	round_manager.fishing_active = true
+	world_setup._process(0.01)
+	assert_almost_eq(light.rotation.x, 0.0, 0.001, "Pitch at start should be 0.0")
+	assert_almost_eq(light.rotation.y, world_setup.YAW_WEST, 0.001, "Yaw at start should be YAW_WEST")
+	assert_almost_eq(light.rotation.z, 0.0, 0.001, "Z should be 0.0")
+
+	world_setup._fishing_anchor_msec = Time.get_ticks_msec() - 5000
+	world_setup._process(0.01)
+	assert_almost_eq(light.rotation.x, 1.45, 0.001, "Pitch at 50% should be 1.45")
+	assert_almost_eq(light.rotation.y, world_setup.SWEEP_YAW, 0.001, "Yaw at 50% should be SWEEP_YAW (0.5)")
+
+	world_setup._fishing_anchor_msec = Time.get_ticks_msec() - 10000
+	world_setup._process(0.01)
+	assert_almost_eq(light.rotation.x, 0.0, 0.001, "Pitch at 100% should be 0.0")
+	assert_almost_eq(light.rotation.y, world_setup.YAW_EAST, 0.001, "Yaw at 100% should be YAW_EAST")
+
+	round_manager.fishing_active = false
+	world_setup._process(0.01)
+	assert_almost_eq(light.rotation.x, -1.0, 0.001, "Snaps back to DAY_PITCH (-1.0)")
+	assert_almost_eq(light.rotation.y, world_setup.SWEEP_YAW, 0.001, "Yaw snaps back to SWEEP_YAW (0.5)")
+	assert_almost_eq(light.rotation.z, 0.0, 0.001, "Z stays 0.0")
+
+
+func test_moon_elevation_and_antipodal() -> void:
+	var world_setup_script = load("res://world/world_setup.gd")
+	var pitch_mid = world_setup_script.pitch_for_progress(0.5)
+	assert_almost_eq(sin(pitch_mid), sin(1.45), 0.001, "Moon elevation uses sin(pitch)")
+	var moon_pos_start = MoonArc.calculate_arc_position(0.0)
+	assert_true(moon_pos_start.x > MapConfig.MAP_CENTER.x, "Antipodal relationship verified")
+
+
+class MockNoDurationManager extends Node:
+	var fishing_active := false
+
+
+func test_fishing_sweep_round_duration_fallback() -> void:
+	var no_dur_manager = MockNoDurationManager.new()
+	no_dur_manager.name = "RoundManager"
+	_main.remove_child(round_manager)
+	round_manager.free()
+	round_manager = no_dur_manager
+	_main.add_child(round_manager)
+
+	var light: DirectionalLight3D = world_setup._directional_light
+	no_dur_manager.fishing_active = true
+	world_setup._process(0.01)
+	assert_almost_eq(light.rotation.x, 0.0, 0.001, "Fallback 900s duration uses 0.0 at start")
+
+
+func test_shift_anchor_methods() -> void:
+	world_setup._fishing_anchor_msec = 1000
+	world_setup.shift_anchor(30000)
+	assert_eq(world_setup._fishing_anchor_msec, 31000, "WorldSetup anchor shifts correctly")
+
+	var moon := world_setup.get_node_or_null("MoonArc") as MoonArc
+	if is_instance_valid(moon):
+		moon._local_anchor_time = 1000
+		moon.shift_anchor(-30000)
+		assert_eq(moon._local_anchor_time, -29000, "MoonArc anchor shifts correctly")

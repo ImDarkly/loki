@@ -234,6 +234,7 @@ func debug_action(action_id: String) -> void:
 
 
 func _adjust_timer(delta: float) -> void:
+	# timer server-only, anchors local-per-peer per moon-arc.md, debug shift host-only cosmetic, self-heals on shop snapback.
 	if not is_instance_valid(timer) or timer.is_stopped():
 		return
 	var remaining := timer.time_left + delta
@@ -242,4 +243,13 @@ func _adjust_timer(delta: float) -> void:
 		_on_timer_timeout()
 	else:
 		timer.start(remaining)
-		# time_left is intentionally local-derived; timer runs on server only
+		if fishing_active:
+			var delta_msec := int(delta * 1000.0)
+			var main := get_node_or_null("/root/main")
+			if main and is_instance_valid(main) and main.has_method("shift_anchor"):
+				main.shift_anchor(delta_msec)
+			var moon := main.get_node_or_null("MoonArc") if main and is_instance_valid(main) else null
+			if not moon:
+				moon = get_node_or_null("/root/main/MoonArc")
+			if moon and is_instance_valid(moon) and moon.has_method("shift_anchor"):
+				moon.shift_anchor(delta_msec)
