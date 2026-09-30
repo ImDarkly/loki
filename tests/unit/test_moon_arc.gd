@@ -65,6 +65,11 @@ func test_arc_position_custom_parameters() -> void:
 	assert_almost_eq(pos_end.y, expected_end.y, 0.001, "Custom radius end Y")
 
 
+class MockRoundManager extends Node:
+	var fishing_active := false
+	var round_duration := 900.0
+
+
 var moon_arc: MoonArc
 var _main: Node3D
 var round_manager: Node
@@ -75,10 +80,8 @@ func before_each() -> void:
 	_main.name = "main"
 	get_node("/root").add_child(_main)
 
-	round_manager = Node3D.new()
+	round_manager = MockRoundManager.new()
 	round_manager.name = "RoundManager"
-	round_manager.set("fishing_active", false)
-	round_manager.set("round_duration", 900.0)
 	_main.add_child(round_manager)
 
 	moon_arc = load("res://world/moon_arc.tscn").instantiate()
@@ -153,4 +156,20 @@ func test_moon_arc_resets_on_restart() -> void:
 	var anchor_2 := moon_arc._local_anchor_time
 	assert_true(moon_arc.sprite_3d.visible, "Moon should be visible again on restart")
 	assert_gt(anchor_2, 0, "New anchor time should be stamped")
+
+
+func test_sun_yaw_and_moon_x_cross_consistency() -> void:
+	var world_setup_script = load("res://world/world_setup.gd")
+	var yaw_start: float = world_setup_script.yaw_for_progress(0.0)
+	var yaw_mid: float = world_setup_script.yaw_for_progress(0.5)
+	var yaw_end: float = world_setup_script.yaw_for_progress(1.0)
+	assert_true(yaw_start > yaw_mid and yaw_mid > yaw_end, "Sun yaw decreases over 0 -> 1")
+
+	var moon_start_x: float = MoonArc.calculate_arc_position(0.0).x
+	var moon_mid_x: float = MoonArc.calculate_arc_position(0.5).x
+	var moon_end_x: float = MoonArc.calculate_arc_position(1.0).x
+	assert_true(moon_start_x > moon_mid_x and moon_mid_x > moon_end_x, "Moon X decreases over 0 -> 1")
+	assert_almost_eq(moon_start_x, MapConfig.MAP_CENTER.x + MoonArc.ARC_RADIUS, 0.001, "Moon starts at positive side")
+	assert_almost_eq(moon_end_x, MapConfig.MAP_CENTER.x - MoonArc.ARC_RADIUS, 0.001, "Moon ends at opposite side")
+	assert_true(yaw_start > yaw_end, "Shader antipodal relationship: sun yaw span and moon arc span correspond")
 

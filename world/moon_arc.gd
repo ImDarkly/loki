@@ -54,6 +54,10 @@ func _process(_delta: float) -> void:
 			visible = false
 
 
+func shift_anchor(delta_msec: int) -> void:
+	_local_anchor_time += delta_msec
+
+
 static func calculate_arc_position(progress: float, center: Vector3 = MapConfig.MAP_CENTER, radius: float = ARC_RADIUS, height: float = ARC_HEIGHT) -> Vector3:
 	var clamped_progress: float = clamp(progress, 0.0, 1.0)
 	var theta: float = clamped_progress * PI

@@ -242,4 +242,13 @@ func _adjust_timer(delta: float) -> void:
 		_on_timer_timeout()
 	else:
 		timer.start(remaining)
-		# time_left is intentionally local-derived; timer runs on server only
+		if fishing_active:
+			var delta_msec := int(delta * 1000.0)
+			var main := get_node_or_null("/root/main")
+			if main and is_instance_valid(main) and main.has_method("shift_anchor"):
+				main.shift_anchor(delta_msec)
+			var moon := main.get_node_or_null("MoonArc") if main and is_instance_valid(main) else null
+			if not moon:
+				moon = get_node_or_null("/root/main/MoonArc")
+			if moon and is_instance_valid(moon) and moon.has_method("shift_anchor"):
+				moon.shift_anchor(delta_msec)

@@ -4,9 +4,11 @@ extends Node3D
 const MOON_SCENE: PackedScene = preload("res://world/moon_arc.tscn")
 
 const DAY_PITCH: float = -1.0
-const NIGHT_PITCH: float = 0.8
+const NIGHT_PITCH: float = 1.45
 const SUNSET_PITCH: float = 0.0
 const SWEEP_YAW: float = 0.5
+const YAW_EAST: float = SWEEP_YAW - PI / 2
+const YAW_WEST: float = SWEEP_YAW + PI / 2
 
 var _sky_material: ShaderMaterial
 var _directional_light: DirectionalLight3D
@@ -148,7 +150,11 @@ static func pitch_for_progress(progress: float) -> float:
 	if p <= 0.5:
 		return lerpf(SUNSET_PITCH, NIGHT_PITCH, p / 0.5)
 	else:
-		return lerpf(NIGHT_PITCH, DAY_PITCH, (p - 0.5) / 0.5)
+		return lerpf(NIGHT_PITCH, SUNSET_PITCH, (p - 0.5) / 0.5)
+
+
+static func yaw_for_progress(progress: float) -> float:
+	return lerpf(YAW_WEST, YAW_EAST, clampf(progress, 0.0, 1.0))
 
 
 func _process(_delta: float) -> void:
@@ -175,7 +181,7 @@ func _process(_delta: float) -> void:
 			var duration_msec: float = duration_sec * 1000.0
 			var progress: float = float(Time.get_ticks_msec() - _fishing_anchor_msec) / duration_msec if duration_msec > 0.0 else 0.0
 			if _directional_light:
-				_directional_light.rotation = Vector3(pitch_for_progress(progress), SWEEP_YAW, 0)
+				_directional_light.rotation = Vector3(pitch_for_progress(progress), yaw_for_progress(progress), 0)
 
 
 func _apply_night() -> void:
@@ -186,3 +192,7 @@ func _apply_night() -> void:
 func _apply_day() -> void:
 	_ground_mat.albedo_color = Color(0.90, 0.56, 0.31)
 	_water_mat.albedo_color = Color(0.04, 0.54, 0.56)
+
+
+func shift_anchor(delta_msec: int) -> void:
+	_fishing_anchor_msec += delta_msec

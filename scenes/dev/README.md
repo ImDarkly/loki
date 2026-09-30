@@ -110,7 +110,7 @@ That’s the whole seagull, sped up for testing. Close the window when done — 
 
 ## Sky & Daytime Test — Quick Guide (`dev_sky_flow.tscn`)
 
-**What it does:** Isolated sky/world setup scene without lobby → host → round. Tests daytime gradient, sunset band, night stars, cloud drift, and `gl_compatibility` rendering profile.
+**What it does:** Isolated sky/world setup scene without lobby → host → round. Tests daytime gradient, sunset east, night stars, west sunrise, cloud drift, and `gl_compatibility` rendering profile.
 
 **Prod values stay untouched:** `wind_speed` default (`Vector2(0.025, 0.025)`) in `world/world_setup.gd:41` and shader defaults remain untouched. This dev scene overrides them *in the dev script only* for shader visual QA (per Manual/Dev Testing convention).
 
@@ -119,15 +119,15 @@ That’s the whole seagull, sped up for testing. Close the window when done — 
 2. Click **Play** (▶) — no lobby, single instance, no peer.
 3. Camera is positioned looking up at the sky and horizon.
 
-**What you see:** Top HUD shows mode (`GAME-TRUTH` vs `SHADER-PREVIEW`), renderer (`gl_compatibility`), light rotation, derived `LIGHT0_DIRECTION.y`, wind speed, day/night mix, and time scale.
+**What you see:** Top HUD shows mode (`SUNSET-WEST` / `SUNRISE-EAST` vs `SWEEP-PREVIEW`), renderer (`gl_compatibility`), light rotation, derived `LIGHT0_DIRECTION.y`, moon elevation in degrees (`MoonElev`), wind speed, day/night mix, and time scale.
 
 **Controls:**
 - **F5** — Game-Truth Day (`_apply_day()` + production rotation `(-1.0, 0.5, 0)`)
-- **F6** — Shader-Preview Sunset (pitches light to horizon to inspect sunset band)
-- **F7** — Shader-Preview Night (pitches light below horizon to inspect night stars and night colors)
-- **F8** — Sweep Preview (auto-play / scrub across sunset-sunrise sweep calling `pitch_for_progress` with progress and pitch in HUD Label)
+- **F6** — Sunset West (`0.0, YAW_WEST`) / Sunrise East (`0.0, YAW_EAST`) toggle
+- **F7** — Shader-Preview Night (`Vector3(1.45, 0.5, 0)` to inspect night stars and night colors)
+- **F8** — Sweep Preview (auto-play / scrub across sunset-sunrise sweep calling `pitch_for_progress` and `yaw_for_progress` with progress, pitch, and yaw in HUD Label)
 - **G** — Toggle Wind Drift (`Vector2(0.025)` ↔ faster drift `Vector2(0.2)`)
 - **H** — 1x / 2x time scale toggle
 - **R** — Reset to production defaults
 
-**Full flow to watch:** Press **F5** (day gradient with clouds) → **F6** (sunset band at horizon) → **F7** (night stars and darker ambient) → **F8** (sweep preview auto-play) → **G** (faster cloud drift) → **R** (reset). Close window when done.
+**Full flow to watch:** Press **F5** (day gradient with clouds) → **F6** (sunset east / west sunrise toggle) → **F7** (night stars and darker ambient) → **F8** (sweep preview auto-play with pitch & yaw) → **G** (faster cloud drift) → **R** (reset). Close window when done.

@@ -4,6 +4,7 @@ var _world_setup: Node3D
 var _label: Label
 var _is_shader_preview: bool = false
 var _is_sweep_preview: bool = false
+var _is_west_sunrise: bool = false
 var _sweep_progress: float = 0.0
 var _fast_wind: bool = false
 const DEV_ROUND_DURATION: float = 5.0
@@ -29,9 +30,10 @@ func _process(delta: float) -> void:
 		if _sweep_progress > 1.0:
 			_sweep_progress = 0.0
 		var p: float = _world_setup.pitch_for_progress(_sweep_progress)
+		var y: float = _world_setup.yaw_for_progress(_sweep_progress)
 		var light: DirectionalLight3D = _world_setup.get("_directional_light") as DirectionalLight3D
 		if light:
-			light.rotation = Vector3(p, 0.5, 0)
+			light.rotation = Vector3(p, y, 0)
 
 	var light: DirectionalLight3D = _world_setup.get("_directional_light") as DirectionalLight3D
 	var sky_mat: ShaderMaterial = _world_setup.get("_sky_material") as ShaderMaterial
@@ -53,7 +55,7 @@ func _process(delta: float) -> void:
 
 	var mode_label = "GAME-TRUTH"
 	if _is_shader_preview:
-		mode_label = "SHADER-PREVIEW"
+		mode_label = "SUNSET-WEST" if not _is_west_sunrise else "SUNRISE-EAST"
 	elif _is_sweep_preview:
 		mode_label = "SWEEP-PREVIEW"
 
@@ -66,10 +68,14 @@ func _process(delta: float) -> void:
 	var time_scale = Engine.time_scale
 	var sweep_info = ""
 	if _is_sweep_preview:
-		sweep_info = " | SweepProg: %.2f | Pitch: %.2f" % [_sweep_progress, _world_setup.pitch_for_progress(_sweep_progress)]
+		sweep_info = " | SweepProg: %.2f | Pitch: %.2f | Yaw: %.2f" % [_sweep_progress, _world_setup.pitch_for_progress(_sweep_progress), _world_setup.yaw_for_progress(_sweep_progress)]
 
-	_label.text = "Mode: %s%s | Renderer: %s | Light Rot: (%s) | LightY: %.2f | Wind: %s | DayNightMix: %.2f | TimeScale: %.1fx\n[F5] Game-Truth Day  [F6] Sunset Preview  [F7] Night Preview  [F8] Sweep Preview  [G] Wind Drift  [H] Speed 1x/2x  [R] Reset" % [
-		mode_label, sweep_info, renderer, rot_str, light_y, str(wind_val), day_night_mix, time_scale
+	var moon_elev_deg = 0.0
+	if light:
+		moon_elev_deg = rad_to_deg(light.rotation.x)
+
+	_label.text = "Mode: %s%s | Renderer: %s | Light Rot: (%s) | LightY: %.2f | MoonElev: %.1f° | Wind: %s | DayNightMix: %.2f | TimeScale: %.1fx\n[F5] Game-Truth Day  [F6] Sunset West / Sunrise East Toggle  [F7] Night Preview  [F8] Sweep Preview  [G] Wind Drift  [H] Speed 1x/2x  [R] Reset" % [
+		mode_label, sweep_info, renderer, rot_str, light_y, moon_elev_deg, str(wind_val), day_night_mix, time_scale
 	]
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -108,10 +114,12 @@ func _apply_game_truth_day() -> void:
 func _apply_sunset_preview() -> void:
 	_is_shader_preview = true
 	_is_sweep_preview = false
+	_is_west_sunrise = not _is_west_sunrise
 	if _world_setup:
 		var light: DirectionalLight3D = _world_setup.get("_directional_light") as DirectionalLight3D
 		if light:
-			light.rotation = Vector3(0.0, 0.5, 0)
+			var y_yaw = _world_setup.YAW_WEST if not _is_west_sunrise else _world_setup.YAW_EAST
+			light.rotation = Vector3(0.0, y_yaw, 0)
 
 func _apply_night_preview() -> void:
 	_is_shader_preview = true
@@ -121,7 +129,7 @@ func _apply_night_preview() -> void:
 			_world_setup._apply_night()
 		var light: DirectionalLight3D = _world_setup.get("_directional_light") as DirectionalLight3D
 		if light:
-			light.rotation = Vector3(0.8, 0.5, 0)
+			light.rotation = Vector3(1.45, 0.5, 0)
 
 func _toggle_sweep_preview() -> void:
 	_is_sweep_preview = not _is_sweep_preview
