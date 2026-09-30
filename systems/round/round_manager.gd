@@ -234,6 +234,7 @@ func debug_action(action_id: String) -> void:
 
 
 func _adjust_timer(delta: float) -> void:
+	# timer server-only, anchors local-per-peer per moon-arc.md, debug shift host-only cosmetic, self-heals on shop snapback.
 	if not is_instance_valid(timer) or timer.is_stopped():
 		return
 	var remaining := timer.time_left + delta

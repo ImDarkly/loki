@@ -119,7 +119,7 @@ That’s the whole seagull, sped up for testing. Close the window when done — 
 2. Click **Play** (▶) — no lobby, single instance, no peer.
 3. Camera is positioned looking up at the sky and horizon.
 
-**What you see:** Top HUD shows mode (`SUNSET-WEST` / `SUNRISE-EAST` vs `SWEEP-PREVIEW`), renderer (`gl_compatibility`), light rotation, derived `LIGHT0_DIRECTION.y`, moon elevation in degrees (`MoonElev`), wind speed, day/night mix, and time scale.
+**What you see:** Top HUD shows mode (`SUNSET-WEST` / `SUNRISE-EAST` / `NIGHT-PREVIEW` vs `SWEEP-PREVIEW`), renderer (`gl_compatibility`), light rotation, derived `LIGHT0_DIRECTION.y`, moon elevation in degrees (`MoonElev`), wind speed, day/night mix, and time scale.
 
 **Controls:**
 - **F5** — Game-Truth Day (`_apply_day()` + production rotation `(-1.0, 0.5, 0)`)

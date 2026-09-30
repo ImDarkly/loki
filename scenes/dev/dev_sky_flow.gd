@@ -3,6 +3,7 @@ extends Node3D
 var _world_setup: Node3D
 var _label: Label
 var _is_shader_preview: bool = false
+var _is_night_preview: bool = false
 var _is_sweep_preview: bool = false
 var _is_west_sunrise: bool = false
 var _sweep_progress: float = 0.0
@@ -54,7 +55,9 @@ func _process(delta: float) -> void:
 		day_night_mix = sky_mat.get_shader_parameter("day_night_mix")
 
 	var mode_label = "GAME-TRUTH"
-	if _is_shader_preview:
+	if _is_night_preview:
+		mode_label = "NIGHT-PREVIEW"
+	elif _is_shader_preview:
 		mode_label = "SUNSET-WEST" if not _is_west_sunrise else "SUNRISE-EAST"
 	elif _is_sweep_preview:
 		mode_label = "SWEEP-PREVIEW"
@@ -100,6 +103,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _apply_game_truth_day() -> void:
 	_is_shader_preview = false
+	_is_night_preview = false
 	_is_sweep_preview = false
 	if _world_setup:
 		if _world_setup.has_method("_apply_day"):
@@ -113,6 +117,7 @@ func _apply_game_truth_day() -> void:
 
 func _apply_sunset_preview() -> void:
 	_is_shader_preview = true
+	_is_night_preview = false
 	_is_sweep_preview = false
 	_is_west_sunrise = not _is_west_sunrise
 	if _world_setup:
@@ -122,7 +127,8 @@ func _apply_sunset_preview() -> void:
 			light.rotation = Vector3(0.0, y_yaw, 0)
 
 func _apply_night_preview() -> void:
-	_is_shader_preview = true
+	_is_shader_preview = false
+	_is_night_preview = true
 	_is_sweep_preview = false
 	if _world_setup:
 		if _world_setup.has_method("_apply_night"):
@@ -134,6 +140,7 @@ func _apply_night_preview() -> void:
 func _toggle_sweep_preview() -> void:
 	_is_sweep_preview = not _is_sweep_preview
 	_is_shader_preview = false
+	_is_night_preview = false
 	if _is_sweep_preview:
 		_sweep_progress = 0.0
 		if _world_setup and _world_setup.has_method("_apply_night"):
@@ -153,6 +160,7 @@ func _toggle_wind() -> void:
 
 func _reset_to_production() -> void:
 	_is_shader_preview = false
+	_is_night_preview = false
 	_is_sweep_preview = false
 	_fast_wind = false
 	if _world_setup:
