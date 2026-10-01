@@ -182,12 +182,7 @@ func test_fishing_sweep_and_shop_snapback() -> void:
 	assert_almost_eq(light.rotation.z, 0.0, 0.001, "Z stays 0.0")
 
 
-func test_moon_elevation_and_antipodal() -> void:
-	var world_setup_script = load("res://world/world_setup.gd")
-	var pitch_mid = world_setup_script.pitch_for_progress(0.5)
-	assert_almost_eq(sin(pitch_mid), sin(1.45), 0.001, "Moon elevation uses sin(pitch)")
-	var moon_pos_start = MoonArc.calculate_arc_position(0.0)
-	assert_true(moon_pos_start.x > MapConfig.MAP_CENTER.x, "Antipodal relationship verified")
+
 
 
 class MockNoDurationManager extends Node:
@@ -213,8 +208,10 @@ func test_shift_anchor_methods() -> void:
 	world_setup.shift_anchor(30000)
 	assert_eq(world_setup._fishing_anchor_msec, 31000, "WorldSetup anchor shifts correctly")
 
-	var moon := world_setup.get_node_or_null("MoonArc") as MoonArc
-	if is_instance_valid(moon):
-		moon._local_anchor_time = 1000
-		moon.shift_anchor(-30000)
-		assert_eq(moon._local_anchor_time, -29000, "MoonArc anchor shifts correctly")
+
+func test_world_setup_lacks_moon_arc_and_has_required_wiring() -> void:
+	var world_env := world_setup.get_node_or_null("WorldEnvironment") as WorldEnvironment
+	assert_true(is_instance_valid(world_env), "WorldEnvironment should be present")
+	assert_true(world_env.environment.sky.sky_material is ShaderMaterial, "ShaderMaterial should be present")
+	assert_true(is_instance_valid(world_setup._directional_light), "DirectionalLight should be present")
+	assert_null(world_setup.get_node_or_null("MoonArc"), "MoonArc should be null")

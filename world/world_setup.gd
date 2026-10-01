@@ -1,7 +1,6 @@
 extends Node3D
 
 
-const MOON_SCENE: PackedScene = preload("res://world/moon_arc.tscn")
 
 const DAY_PITCH: float = -1.0
 const NIGHT_PITCH: float = 1.45
@@ -28,14 +27,6 @@ func _ready() -> void:
 	setup_water()
 	_setup_danger_system()
 	_add_fps_counter()
-	_setup_moon_arc()
-
-
-func _setup_moon_arc() -> void:
-	var moon: Node3D = MOON_SCENE.instantiate() as Node3D
-	if moon:
-		moon.name = "MoonArc"
-		add_child(moon)
 
 
 func setup_environment() -> void:

@@ -247,3 +247,53 @@ func test_restart_invalidates_in_flight_grace() -> void:
 	manager._on_wipe_grace_elapsed(stale_gen)
 	assert_true(manager.round_active, "Stale grace must not end the restarted round")
 	assert_signal_not_emitted(manager, "round_ended")
+
+
+class MockMainWithAnchor extends Node3D:
+	var calls: Array = []
+
+	func shift_anchor(delta_msec: int) -> void:
+		calls.append(delta_msec)
+
+
+func _get_or_create_mock_main() -> MockMainWithAnchor:
+	var existing := get_node_or_null("/root/main")
+	if existing:
+		existing.free()
+	var mock_main := MockMainWithAnchor.new()
+	mock_main.name = "main"
+	get_node("/root").add_child(mock_main)
+	return mock_main
+
+
+func test_adjust_timer_running_fishing_active_shifts_anchor() -> void:
+	var main := _get_or_create_mock_main()
+	manager.timer.start(100.0)
+	manager.fishing_active = true
+	var t_before = manager.timer.time_left
+	manager.debug_action("add_time_30")
+	assert_true(manager.timer.time_left > t_before)
+	assert_eq(main.calls, [30000])
+
+	manager.debug_action("shave_time_30")
+	assert_eq(main.calls, [30000, -30000])
+
+
+func test_adjust_timer_running_fishing_inactive_does_not_shift_anchor() -> void:
+	var main := _get_or_create_mock_main()
+	manager.timer.start(100.0)
+	manager.fishing_active = false
+	var t_before = manager.timer.time_left
+	manager.debug_action("add_time_30")
+	assert_true(manager.timer.time_left > t_before)
+	assert_true(main.calls.is_empty())
+
+
+func test_adjust_timer_stopped_does_not_shift_anchor_and_handles_absent_main() -> void:
+	var existing := get_node_or_null("/root/main")
+	if existing:
+		existing.free()
+	manager.timer.stop()
+	manager.fishing_active = true
+	manager.debug_action("add_time_30")
+	assert_true(manager.timer.is_stopped())
