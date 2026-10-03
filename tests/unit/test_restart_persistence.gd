@@ -95,11 +95,13 @@ func test_fishing_mechanic_reset_on_restart() -> void:
 	await get_tree().process_frame
 	player.fishing_mechanic.hook_type = player.fishing_mechanic.HookType.PLAYER
 	player.fishing_mechanic.current_state = player.fishing_mechanic.State.BITE
+	player.fishing_mechanic._wait_time = 4.2
 
 	player.fishing_mechanic.reset_for_restart()
 
 	assert_eq(player.fishing_mechanic.hook_type, player.fishing_mechanic.HookType.NONE, "Fishing mechanic hook_type should reset to NONE on restart")
 	assert_eq(player.fishing_mechanic.current_state, player.fishing_mechanic.State.IDLE, "Fishing mechanic state should reset to IDLE on restart")
+	assert_eq(player.fishing_mechanic._wait_time, 0.0, "Fishing mechanic _wait_time should reset to 0.0 on restart")
 
 
 func test_restart_closes_pause_menu_and_emits_pause_toggled_false() -> void:

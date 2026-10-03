@@ -994,3 +994,89 @@ func test_direct_clear_regression() -> void:
 	multiplayer.multiplayer_peer = saved_peer
 
 
+func test_waiting_shows_gentle_idle_bob() -> void:
+	mechanic.current_state = mechanic.State.WAITING
+	mechanic.cast_target_position = Vector3(10, 0, 5)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+
+	mechanic._wait_time = 0.0
+	mechanic._process(0.1)
+
+	var base_y = mechanic.cast_target_position.y
+	var observed_y = mechanic.bobber_node.position.y
+	var expected_offset = sin(mechanic._wait_time * 2.0) * 0.05
+	assert_almost_eq(observed_y, base_y + expected_offset, 0.0001, "Waiting bob should apply gentle sin(_wait_time * 2.0) * 0.05 offset")
+
+	var min_y = 999.0
+	var max_y = -999.0
+	for i in range(100):
+		mechanic._wait_time = float(i) * 0.1
+		mechanic._process(0.1)
+		var y = mechanic.bobber_node.position.y
+		min_y = min(min_y, y)
+		max_y = max(max_y, y)
+
+	assert_true(max_y <= base_y + 0.05 + 0.0001, "Waiting bob max y should not exceed amplitude 0.05")
+	assert_true(min_y >= base_y - 0.05 - 0.0001, "Waiting bob min y should not fall below -0.05")
+	assert_gt(max_y - min_y, 0.0, "Waiting bob should vary over time")
+
+
+func test_bite_bob_more_urgent_than_waiting() -> void:
+	mechanic.current_state = mechanic.State.WAITING
+	mechanic.cast_target_position = Vector3(0, 0, 0)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+
+	var waiting_max_offset = 0.0
+	for i in range(200):
+		mechanic._wait_time = float(i) * 0.05
+		mechanic._process(0.01)
+		var offset = abs(mechanic.bobber_node.position.y - mechanic.cast_target_position.y)
+		waiting_max_offset = max(waiting_max_offset, offset)
+
+	mechanic._cleanup_bobber()
+
+	mechanic.current_state = mechanic.State.BITE
+	mechanic.cast_target_position = Vector3(0, 0, 0)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+
+	var bite_max_offset = 0.0
+	# Sample within the < 1.0s miss window to measure max amplitude without triggering escape timeout
+	for i in range(95):
+		mechanic._bite_time = float(i) * 0.01
+		mechanic._process(0.01)
+		var offset = abs(mechanic.bobber_node.position.y - mechanic.cast_target_position.y)
+		bite_max_offset = max(bite_max_offset, offset)
+
+	mechanic._cleanup_bobber()
+
+	assert_lt(waiting_max_offset, bite_max_offset, "Waiting bob amplitude (0.05) must be less urgent/smaller than bite bob amplitude (0.12)")
+	assert_almost_eq(waiting_max_offset, 0.05, 0.005, "Waiting max offset should be ~0.05")
+	assert_almost_eq(bite_max_offset, 0.12, 0.005, "Bite max offset should be ~0.12")
+
+
+func test_idle_and_success_have_no_bob_offset() -> void:
+	mechanic.current_state = mechanic.State.IDLE
+	mechanic._wait_time = 10.0
+	mechanic._bite_time = 10.0
+	mechanic._create_bobber(Vector3(0, 1, 0))
+	autofree(mechanic.bobber_node)
+	mechanic._process(0.1)
+	var idle_pos = mechanic.bobber_node.position
+	var rod_tip = mechanic._get_rod_tip_position()
+	assert_eq(idle_pos, rod_tip + Vector3(0, -0.1, 0), "IDLE state should position bobber at rod tip, no idle bob")
+
+	mechanic._cleanup_bobber()
+
+	mechanic.current_state = mechanic.State.SUCCESS
+	mechanic._wait_time = 10.0
+	mechanic._bite_time = 10.0
+	mechanic._create_bobber(Vector3(5, 5, 5))
+	autofree(mechanic.bobber_node)
+	mechanic._process(0.1)
+	assert_eq(mechanic.bobber_node.position, Vector3(5, 5, 5), "SUCCESS state should not apply wait/bite bob offsets")
+
+
+

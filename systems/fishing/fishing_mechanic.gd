@@ -53,6 +53,7 @@ var _prev_remote_state: int = -1
 
 var _line_twitch: float = 0.0
 var _bite_time: float = 0.0
+var _wait_time: float = 0.0
 var _is_fighting: bool = false
 var _fight_initial_distance: float = 0.0
 @export var fighting_pull_strength: float = 0.5
@@ -620,8 +621,9 @@ func _process(delta: float) -> void:
 		State.CASTING, State.WAITING, State.BITE:
 			if hook_type == HookType.PLAYER and is_instance_valid(_tether_target):
 				cast_target_position = _tether_target.global_position
-			_update_bobber()
-			_rebuild_line()
+
+			if current_state == State.WAITING:
+				_wait_time += delta
 
 			if current_state == State.BITE:
 				_bite_time += delta
@@ -645,6 +647,9 @@ func _process(delta: float) -> void:
 							_fight_initial_distance = player.global_position.distance_to(cast_target_position)
 						_fight_target = randf_range(2.0, 8.0)
 						_fight_progress = 0.0
+
+			_update_bobber()
+			_rebuild_line()
 
 			if is_local_render and current_state == State.WAITING and Input.is_action_just_pressed("reel"):
 				bite_timer.stop()
@@ -750,6 +755,7 @@ func _on_casting_timer_timeout() -> void:
 	if current_state != State.CASTING:
 		return
 	current_state = State.WAITING
+	_wait_time = 0.0
 	var zone_index := _get_zone_index_for_cast_target()
 	if zone_index != _get_no_zone_index():
 		_active_zone_index = zone_index
@@ -804,7 +810,7 @@ func _rebuild_line() -> void:
 		return
 
 	var start := _get_rod_tip_position()
-	var end := _get_bobber_position()
+	var end := bobber_node.position if current_state in [State.WAITING, State.BITE] and is_instance_valid(bobber_node) else _get_bobber_position()
 
 	line_material.albedo_color.a = 1.0
 
@@ -851,8 +857,10 @@ func _update_bobber() -> void:
 		return
 
 	bobber_node.position = _get_bobber_position()
+	if current_state == State.WAITING:
+		bobber_node.position.y += sin(_wait_time * 2.0) * 0.05
 	if current_state == State.BITE:
-		bobber_node.position.y += sin(_bite_time * 3.0) * 0.008
+		bobber_node.position.y += sin(_bite_time * 5.0) * 0.12
 
 
 func _play_bite_feedback() -> void:
@@ -898,6 +906,7 @@ func reset_for_restart() -> void:
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
 	_stop_telegraph()
+	_wait_time = 0.0
 	personal_catch_count = 0
 	_active_zone_index = -1
 	personal_catch_changed.emit(personal_catch_count)
