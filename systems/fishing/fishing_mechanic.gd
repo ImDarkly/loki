@@ -810,7 +810,7 @@ func _rebuild_line() -> void:
 		return
 
 	var start := _get_rod_tip_position()
-	var end := _get_bobber_position()
+	var end := bobber_node.position if current_state in [State.WAITING, State.BITE] and is_instance_valid(bobber_node) else _get_bobber_position()
 
 	line_material.albedo_color.a = 1.0
 
