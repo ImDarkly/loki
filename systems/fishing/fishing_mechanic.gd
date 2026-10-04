@@ -131,6 +131,11 @@ func advance_fight(delta: float) -> void:
 		_complete_fight_catch()
 
 
+func _reset_scroll_timers() -> void:
+	_escape_timer = 0.0
+	_pull_spike_timer = 0.3
+
+
 @rpc("any_peer", "reliable", "call_remote")
 func notify_scroll() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
@@ -139,8 +144,7 @@ func notify_scroll() -> void:
 		var sender_id := multiplayer.get_remote_sender_id()
 		if sender_id != 0 and sender_id != 1 and sender_id != _get_owner_client_id():
 			return
-	_escape_timer = 0.0
-	_pull_spike_timer = 0.3
+	_reset_scroll_timers()
 
 
 func _process_pull(delta: float) -> void:
@@ -354,6 +358,9 @@ func _complete_fight_catch() -> void:
 		_tether_target = null
 		return
 
+	var caught_zone_index := _active_zone_index
+	var caught_source_position := cast_target_position
+
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
@@ -368,6 +375,12 @@ func _complete_fight_catch() -> void:
 	_report_zone_leave()
 	$FishManager.cleanup()
 	catch_feedback_manager.play_catch_success()
+
+	if caught_zone_index != -1 and is_instance_valid(_zone_manager_ref):
+		if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+			_zone_manager_ref.relocate_zone_after_catch(caught_zone_index, caught_source_position)
+		else:
+			_zone_manager_ref.request_catch_relocation.rpc(caught_zone_index, caught_source_position)
 
 
 func _on_personal_catch_changed(count: int) -> void:

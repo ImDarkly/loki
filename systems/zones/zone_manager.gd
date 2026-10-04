@@ -7,10 +7,10 @@ const NO_ZONE_INDEX: int = -1
 @export var zone_radius: float = 1.0
 @export var water_boundary_margin: float = 1.5
 @export var min_zone_spacing: float = 2.0
-@export var reshuffle_interval_min: float = 90.0
-@export var reshuffle_interval_max: float = 180.0
 @export var yell_scare_radius: float = 8.0
 @export var yell_rescare_interval: float = 1.5
+
+const CATCH_RELOCATION_TOP_K: int = 3
 
 var zones: Array[Dictionary] = []
 var zone_nodes: Array[MeshInstance3D] = []
@@ -18,7 +18,6 @@ var zone_occupant_counts: Array[int] = []
 var _peer_zone_occupancy: Dictionary = {}
 var _previously_yelling: Dictionary = {}
 
-@onready var reshuffle_timer: Timer = $ReshuffleTimer
 @onready var yell_scare_timer: Timer = $YellScareTimer
 
 
@@ -27,18 +26,14 @@ func _ready() -> void:
 	if dbg:
 		dbg.register_system(name, self)
 
-	reshuffle_timer.one_shot = true
-	reshuffle_timer.timeout.connect(_on_reshuffle_timer_timeout)
 	yell_scare_timer.timeout.connect(_on_yell_scare_tick)
 
 	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
 		multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 		_generate_zones()
-		_start_reshuffle_timer()
 		_sync_state_to_clients()
 	else:
 		set_process(false)
-		reshuffle_timer.stop()
 		yell_scare_timer.stop()
 		return
 
@@ -173,37 +168,46 @@ func _rebuild_occupancy_state() -> void:
 	_peer_zone_occupancy.clear()
 
 
-func _start_reshuffle_timer() -> void:
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		return
-	var interval := randf_range(reshuffle_interval_min, reshuffle_interval_max)
-	reshuffle_timer.start(interval)
-
-
-func _on_reshuffle_timer_timeout() -> void:
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		return
-	_reshuffle_unoccupied_zones()
-	_sync_state_to_clients()
-	_start_reshuffle_timer()
-
-
-func _reshuffle_unoccupied_zones() -> void:
-	for i in range(zones.size()):
-		if zone_occupant_counts[i] > 0:
-			continue
-		var next_center := _pick_zone_center_excluding(i)
-		zones[i]["center"] = next_center
-	_update_zone_visuals()
-
-
-func _pick_zone_center_excluding(zone_index: int) -> Vector3:
+func _pick_catch_relocation_center(source_position: Vector3, zone_index: int) -> Vector3:
+	var current_center: Vector3 = zones[zone_index]["center"]
+	var current_dist := _flat_distance(source_position, current_center)
+	var candidates: Array[Dictionary] = []
 	for _attempt in range(32):
 		var candidate := _pick_random_zone_center()
-		if _is_valid_zone_position_excluding(candidate, zone_index):
-			return candidate
+		if not _is_valid_zone_position_excluding(candidate, zone_index):
+			continue
+		var dist := _flat_distance(source_position, candidate)
+		if dist > current_dist:
+			candidates.append({"center": candidate, "dist": dist})
+	if candidates.is_empty():
+		return current_center
+	candidates.sort_custom(func(a, b): return a["dist"] > b["dist"])
+	var top_count := mini(candidates.size(), CATCH_RELOCATION_TOP_K)
+	var pick_idx := randi_range(0, top_count - 1)
+	return candidates[pick_idx]["center"]
 
-	return zones[zone_index]["center"]
+
+func relocate_zone_after_catch(zone_index: int, source_position: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if not _is_valid_zone_index(zone_index):
+		return
+	var next_center := _pick_catch_relocation_center(source_position, zone_index)
+	if next_center != zones[zone_index]["center"]:
+		zones[zone_index]["center"] = next_center
+	_interrupt_zone_occupants(zone_index)
+	_update_zone_visuals()
+	_sync_state_to_clients()
+
+
+@rpc("any_peer", "reliable")
+func request_catch_relocation(zone_index: int, source_position: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if not _is_valid_zone_index(zone_index):
+		return
+	# zone_index and source_position are client-claimed per co-op trust model matching enter/leave.
+	relocate_zone_after_catch(zone_index, source_position)
 
 
 func _is_valid_zone_position_excluding(candidate: Vector3, excluded_index: int) -> bool:
@@ -403,7 +407,8 @@ func _apply_synced_state(centers: Array[Vector3], radii: Array[float]) -> void:
 	zones.clear()
 	for i in range(centers.size()):
 		zones.append({"center": centers[i], "radius": radii[i]})
-	_rebuild_occupancy_state()
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+		_rebuild_occupancy_state()
 	_ensure_zone_nodes()
 	_update_zone_visuals()
 
@@ -412,8 +417,7 @@ func reset_for_restart() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	_rebuild_occupancy_state()
-	reshuffle_timer.stop()
-	_start_reshuffle_timer()
+	_generate_zones()
 	_sync_state_to_clients()
 
 
@@ -428,14 +432,12 @@ func get_debug_state() -> Dictionary:
 		"zone_count": zones.size(),
 		"occupied_zones": occupied_zones_count,
 		"total_occupants": total_occ,
-		"reshuffle_timer_left": max(0, int(ceil(reshuffle_timer.time_left))) if is_instance_valid(reshuffle_timer) else 0,
 		"yell_scare_timer_left": max(0, int(ceil(yell_scare_timer.time_left))) if is_instance_valid(yell_scare_timer) else 0
 	}
 
 
 func get_debug_actions() -> Array[Dictionary]:
 	return [
-		{"id": "reshuffle_zones", "label": "Reshuffle Zones"},
 		{"id": "regen_zones", "label": "Regenerate Zones"},
 		{"id": "clear_occupancy", "label": "Clear Occupancy"}
 	]
@@ -445,24 +447,15 @@ func debug_action(action_id: String) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return
 	match action_id:
-		"reshuffle_zones":
-			_debug_reshuffle_zones()
 		"regen_zones":
 			_debug_regen_zones()
 		"clear_occupancy":
 			_debug_clear_occupancy()
 
 
-func _debug_reshuffle_zones() -> void:
-	_reshuffle_unoccupied_zones()
-	_sync_state_to_clients()
-
-
 func _debug_regen_zones() -> void:
 	_generate_zones()
 	_rebuild_occupancy_state()
-	reshuffle_timer.stop()
-	_start_reshuffle_timer()
 	_sync_state_to_clients()
 
 

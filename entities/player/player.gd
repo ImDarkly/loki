@@ -849,10 +849,9 @@ func _process_fight(delta: float) -> void:
 		_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
 		if not _is_pause_open and Input.is_action_just_pressed("reel_fight"):
 			_pull_spike_timer = 0.3
+			fishing_mechanic._reset_scroll_timers()
 			if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 				fishing_mechanic.notify_scroll.rpc_id(1)
-			else:
-				fishing_mechanic.notify_scroll()
 
 		fishing_mechanic.advance_fight(delta)
 		if not fishing_mechanic._is_fighting:
@@ -909,7 +908,9 @@ func _process_fight(delta: float) -> void:
 	_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
 	if not _is_pause_open and Input.is_action_just_pressed("reel_fight"):
 		_pull_spike_timer = 0.3
-		fishing_mechanic.notify_scroll()
+		fishing_mechanic._reset_scroll_timers()
+		if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+			fishing_mechanic.notify_scroll.rpc_id(1)
 	var is_spiked: bool = _pull_spike_timer > 0
 	var current_pull: float = fishing_mechanic.fighting_spike_pull if is_spiked else fishing_mechanic.fighting_pull_strength
 	var pull_force: Vector3 = dir * current_pull * pull_mult

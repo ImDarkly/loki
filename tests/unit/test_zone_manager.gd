@@ -61,17 +61,101 @@ func test_leave_without_prior_enter_is_noop() -> void:
 	assert_eq(manager.zone_occupant_counts[0], 0)
 
 
-func test_occupied_zone_is_skipped_during_reshuffle() -> void:
-	manager.enter_zone(0, 101)
+func test_catch_relocation_moves_zone_farther() -> void:
+	manager.set_zones([{"center": _near_source_zone_pos(), "radius": 1.0}])
+	var source := Vector3(0, 0, 0)
+	var before: Vector3 = manager.zones[0]["center"]
+	var before_dist := _flat_distance(source, before)
+
+	manager.relocate_zone_after_catch(0, source)
+
+	var after: Vector3 = manager.zones[0]["center"]
+	assert_ne(after, before)
+	assert_gt(_flat_distance(source, after), before_dist)
+
+
+func test_catch_relocation_leaves_other_zones_unchanged() -> void:
+	manager.set_zones([
+		{"center": _near_source_zone_pos(), "radius": 1.0},
+		{"center": Vector3(15, 0, 15), "radius": 1.0}
+	])
+	var source := Vector3(0, 0, 0)
+	var zone1_before = manager.zones[1]["center"]
+
+	manager.relocate_zone_after_catch(0, source)
+
+	assert_eq(manager.zones[1]["center"], zone1_before)
+
+
+func test_catch_relocation_invalid_index_noop() -> void:
 	var before = manager.zones[0]["center"]
-	manager._reshuffle_unoccupied_zones()
+	manager.relocate_zone_after_catch(99, Vector3(0, 0, 0))
 	assert_eq(manager.zones[0]["center"], before)
 
 
-func test_unoccupied_zone_is_eligible_during_reshuffle() -> void:
-	var before = manager.zones[1]["center"]
-	manager._reshuffle_unoccupied_zones()
-	assert_ne(manager.zones[1]["center"], before)
+func test_catch_relocation_client_peer_noop() -> void:
+	_saved_multiplayer_peer = manager.multiplayer.multiplayer_peer
+	var fake_peer := _make_client_peer()
+	manager.multiplayer.multiplayer_peer = fake_peer
+	var before = manager.zones[0]["center"]
+	manager.relocate_zone_after_catch(0, Vector3(0, 0, 0))
+	assert_eq(manager.zones[0]["center"], before)
+	manager.multiplayer.multiplayer_peer = null
+
+
+func test_catch_relocation_fallback_keeps_center() -> void:
+	var far_spot := _far_spot_from(Vector3(0, 0, 0))
+	manager.set_zones([{"center": far_spot, "radius": 1.0}])
+	var before: Vector3 = manager.zones[0]["center"]
+	manager.relocate_zone_after_catch(0, Vector3(0, 0, 0))
+	assert_eq(manager.zones[0]["center"], before)
+
+
+func test_catch_relocation_interrupts_bite_co_occupant() -> void:
+	manager.set_zones([{"center": _near_source_zone_pos(), "radius": 1.0}])
+	manager.enter_zone(0, 101)
+	var mechanic := _add_mock_occupant(101, BITE_STATE, 101)
+	watch_signals(mechanic)
+
+	manager.relocate_zone_after_catch(0, Vector3(0, 0, 0))
+
+	assert_signal_emitted(mechanic, "reel_failure")
+
+
+func test_catch_relocation_does_not_interrupt_waiting_occupant() -> void:
+	manager.set_zones([{"center": _near_source_zone_pos(), "radius": 1.0}])
+	manager.enter_zone(0, 101)
+	var mechanic := _add_mock_occupant(101, WAITING_STATE, 101)
+	watch_signals(mechanic)
+
+	manager.relocate_zone_after_catch(0, Vector3(0, 0, 0))
+
+	assert_signal_not_emitted(mechanic, "reel_failure")
+
+
+func test_catch_relocation_does_not_interrupt_catcher() -> void:
+	manager.set_zones([{"center": _near_source_zone_pos(), "radius": 1.0}])
+	manager.enter_zone(0, 101)
+	manager.leave_zone(0, 101)
+	var mechanic := _add_mock_occupant(101, BITE_STATE, 101)
+	watch_signals(mechanic)
+
+	manager.relocate_zone_after_catch(0, Vector3(0, 0, 0))
+
+	assert_signal_not_emitted(mechanic, "reel_failure")
+
+
+func test_catch_relocation_offline_interrupted() -> void:
+	_saved_multiplayer_peer = manager.multiplayer.multiplayer_peer
+	manager.multiplayer.multiplayer_peer = null
+	manager.set_zones([{"center": _near_source_zone_pos(), "radius": 1.0}])
+	manager.enter_zone(0, 1)
+	var mechanic := _add_mock_occupant(1, BITE_STATE, -1)
+	watch_signals(mechanic)
+
+	manager.relocate_zone_after_catch(0, Vector3(0, 0, 0))
+
+	assert_signal_emitted(mechanic, "reel_failure")
 
 
 func test_placement_respects_minimum_zone_spacing() -> void:
@@ -109,33 +193,25 @@ func test_reset_for_restart_clears_occupancy() -> void:
 	assert_eq(manager.zone_occupant_counts[1], 0)
 
 
-func test_reset_for_restart_starts_timer() -> void:
-	manager.reshuffle_timer.stop()
-	assert_true(manager.reshuffle_timer.is_stopped())
-
-	manager.reset_for_restart()
-
-	assert_false(manager.reshuffle_timer.is_stopped())
-
-
-func test_reset_for_restart_preserves_positions() -> void:
+func test_reset_for_restart_regenerates_zones() -> void:
 	var positions_before: Array[Vector3] = []
 	for zone in manager.zones:
 		positions_before.append(zone["center"])
 
 	manager.reset_for_restart()
 
-	for i in range(manager.zones.size()):
-		assert_eq(manager.zones[i]["center"], positions_before[i])
+	var changed := false
+	for i in range(mini(manager.zones.size(), positions_before.size())):
+		if manager.zones[i]["center"] != positions_before[i]:
+			changed = true
+			break
+	assert_true(changed or manager.zones.size() != positions_before.size())
 
 
-func test_scare_relocates_occupied_zone_overriding_lock() -> void:
+func test_scare_relocates_occupied_zone() -> void:
 	manager.enter_zone(0, 101)
 	var source := Vector3(0, 0, 0)
 	var before: Vector3 = manager.zones[0]["center"]
-
-	manager._reshuffle_unoccupied_zones()
-	assert_eq(manager.zones[0]["center"], before, "Occupied zone must be skipped by idle reshuffle")
 
 	manager.scare(source, 30.0)
 
@@ -318,22 +394,19 @@ func test_get_debug_state_keys_and_types() -> void:
 	assert_true(st.has("zone_count"))
 	assert_true(st.has("occupied_zones"))
 	assert_true(st.has("total_occupants"))
-	assert_true(st.has("reshuffle_timer_left"))
 	assert_true(st.has("yell_scare_timer_left"))
 	assert_eq(typeof(st["zone_count"]), TYPE_INT)
 	assert_eq(typeof(st["occupied_zones"]), TYPE_INT)
 	assert_eq(typeof(st["total_occupants"]), TYPE_INT)
-	assert_eq(typeof(st["reshuffle_timer_left"]), TYPE_INT)
 	assert_eq(typeof(st["yell_scare_timer_left"]), TYPE_INT)
 
 
 func test_get_debug_actions_ids_and_labels() -> void:
 	var acts = manager.get_debug_actions()
-	assert_eq(acts.size(), 3)
+	assert_eq(acts.size(), 2)
 	var map = {}
 	for act in acts:
 		map[act["id"]] = act["label"]
-	assert_eq(map.get("reshuffle_zones"), "Reshuffle Zones")
 	assert_eq(map.get("regen_zones"), "Regenerate Zones")
 	assert_eq(map.get("clear_occupancy"), "Clear Occupancy")
 
@@ -348,10 +421,6 @@ func test_debug_actions_execution() -> void:
 	assert_eq(manager.zone_occupant_counts[0], 1)
 	manager.debug_action("regen_zones")
 	assert_eq(manager.zone_occupant_counts[0], 0, "regen_zones should reset occupant counts")
-
-	var before = manager.zones[1]["center"]
-	manager.debug_action("reshuffle_zones")
-	assert_ne(manager.zones[1]["center"], before, "reshuffle_zones should move unoccupied zone")
 
 
 func test_debug_action_client_noop() -> void:
