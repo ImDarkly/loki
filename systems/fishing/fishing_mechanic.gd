@@ -18,6 +18,7 @@ var hooked_by_caster_id: int = 0
 
 @export var min_bite_delay: float = 3.0
 @export var max_bite_delay: float = 8.0
+@export var dead_zone_fast_fail_delay: float = 1.5
 
 @export var gravity_strength: float = 9.8
 
@@ -760,7 +761,7 @@ func _on_casting_timer_timeout() -> void:
 	if zone_index != _get_no_zone_index():
 		_active_zone_index = zone_index
 		_report_zone_enter(zone_index)
-	var delay: float = randf_range(min_bite_delay, max_bite_delay)
+	var delay: float = dead_zone_fast_fail_delay if zone_index == _get_no_zone_index() else randf_range(min_bite_delay, max_bite_delay)
 	bite_timer.start(delay)
 	print("Cast: waiting %.2f seconds for bite" % delay)
 
