@@ -19,6 +19,7 @@ func before_each() -> void:
 	zone_manager.call("set_zones", [
 		{"center": Vector3(0, 0, 0), "radius": 10.0}
 	])
+	mechanic._zone_manager_ref = zone_manager
 
 
 func test_fish_fled_during_bite_transitions_to_idle() -> void:
@@ -686,6 +687,28 @@ func test_water_fallback_sets_zone_and_bite_timer() -> void:
 	assert_eq(mechanic.current_state, mechanic.State.WAITING, "Water fallback should enter WAITING after flight")
 	assert_eq(mechanic._active_zone_index, 0, "Water fallback inside a zone should record _active_zone_index")
 	assert_true(mechanic.bite_timer.time_left > 0.0, "Water fallback inside a zone should start the BiteTimer")
+
+
+func test_dead_zone_cast_uses_fast_fail_delay() -> void:
+	mechanic.try_cast_with_detection(Vector3(100, 0, 100), 0.5)
+	assert_eq(mechanic.current_state, mechanic.State.CASTING, "Dead zone cast should enter CASTING")
+
+	mechanic._on_casting_timer_timeout()
+
+	assert_eq(mechanic.current_state, mechanic.State.WAITING, "Dead zone cast should enter WAITING after flight")
+	assert_eq(mechanic._active_zone_index, -1, "Dead zone cast should have _active_zone_index == -1")
+	assert_eq(mechanic.bite_timer.wait_time, mechanic.dead_zone_fast_fail_delay, "Bite timer wait_time should equal dead_zone_fast_fail_delay")
+
+
+func test_in_zone_cast_uses_full_bite_delay_range() -> void:
+	mechanic.try_cast_with_detection(Vector3(0, 0, 0), 0.5)
+	assert_eq(mechanic.current_state, mechanic.State.CASTING, "In-zone cast should enter CASTING")
+
+	mechanic._on_casting_timer_timeout()
+
+	assert_eq(mechanic.current_state, mechanic.State.WAITING, "In-zone cast should enter WAITING after flight")
+	assert_eq(mechanic._active_zone_index, 0, "In-zone cast should record _active_zone_index == 0")
+	assert_between(mechanic.bite_timer.wait_time, mechanic.min_bite_delay, mechanic.max_bite_delay, "Bite timer wait_time should be within [min_bite_delay, max_bite_delay]")
 
 
 func test_rescue_cancels_float_timeout() -> void:
