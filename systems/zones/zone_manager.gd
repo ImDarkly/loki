@@ -206,6 +206,7 @@ func request_catch_relocation(zone_index: int, source_position: Vector3) -> void
 		return
 	if not _is_valid_zone_index(zone_index):
 		return
+	# zone_index and source_position are client-claimed per co-op trust model matching enter/leave.
 	relocate_zone_after_catch(zone_index, source_position)
 
 
@@ -406,7 +407,8 @@ func _apply_synced_state(centers: Array[Vector3], radii: Array[float]) -> void:
 	zones.clear()
 	for i in range(centers.size()):
 		zones.append({"center": centers[i], "radius": radii[i]})
-	_rebuild_occupancy_state()
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+		_rebuild_occupancy_state()
 	_ensure_zone_nodes()
 	_update_zone_visuals()
 
