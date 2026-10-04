@@ -191,6 +191,15 @@ func test_scroll_resets_escape_timer() -> void:
 	assert_signal_not_emitted(mechanic, "reel_failure")
 
 
+func test_scroll_dual_reset_local() -> void:
+	mechanic._escape_timer = 2.0
+	mechanic._pull_spike_timer = 0.0
+	mechanic._reset_scroll_timers()
+	assert_eq(mechanic._escape_timer, 0.0, "_reset_scroll_timers should reset escape timer locally")
+	assert_eq(mechanic._pull_spike_timer, 0.3, "_reset_scroll_timers should set pull spike timer locally")
+
+
+
 func test_telegraph_intensity_ramps_before_trigger() -> void:
 	mechanic.current_state = 3
 	mechanic._is_fighting = true
