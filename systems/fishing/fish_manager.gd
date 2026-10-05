@@ -8,11 +8,12 @@ var _shadow_center: Vector3 = Vector3.ZERO
 const SHADOW_RADIUS := 0.55
 const SHADOW_Y_OFFSET := -0.35
 const SHADOW_ANGULAR_SPEED := 1.5
-const SHADOW_SCALE := Vector3(0.15, 0.15, 0.15)
+const SHADOW_SCALE := Vector3(0.15, 0.05, 0.15)
 
 const GOLDFISH_SCENE := preload("res://systems/fishing/assets/Goldfish.glb")
 const CLOWNFISH_SCENE := preload("res://systems/fishing/assets/Clownfish.glb")
 const SHADOW_MATERIAL := preload("res://systems/fishing/assets/fish_shadow_material.tres")
+const SWIM_ANIMATION := "Fish_Armature|Swimming_Normal"
 
 
 func spawn(position: Vector3) -> void:
@@ -61,6 +62,7 @@ func spawn_shadows(center: Vector3) -> void:
 		_shadow_nodes.append(inst)
 		_shadow_angles.append(float(i) * PI)
 		_place_shadow_on_circle(i)
+		_play_swim_animation(inst)
 
 
 func _apply_shadow_material_recursive(node: Node) -> void:
@@ -70,6 +72,17 @@ func _apply_shadow_material_recursive(node: Node) -> void:
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for child in node.get_children():
 		_apply_shadow_material_recursive(child)
+
+
+func _play_swim_animation(inst: Node) -> void:
+	for child in inst.find_children("*", "AnimationPlayer", true, false):
+		var player := child as AnimationPlayer
+		if player == null or not player.has_animation(SWIM_ANIMATION):
+			continue
+		var clip := player.get_animation(SWIM_ANIMATION)
+		if clip.loop_mode == Animation.LOOP_NONE:
+			clip.loop_mode = Animation.LOOP_LINEAR
+		player.play(SWIM_ANIMATION)
 
 
 func despawn_shadows() -> void:

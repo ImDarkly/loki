@@ -101,7 +101,7 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
-	$FishManager.cleanup()
+	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
 	_tether_target = null
@@ -287,7 +287,7 @@ func _on_hook_rejected() -> void:
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
-	$FishManager.cleanup()
+	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
 	_clear_victim_reservation()
@@ -320,7 +320,7 @@ func _trigger_escape_launch() -> void:
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
-	$FishManager.cleanup()
+	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
 	_clear_victim_reservation()
@@ -351,7 +351,7 @@ func _complete_fight_catch() -> void:
 		_stop_telegraph()
 		_report_zone_leave()
 		_snap_bobber_to_rod()
-		_cleanup_all()
+		_clear_fish_visuals()
 		current_state = State.IDLE
 		hook_type = HookType.NONE
 		_clear_victim_reservation()
@@ -544,7 +544,7 @@ func _handle_remote_transition(to_state: int) -> void:
 		State.IDLE, State.SUCCESS:
 			_is_fighting = false
 			_snap_bobber_to_rod()
-			$FishManager.cleanup()
+			_clear_fish_visuals()
 			hook_type = HookType.NONE
 			_clear_victim_reservation()
 			_tether_target = null
@@ -649,7 +649,7 @@ func _process(delta: float) -> void:
 						_clear_victim_reservation()
 						_tether_target = null
 						current_state = State.IDLE
-						_cleanup_all()
+						_clear_fish_visuals()
 						reel_failure.emit()
 						return
 
@@ -673,7 +673,7 @@ func _process(delta: float) -> void:
 				_clear_victim_reservation()
 				_tether_target = null
 				current_state = State.IDLE
-				_cleanup_all()
+				_clear_fish_visuals()
 
 		State.IDLE:
 			if is_instance_valid(bobber_node):
@@ -787,7 +787,7 @@ func _on_bite_timer_timeout() -> void:
 		_report_zone_leave()
 		current_state = State.IDLE
 		_snap_bobber_to_rod()
-		_cleanup_all()
+		_clear_fish_visuals()
 		catch_feedback_manager.play_dead_zone_feedback()
 		return
 
@@ -904,13 +904,17 @@ func _cleanup_line() -> void:
 	_line_twitch = 0.0
 
 
+func _clear_fish_visuals() -> void:
+	$FishManager.cleanup()
+	$FishManager.despawn_shadows()
+
+
 func _cleanup_all() -> void:
 	_cleanup_line()
 	_cleanup_bobber()
 	if casting_timer:
 		casting_timer.stop()
-	$FishManager.cleanup()
-	$FishManager.despawn_shadows()
+	_clear_fish_visuals()
 
 
 func _exit_tree() -> void:

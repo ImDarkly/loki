@@ -1228,6 +1228,116 @@ func test_ambient_fish_shadows_circle_inside_zone() -> void:
 	assert_false(fish_manager.has_shadows(), "Shadows should despawn on _cleanup_all")
 
 
+func test_idle_player_catch_preserves_bobber_clears_shadows() -> void:
+	mechanic.is_local_render = true
+	mechanic.current_state = mechanic.State.BITE
+	mechanic.hook_type = mechanic.HookType.PLAYER
+	mechanic._is_fighting = true
+	mechanic.cast_target_position = Vector3(5, 0, 5)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+	mechanic.get_node("FishManager").spawn_shadows(mechanic.bobber_node.global_position)
+	assert_true(mechanic.get_node("FishManager").has_shadows(), "Precondition: shadows active")
+
+	mechanic._complete_fight_catch()
+
+	assert_eq(mechanic.current_state, mechanic.State.IDLE, "Player-hook completion should return to IDLE")
+	assert_true(is_instance_valid(mechanic.bobber_node), "Bobber should survive IDLE return")
+	assert_false(mechanic.get_node("FishManager").has_shadows(), "Shadows should despawn on player-hook completion")
+
+
+func test_idle_bite_timeout_preserves_bobber_clears_shadows() -> void:
+	mechanic.is_local_render = true
+	mechanic.current_state = mechanic.State.BITE
+	mechanic.hook_type = mechanic.HookType.NONE
+	mechanic._is_fighting = false
+	mechanic._bite_time = 0.0
+	mechanic._active_zone_index = 0
+	mechanic.cast_target_position = Vector3(5, 0, 5)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+	mechanic.get_node("FishManager").spawn_shadows(mechanic.bobber_node.global_position)
+	assert_true(mechanic.get_node("FishManager").has_shadows(), "Precondition: shadows active")
+
+	Input.action_release("reel")
+	while mechanic.current_state == mechanic.State.BITE:
+		mechanic._process(0.5)
+		if mechanic._bite_time > 5.0:
+			break
+
+	assert_eq(mechanic.current_state, mechanic.State.IDLE, "BITE timeout should return to IDLE")
+	assert_true(is_instance_valid(mechanic.bobber_node), "Bobber should survive BITE timeout")
+	assert_false(mechanic.get_node("FishManager").has_shadows(), "Shadows should despawn on BITE timeout")
+
+
+func test_idle_waiting_cancel_preserves_bobber_clears_shadows() -> void:
+	mechanic.is_local_render = true
+	mechanic.current_state = mechanic.State.WAITING
+	mechanic.hook_type = mechanic.HookType.FISH
+	mechanic.cast_target_position = Vector3(5, 0, 5)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+	mechanic.get_node("FishManager").spawn_shadows(mechanic.bobber_node.global_position)
+	assert_true(mechanic.get_node("FishManager").has_shadows(), "Precondition: shadows active")
+
+	Input.action_press("reel")
+	mechanic._process(0.1)
+	Input.action_release("reel")
+
+	assert_eq(mechanic.current_state, mechanic.State.IDLE, "WAITING cancel should return to IDLE")
+	assert_true(is_instance_valid(mechanic.bobber_node), "Bobber should survive WAITING cancel")
+	assert_false(mechanic.get_node("FishManager").has_shadows(), "Shadows should despawn on WAITING cancel")
+
+
+func test_idle_dead_zone_preserves_bobber_clears_shadows() -> void:
+	mechanic.is_local_render = true
+	mechanic.current_state = mechanic.State.WAITING
+	mechanic.cast_target_position = Vector3(100, 0, 100)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+	mechanic.get_node("FishManager").spawn_shadows(mechanic.bobber_node.global_position)
+	assert_true(mechanic.get_node("FishManager").has_shadows(), "Precondition: shadows active")
+
+	mechanic._on_bite_timer_timeout()
+
+	assert_eq(mechanic.current_state, mechanic.State.IDLE, "Dead-zone fast-fail should return to IDLE")
+	assert_true(is_instance_valid(mechanic.bobber_node), "Bobber should survive dead-zone fast-fail")
+	assert_false(mechanic.get_node("FishManager").has_shadows(), "Shadows should despawn on dead-zone fast-fail")
+
+
+func test_ambient_fish_shadow_scale_y_flattened() -> void:
+	var fish_manager = mechanic.get_node("FishManager")
+	assert_lt(fish_manager.SHADOW_SCALE.y, fish_manager.SHADOW_SCALE.x, "SHADOW_SCALE should be Y-flattened")
+
+	mechanic._create_bobber(Vector3(5, 0, 5))
+	autofree(mechanic.bobber_node)
+	fish_manager.spawn_shadows(mechanic.bobber_node.global_position)
+	assert_true(fish_manager.has_shadows(), "Precondition: shadows active")
+	for node in fish_manager._shadow_nodes:
+		if is_instance_valid(node):
+			assert_lt(node.scale.y, node.scale.x, "Spawned shadow should be Y-flattened")
+	mechanic._cleanup_all()
+
+
+func test_ambient_fish_shadows_play_swim_animation() -> void:
+	var fish_manager = mechanic.get_node("FishManager")
+	mechanic._create_bobber(Vector3(5, 0, 5))
+	autofree(mechanic.bobber_node)
+	fish_manager.spawn_shadows(mechanic.bobber_node.global_position)
+	assert_true(fish_manager.has_shadows(), "Precondition: shadows active")
+	assert_eq(fish_manager._shadow_nodes.size(), 2, "Exactly 2 shadow fish should spawn")
+	for node in fish_manager._shadow_nodes:
+		var players: Array[Node] = node.find_children("*", "AnimationPlayer", true, false)
+		assert_gt(players.size(), 0, "Shadow should contain an AnimationPlayer")
+		for child in players:
+			var player := child as AnimationPlayer
+			assert_true(player.has_animation(fish_manager.SWIM_ANIMATION), "Shadow rig should have swim clip")
+			assert_eq(player.current_animation, fish_manager.SWIM_ANIMATION, "Shadow should play swim clip")
+			assert_true(player.is_playing(), "Shadow swim clip should be playing")
+			assert_eq(player.get_animation(fish_manager.SWIM_ANIMATION).loop_mode, Animation.LOOP_LINEAR, "Swim clip should loop")
+	mechanic._cleanup_all()
+
+
 
 
 
