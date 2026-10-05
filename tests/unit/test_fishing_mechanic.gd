@@ -1111,4 +1111,123 @@ func test_idle_and_success_have_no_bob_offset() -> void:
 	assert_eq(mechanic.bobber_node.position, Vector3(5, 5, 5), "SUCCESS state should not apply wait/bite bob offsets")
 
 
+func test_ambient_fish_shadows_lifecycle() -> void:
+	mechanic.is_local_render = true
+	mechanic.cast_target_position = Vector3(5, 0, 5)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+
+	mechanic.current_state = mechanic.State.WAITING
+	mechanic.get_node("FishManager").spawn_shadows(mechanic.bobber_node.global_position)
+	assert_true(mechanic.get_node("FishManager").has_shadows(), "Shadows should be active during WAITING")
+	assert_eq(mechanic.get_node("FishManager")._shadow_nodes.size(), 2, "Exactly 2 shadow fish should spawn")
+
+	mechanic._cleanup_all()
+	assert_false(mechanic.get_node("FishManager").has_shadows(), "Shadows should despawn on _cleanup_all")
+
+
+func test_ambient_fish_shadows_local_only() -> void:
+	mechanic.is_local_render = false
+	mechanic.current_state = mechanic.State.CASTING
+	mechanic.cast_target_position = Vector3(5, 0, 5)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+	mechanic._on_casting_timer_timeout()
+	assert_false(mechanic.get_node("FishManager").has_shadows(), "Shadows should not spawn when is_local_render is false")
+	mechanic._cleanup_all()
+
+
+func test_ambient_fish_shadows_despawn_on_state_change_bite() -> void:
+	mechanic.is_local_render = true
+	mechanic.cast_target_position = Vector3(5, 0, 5)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+
+	mechanic.current_state = mechanic.State.WAITING
+	mechanic.get_node("FishManager").spawn_shadows(mechanic.bobber_node.global_position)
+	assert_true(mechanic.get_node("FishManager").has_shadows(), "Shadows should be active during WAITING")
+
+	mechanic._active_zone_index = 0
+	mechanic._on_bite_timer_timeout()
+	assert_false(mechanic.get_node("FishManager").has_shadows(), "Shadows should despawn when transitioning to BITE")
+	mechanic._cleanup_all()
+
+
+func test_ambient_fish_shadows_despawn_on_new_cast() -> void:
+	mechanic.is_local_render = true
+	mechanic.cast_target_position = Vector3(5, 0, 5)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+
+	mechanic.current_state = mechanic.State.WAITING
+	mechanic.get_node("FishManager").spawn_shadows(mechanic.bobber_node.global_position)
+	assert_true(mechanic.get_node("FishManager").has_shadows(), "Shadows should be active during WAITING")
+
+	mechanic.cast(Vector3(2, 0, 2), 1.0)
+	assert_false(mechanic.get_node("FishManager").has_shadows(), "Shadows should despawn on new cast")
+	mechanic._cleanup_all()
+
+
+func test_ambient_fish_shadows_material_and_model() -> void:
+	mechanic.is_local_render = true
+	mechanic.cast_target_position = Vector3(5, 0, 5)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+
+	var fish_manager = mechanic.get_node("FishManager")
+	fish_manager.spawn_shadows(mechanic.bobber_node.global_position)
+	assert_true(fish_manager.has_shadows(), "Shadows should spawn")
+	assert_eq(fish_manager._shadow_nodes.size(), 2, "Exactly 2 shadow fish should spawn")
+
+	for node in fish_manager._shadow_nodes:
+		if is_instance_valid(node):
+			var found_mesh := false
+			var stack: Array[Node] = [node]
+			while not stack.is_empty():
+				var curr: Node = stack.pop_back()
+				if curr is MeshInstance3D:
+					var mi := curr as MeshInstance3D
+					if mi.material_override == fish_manager.SHADOW_MATERIAL:
+						found_mesh = true
+						assert_eq(mi.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Shadow casting should be disabled")
+				for child in curr.get_children():
+					stack.append(child)
+			assert_true(found_mesh, "Shadow node should have MeshInstance3D with shadow material override")
+	fish_manager.cleanup()
+	fish_manager.despawn_shadows()
+
+
+func test_ambient_fish_shadows_circle_inside_zone() -> void:
+	mechanic.is_local_render = true
+	var center := Vector3(5, 0, 5)
+	mechanic.cast_target_position = center
+	mechanic._create_bobber(center)
+	autofree(mechanic.bobber_node)
+
+	var fish_manager = mechanic.get_node("FishManager")
+	fish_manager.spawn_shadows(mechanic.bobber_node.global_position)
+
+	assert_eq(fish_manager._shadow_nodes.size(), 2, "Exactly 2 shadow fish should spawn")
+	for node in fish_manager._shadow_nodes:
+		var flat := Vector2(node.global_position.x - center.x, node.global_position.z - center.z)
+		assert_almost_eq(flat.length(), fish_manager.SHADOW_RADIUS, 0.01, "Shadow should sit on the tight circle around the bobber")
+		assert_lt(flat.length(), 1.0, "Shadow circle should fit inside the zone ring (radius 1.0)")
+		assert_almost_eq(node.global_position.y, center.y + fish_manager.SHADOW_Y_OFFSET, 0.01, "Shadow should sit just below the bobber, above the water plane")
+
+	var before: Array[Vector3] = []
+	for node in fish_manager._shadow_nodes:
+		before.append(node.global_position)
+	fish_manager._process(0.5)
+	for i in range(fish_manager._shadow_nodes.size()):
+		var node = fish_manager._shadow_nodes[i]
+		assert_ne(node.global_position, before[i], "Shadow should drift along the circle over time")
+		var flat := Vector2(node.global_position.x - center.x, node.global_position.z - center.z)
+		assert_almost_eq(flat.length(), fish_manager.SHADOW_RADIUS, 0.05, "Shadow should stay on the circle while drifting")
+
+	mechanic._cleanup_all()
+	assert_false(fish_manager.has_shadows(), "Shadows should despawn on _cleanup_all")
+
+
+
+
 
