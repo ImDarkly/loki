@@ -778,8 +778,8 @@ func _on_casting_timer_timeout() -> void:
 	var delay: float = dead_zone_fast_fail_delay if zone_index == _get_no_zone_index() else randf_range(min_bite_delay, max_bite_delay)
 	bite_timer.start(delay)
 	print("Cast: waiting %.2f seconds for bite" % delay)
-	if is_local_render and is_instance_valid(bobber_node):
-		$FishManager.spawn_shadows(bobber_node.global_position)
+	if is_local_render and is_instance_valid(bobber_node) and _active_zone_index != _get_no_zone_index():
+		$FishManager.spawn_shadows(_get_ambient_shadow_center())
 
 
 func _on_bite_timer_timeout() -> void:
@@ -808,6 +808,14 @@ func _get_zone_index_for_cast_target() -> int:
 	if not is_instance_valid(_zone_manager_ref):
 		return _get_no_zone_index()
 	return _zone_manager_ref.get_zone_index_for_point(cast_target_position)
+
+
+func _get_ambient_shadow_center() -> Vector3:
+	if _active_zone_index != -1 and is_instance_valid(_zone_manager_ref):
+		var zones: Array = _zone_manager_ref.get("zones")
+		if zones != null and _active_zone_index >= 0 and _active_zone_index < zones.size():
+			return zones[_active_zone_index]["center"]
+	return Vector3.ZERO
 
 
 func _get_no_zone_index() -> int:

@@ -1338,6 +1338,58 @@ func test_ambient_fish_shadows_play_swim_animation() -> void:
 	mechanic._cleanup_all()
 
 
+func test_ambient_shadows_spawn_at_zone_center_not_bobber() -> void:
+	mechanic.is_local_render = true
+	mechanic.current_state = mechanic.State.CASTING
+	mechanic.cast_target_position = Vector3(5, 0, 0)
+	mechanic._create_bobber(Vector3(9, 0, 9))
+	autofree(mechanic.bobber_node)
+	mechanic._on_casting_timer_timeout()
+	var fish_manager = mechanic.get_node("FishManager")
+	assert_true(fish_manager.has_shadows(), "Shadows should spawn on WAITING enter")
+	assert_eq(fish_manager._shadow_center, Vector3(0, 0, 0), "Shadows should center on the zone center, not the bobber")
+	assert_ne(fish_manager._shadow_center, mechanic.bobber_node.global_position, "Shadow center must not track the bobber node")
+	for node in fish_manager._shadow_nodes:
+		assert_lt(node.global_position.y, mechanic.bobber_node.global_position.y, "Shadow should swim below the bobber, under the water surface")
+		var flat := Vector2(node.global_position.x - fish_manager._shadow_center.x, node.global_position.z - fish_manager._shadow_center.z)
+		assert_almost_eq(flat.length(), fish_manager.SHADOW_RADIUS, 0.05, "Shadow should circle tight under the zone ring")
+	mechanic._cleanup_all()
+
+
+func test_ambient_shadows_ignore_bobber_drift() -> void:
+	mechanic.is_local_render = true
+	mechanic.current_state = mechanic.State.CASTING
+	mechanic.cast_target_position = Vector3(5, 0, 0)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+	mechanic._on_casting_timer_timeout()
+	var fish_manager = mechanic.get_node("FishManager")
+	var zone_center: Vector3 = fish_manager._shadow_center
+	assert_eq(zone_center, Vector3(0, 0, 0), "Precondition: shadows anchored to zone center")
+	mechanic.bobber_node.position += Vector3(0.3, 0.05, -0.2)
+	mechanic._process(0.1)
+	fish_manager._process(0.5)
+	assert_eq(fish_manager._shadow_center, zone_center, "Bobber drift must not move the shadow center")
+	for node in fish_manager._shadow_nodes:
+		var flat := Vector2(node.global_position.x - zone_center.x, node.global_position.z - zone_center.z)
+		assert_almost_eq(flat.length(), fish_manager.SHADOW_RADIUS, 0.05, "Shadows should keep circling the zone center")
+	mechanic._cleanup_all()
+
+
+func test_ambient_shadows_no_spawn_in_dead_zone() -> void:
+	mechanic.is_local_render = true
+	mechanic.current_state = mechanic.State.CASTING
+	mechanic.cast_target_position = Vector3(100, 0, 100)
+	mechanic._create_bobber(mechanic.cast_target_position)
+	autofree(mechanic.bobber_node)
+	mechanic._on_casting_timer_timeout()
+	var fish_manager = mechanic.get_node("FishManager")
+	assert_eq(mechanic._active_zone_index, -1, "Precondition: dead-zone cast has no active zone")
+	assert_false(fish_manager.has_shadows(), "No shadows should spawn during WAITING in a dead zone")
+	assert_true(fish_manager._shadow_nodes.is_empty(), "No shadow nodes should exist without a valid zone")
+	mechanic._cleanup_all()
+
+
 
 
 

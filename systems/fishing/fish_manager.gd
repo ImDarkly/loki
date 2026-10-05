@@ -16,6 +16,12 @@ const SHADOW_MATERIAL := preload("res://systems/fishing/assets/fish_shadow_mater
 const SWIM_ANIMATION := "Fish_Armature|Swimming_Normal"
 
 
+func _ready() -> void:
+	var dbg = get_node_or_null("/root/DebugOverlay")
+	if dbg:
+		dbg.register_system(name, self)
+
+
 func spawn(position: Vector3) -> void:
 	cleanup()
 
@@ -126,3 +132,28 @@ func _process(delta: float) -> void:
 func _exit_tree() -> void:
 	cleanup()
 	despawn_shadows()
+
+
+func get_debug_state() -> Dictionary:
+	return {
+		"shadow_count": _shadow_nodes.size(),
+		"has_shadows": has_shadows(),
+		"center": str(_shadow_center)
+	}
+
+
+func get_debug_actions() -> Array[Dictionary]:
+	return [
+		{"id": "spawn_shadows", "label": "Spawn Shadows"},
+		{"id": "clear_shadows", "label": "Clear Shadows"}
+	]
+
+
+func debug_action(action_id: String) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	match action_id:
+		"spawn_shadows":
+			spawn_shadows(_shadow_center if _shadow_center != Vector3.ZERO else global_position)
+		"clear_shadows":
+			despawn_shadows()
