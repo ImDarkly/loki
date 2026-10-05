@@ -8,7 +8,8 @@ const COVERED: Array[String] = [
 	"res://systems/zones/zone_manager.gd",
 	"res://systems/quota/quota_manager.gd",
 	"res://systems/quota/coin_manager.gd",
-	"res://systems/fishing/fishing_mechanic.gd"
+	"res://systems/fishing/fishing_mechanic.gd",
+	"res://systems/fishing/fish_manager.gd"
 ]
 
 

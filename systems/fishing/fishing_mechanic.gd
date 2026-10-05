@@ -101,7 +101,7 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
-	$FishManager.cleanup()
+	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
 	_tether_target = null
@@ -287,7 +287,7 @@ func _on_hook_rejected() -> void:
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
-	$FishManager.cleanup()
+	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
 	_clear_victim_reservation()
@@ -320,7 +320,7 @@ func _trigger_escape_launch() -> void:
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
-	$FishManager.cleanup()
+	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
 	_clear_victim_reservation()
@@ -351,7 +351,7 @@ func _complete_fight_catch() -> void:
 		_stop_telegraph()
 		_report_zone_leave()
 		_snap_bobber_to_rod()
-		$FishManager.cleanup()
+		_clear_fish_visuals()
 		current_state = State.IDLE
 		hook_type = HookType.NONE
 		_clear_victim_reservation()
@@ -544,7 +544,7 @@ func _handle_remote_transition(to_state: int) -> void:
 		State.IDLE, State.SUCCESS:
 			_is_fighting = false
 			_snap_bobber_to_rod()
-			$FishManager.cleanup()
+			_clear_fish_visuals()
 			hook_type = HookType.NONE
 			_clear_victim_reservation()
 			_tether_target = null
@@ -649,7 +649,7 @@ func _process(delta: float) -> void:
 						_clear_victim_reservation()
 						_tether_target = null
 						current_state = State.IDLE
-						$FishManager.cleanup()
+						_clear_fish_visuals()
 						reel_failure.emit()
 						return
 
@@ -673,6 +673,7 @@ func _process(delta: float) -> void:
 				_clear_victim_reservation()
 				_tether_target = null
 				current_state = State.IDLE
+				_clear_fish_visuals()
 
 		State.IDLE:
 			if is_instance_valid(bobber_node):
@@ -777,6 +778,8 @@ func _on_casting_timer_timeout() -> void:
 	var delay: float = dead_zone_fast_fail_delay if zone_index == _get_no_zone_index() else randf_range(min_bite_delay, max_bite_delay)
 	bite_timer.start(delay)
 	print("Cast: waiting %.2f seconds for bite" % delay)
+	if is_local_render and is_instance_valid(bobber_node) and _active_zone_index != _get_no_zone_index():
+		$FishManager.spawn_shadows(_get_ambient_shadow_center())
 
 
 func _on_bite_timer_timeout() -> void:
@@ -784,7 +787,7 @@ func _on_bite_timer_timeout() -> void:
 		_report_zone_leave()
 		current_state = State.IDLE
 		_snap_bobber_to_rod()
-		$FishManager.cleanup()
+		_clear_fish_visuals()
 		catch_feedback_manager.play_dead_zone_feedback()
 		return
 
@@ -794,6 +797,7 @@ func _on_bite_timer_timeout() -> void:
 	if is_instance_valid(bobber_node):
 		bobber_node.visible = true
 	_play_bite_feedback()
+	$FishManager.despawn_shadows()
 	$FishManager.spawn(cast_target_position)
 	bite_occurred.emit(cast_target_position)
 	print("Bite! Press left mouse to catch")
@@ -804,6 +808,14 @@ func _get_zone_index_for_cast_target() -> int:
 	if not is_instance_valid(_zone_manager_ref):
 		return _get_no_zone_index()
 	return _zone_manager_ref.get_zone_index_for_point(cast_target_position)
+
+
+func _get_ambient_shadow_center() -> Vector3:
+	if _active_zone_index != -1 and is_instance_valid(_zone_manager_ref):
+		var zones: Array = _zone_manager_ref.get("zones")
+		if zones != null and _active_zone_index >= 0 and _active_zone_index < zones.size():
+			return zones[_active_zone_index]["center"]
+	return Vector3.ZERO
 
 
 func _get_no_zone_index() -> int:
@@ -900,12 +912,21 @@ func _cleanup_line() -> void:
 	_line_twitch = 0.0
 
 
+func _clear_fish_visuals() -> void:
+	$FishManager.cleanup()
+	$FishManager.despawn_shadows()
+
+
 func _cleanup_all() -> void:
 	_cleanup_line()
 	_cleanup_bobber()
 	if casting_timer:
 		casting_timer.stop()
-	$FishManager.cleanup()
+	_clear_fish_visuals()
+
+
+func _exit_tree() -> void:
+	_cleanup_all()
 
 
 func reset_for_restart() -> void:
