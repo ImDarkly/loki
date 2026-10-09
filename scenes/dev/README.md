@@ -131,3 +131,24 @@ That’s the whole seagull, sped up for testing. Close the window when done — 
 - **R** — Reset to production defaults
 
 **Full flow to watch:** Press **F5** (day gradient with clouds) → **F6** (sunset east / west sunrise toggle) → **F7** (night stars and darker ambient) → **F8** (sweep preview auto-play with pitch & yaw) → **G** (faster cloud drift) → **R** (reset). Close window when done.
+
+---
+
+## Fish Fight Travel Test — Quick Guide (`dev_fish_fight_flow.tscn`)
+
+**What it does:** Isolated fish fight travel scene without lobby → host → round. Tests Quaternius fish animation, fight travel from cast spot toward rod tip, bobber hiding during FISH fight, line end at fish position, and island-touch catch.
+
+**Prod values stay untouched:** `min_bite_delay` / `max_bite_delay` are `3.0` / `8.0` and `escape_time_threshold` is `1.0` in `systems/fishing/fishing_mechanic.gd`. This dev scene overrides them *in the dev script only* for fast testing (per Manual/Dev Testing convention).
+
+**How to open and move:**
+1. In Godot FileSystem go to `scenes/dev/dev_fish_fight_flow.tscn`
+2. Click **Play** (▶) — no lobby, single instance, no peer.
+3. Click inside game window to capture mouse, **W/A/S/D + Mouse** to look.
+
+**What you see:** Top-left HUD shows state, hook type, fight pull progress, and fish position. Animated fish swims from cast spot toward rod tip as you reel.
+
+**Controls:**
+- **F5** — Force cast and bite (spawns animated fish at cast spot)
+- **Scroll Wheel Down (`reel_fight`) / F6** — Reel / spike pull to move fish toward shore
+- **R** — Reset
+

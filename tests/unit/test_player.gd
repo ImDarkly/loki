@@ -220,7 +220,7 @@ func test_reset_for_restart_clears_holding_rock() -> void:
 func test_wasd_works_during_fight() -> void:
 	player.global_position = Vector3.ZERO
 	player.fishing_mechanic._is_fighting = true
-	player.fishing_mechanic.cast_target_position = Vector3.ZERO
+	player.fishing_mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
 	player.fishing_mechanic._fight_initial_distance = 0.0
 	player.fishing_mechanic._fight_target = 99.0
 

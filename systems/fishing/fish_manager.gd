@@ -7,6 +7,7 @@ var _shadow_center: Vector3 = Vector3.ZERO
 
 const SHADOW_RADIUS := 0.55
 const SHADOW_Y_OFFSET := -0.35
+const FISH_SWIM_DEPTH := -0.5
 const SHADOW_ANGULAR_SPEED := 1.5
 const SHADOW_SCALE := Vector3(0.15, 0.05, 0.15)
 
@@ -24,19 +25,27 @@ func _ready() -> void:
 
 func spawn(position: Vector3) -> void:
 	cleanup()
+	var inst := GOLDFISH_SCENE.instantiate() as Node3D
+	if not inst:
+		return
+	inst.scale = Vector3(0.1, 0.1, 0.1)
+	add_child(inst)
+	inst.top_level = true
+	inst.global_position = position + Vector3(0, FISH_SWIM_DEPTH, 0)
+	_fish_node = inst
+	_play_swim_animation(inst)
 
-	_fish_node = MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.3, 0.1, 0.5)
 
-	var mat := ORMMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.5, 0.0)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mesh.material = mat
-
-	_fish_node.mesh = mesh
-	_fish_node.position = position + Vector3(0, 0.05, 0)
-	get_tree().root.add_child(_fish_node)
+func update_fight_position(from_pos: Vector3, to_pos: Vector3, weight: float) -> void:
+	if not is_instance_valid(_fish_node):
+		return
+	var pos := from_pos.lerp(to_pos, clamp(weight, 0.0, 1.0))
+	pos.y = FISH_SWIM_DEPTH
+	_fish_node.global_position = pos
+	var dir := to_pos - from_pos
+	dir.y = 0.0
+	if dir.length_squared() > 0.001:
+		_fish_node.rotation.y = atan2(dir.x, dir.z)
 
 
 func get_fish() -> Node3D:
