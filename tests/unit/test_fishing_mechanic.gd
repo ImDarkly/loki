@@ -76,6 +76,7 @@ func test_bite_click_hooks_fish_starts_fight() -> void:
 	mechanic._active_zone_index = 0
 	mechanic._bite_time = 0.0
 	mechanic._is_fighting = false
+	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
 
 	watch_signals(mechanic)
 
@@ -85,8 +86,8 @@ func test_bite_click_hooks_fish_starts_fight() -> void:
 
 	assert_true(mechanic._is_fighting, "BITE reel click should set _is_fighting = true")
 	assert_eq(mechanic.current_state, 3, "Should remain in BITE (3) after hook")
-	assert_between(mechanic._fight_target, 2.0, 8.0, "fight_target should be in [2.0, 8.0] range")
-	assert_eq(mechanic._fight_progress, 0.0, "fight_progress should start at 0.0")
+	assert_between(mechanic._fight_target, 5.0, 100.0, "fight_target should be distance-derived")
+	assert_eq(mechanic._fight_pull, 0.0, "fight_pull should start at 0.0")
 
 
 func test_bite_miss_window_1_second_causes_escape() -> void:
@@ -114,12 +115,13 @@ func test_fight_auto_catches_when_time_elapsed() -> void:
 	mechanic.current_state = 3
 	mechanic._is_fighting = true
 	mechanic.personal_catch_count = 0
-	mechanic._fight_target = 2.0
-	mechanic._fight_progress = 1.9
+	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	mechanic._fight_pull = 1.0
+	mechanic._pull_spike_timer = 0.3
 
 	watch_signals(mechanic)
 
-	mechanic.advance_fight(0.2)
+	mechanic.advance_fight(0.1)
 
 	assert_eq(mechanic.current_state, 4, "Should transition to SUCCESS (4)")
 	assert_eq(mechanic.personal_catch_count, 1, "personal_catch_count should increment")
@@ -132,8 +134,9 @@ func test_fight_does_not_auto_catch_before_target() -> void:
 	mechanic.current_state = 3
 	mechanic._is_fighting = true
 	mechanic.personal_catch_count = 0
-	mechanic._fight_target = 5.0
-	mechanic._fight_progress = 0.0
+	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	mechanic._fight_pull = 0.0
+	mechanic._pull_spike_timer = 0.0
 	mechanic._escape_timer = 0.0
 	mechanic.escape_time_threshold = 99.0
 
@@ -177,9 +180,9 @@ func test_escape_triggers_after_threshold() -> void:
 func test_scroll_resets_escape_timer() -> void:
 	mechanic.current_state = 3
 	mechanic._is_fighting = true
-	mechanic._fight_target = 99.0
 	mechanic.escape_time_threshold = 1.0
-	mechanic.cast_target_position = Vector3(10, 0, 0)
+	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	mechanic._pull_spike_timer = 0.0
 
 	watch_signals(mechanic)
 
@@ -203,15 +206,39 @@ func test_scroll_dual_reset_local() -> void:
 func test_telegraph_intensity_ramps_before_trigger() -> void:
 	mechanic.current_state = 3
 	mechanic._is_fighting = true
-	mechanic._fight_target = 99.0
 	mechanic.escape_time_threshold = 2.0
 	mechanic._escape_timer = 0.0
+	mechanic._pull_spike_timer = 0.0
+	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
 
 	mechanic.advance_fight(1.0)
 	assert_almost_eq(mechanic._telegraph_intensity, 0.5, 0.01, "Half threshold should give 0.5 intensity")
 
 	mechanic.advance_fight(0.5)
 	assert_almost_eq(mechanic._telegraph_intensity, 0.75, 0.01, "3/4 threshold should give 0.75 intensity")
+
+
+func test_fish_visual_position_at_progress_steps() -> void:
+	mechanic.current_state = 3
+	mechanic.hook_type = mechanic.HookType.FISH
+	mechanic._is_fighting = true
+	var rod_tip = autofree(Node3D.new())
+	add_child(rod_tip)
+	rod_tip.global_position = Vector3(1, 1.6, -1)
+	mechanic.set_rod_tip(rod_tip)
+	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	mechanic._fight_pull = 0.0
+	mechanic._process(0.0)
+	assert_almost_eq(mechanic.get_fish_position().x, (MapConfig.MAP_CENTER + Vector3(15, 0, 0)).x, 0.01, "0% progress should be at cast target")
+
+	mechanic._fight_pull = 0.5
+	mechanic._process(0.0)
+	var mid_x = mechanic.get_fish_position().x
+	assert_gt(mid_x, MapConfig.MAP_CENTER.x, "50% progress should move toward shore")
+
+	mechanic._fight_pull = 1.0
+	mechanic._process(0.0)
+	assert_almost_eq(mechanic.get_fish_position().x, rod_tip.global_position.x, 0.01, "100% progress should reach rod tip / shore target")
 
 
 func test_arc_velocity_lands_at_target() -> void:
@@ -1070,6 +1097,7 @@ func test_bite_bob_more_urgent_than_waiting() -> void:
 	mechanic._cleanup_bobber()
 
 	mechanic.current_state = mechanic.State.BITE
+	mechanic._is_fighting = true
 	mechanic.cast_target_position = Vector3(0, 0, 0)
 	mechanic._create_bobber(mechanic.cast_target_position)
 	autofree(mechanic.bobber_node)
@@ -1388,6 +1416,47 @@ func test_ambient_shadows_no_spawn_in_dead_zone() -> void:
 	assert_false(fish_manager.has_shadows(), "No shadows should spawn during WAITING in a dead zone")
 	assert_true(fish_manager._shadow_nodes.is_empty(), "No shadow nodes should exist without a valid zone")
 	mechanic._cleanup_all()
+
+
+func test_fish_swims_at_swim_depth() -> void:
+	mechanic.current_state = 3
+	mechanic.hook_type = mechanic.HookType.FISH
+	mechanic._is_fighting = true
+	var rod_tip = autofree(Node3D.new())
+	add_child(rod_tip)
+	rod_tip.global_position = Vector3(1, 1.6, -1)
+	mechanic.set_rod_tip(rod_tip)
+	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	var swim_depth = mechanic.get_node("FishManager").FISH_SWIM_DEPTH
+
+	for pull in [0.0, 0.5, 1.0]:
+		mechanic._fight_pull = pull
+		mechanic._process(0.0)
+		assert_almost_eq(mechanic.get_fish_position().y, swim_depth, 0.001, "Fish Y should be at FISH_SWIM_DEPTH during fight at pull %s" % pull)
+
+	mechanic._on_bite_timer_timeout()
+	assert_almost_eq(mechanic.get_fish_position().y, swim_depth, 0.001, "Fish Y should be at FISH_SWIM_DEPTH on BITE")
+
+
+func test_shore_catch_ignores_fish_depth() -> void:
+	mechanic.current_state = 3
+	mechanic.hook_type = mechanic.HookType.FISH
+	mechanic._is_fighting = true
+	mechanic.personal_catch_count = 0
+	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS - 1.0, 0, 0)
+	mechanic._fight_pull = 0.0
+	mechanic._process(0.0)
+
+	var fish_pos = mechanic.get_fish_position()
+	assert_almost_eq(fish_pos.y, mechanic.get_node("FishManager").FISH_SWIM_DEPTH, 0.001, "Fish should be at swim depth")
+	assert_true(MapConfig.is_within_radius(fish_pos, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS + mechanic.SHORE_CONTACT_TOLERANCE), "Fish should be within shore contact range in XZ")
+
+	watch_signals(mechanic)
+	mechanic.advance_fight(0.1)
+
+	assert_eq(mechanic.current_state, 4, "Should successfully catch when near shore regardless of depth")
+	assert_signal_emitted(mechanic, "reel_success")
+
 
 
 

@@ -898,7 +898,7 @@ func _process_fight(delta: float) -> void:
 				rpc("_sync_fishing_state", fs)
 		return
 
-	var fish_pos: Vector3 = fishing_mechanic.cast_target_position
+	var fish_pos: Vector3 = fishing_mechanic.get_fish_position() if fishing_mechanic.has_method("get_fish_position") else fishing_mechanic.cast_target_position
 	var to_fish: Vector3 = fish_pos - global_position
 	var dist: float = to_fish.length()
 	var dir: Vector3 = to_fish.normalized() if dist > 0.001 else Vector3.FORWARD
