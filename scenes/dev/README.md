@@ -88,7 +88,7 @@ That’s the whole seagull, sped up for testing. Close the window when done — 
 
 **What it does:** Shows the full rod-pull rescue story — the rescuer hooks a floating victim directly (no cast arc), the pull drags the victim toward the island, and crossing the shore revives them.
 
-**Prod values stay untouched:** `min_bite_delay` / `max_bite_delay` are `3.0` / `8.0` and `escape_time_threshold` is `1.8` in `systems/fishing/fishing_mechanic.gd`. This dev scene overrides them *in the dev script only* to `0.5` / `1.0` / `99.0` for fast testing (per Manual/Dev Testing convention — shorten in dev script, not `@export` defaults).
+**Prod values stay untouched:** `min_bite_delay` / `max_bite_delay` are `3.0` / `8.0` and `escape_time_threshold` is `1.0` in `systems/fishing/fishing_mechanic.gd`. This dev scene overrides them *in the dev script only* to `0.5` / `1.0` / `99.0` for fast testing (per Manual/Dev Testing convention — shorten in dev script, not `@export` defaults).
 
 **How to open and move:**
 1. Open Godot, in FileSystem go to `scenes/dev/dev_rod_pull_flow.tscn`

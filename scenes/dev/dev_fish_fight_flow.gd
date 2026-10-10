@@ -37,8 +37,8 @@ func _process(_delta: float) -> void:
 		return
 	var state_name := str(_mechanic.State.keys()[_mechanic.current_state]) if _mechanic.current_state < _mechanic.State.size() else str(_mechanic.current_state)
 	var hook_name := str(_mechanic.HookType.keys()[_mechanic.hook_type]) if _mechanic.hook_type < _mechanic.HookType.size() else str(_mechanic.hook_type)
-	var fight_pull := _mechanic._fight_pull
-	var fish_pos := _mechanic.get_fish_position()
+	var fight_pull: float = _mechanic._fight_pull
+	var fish_pos: Vector3 = _mechanic.get_fish_position()
 	_label.text = "State: %s | Hook: %s | Fight Pull: %.2f | Fish Pos: (%.1f, %.1f, %.1f)\n[F5] Cast & Bite  [Scroll Down / F6] Reel / Spike  [R] Reset" % [state_name, hook_name, fight_pull, fish_pos.x, fish_pos.y, fish_pos.z]
 
 
@@ -64,7 +64,7 @@ func _force_cast_and_bite() -> void:
 	if _mechanic == null:
 		return
 	_mechanic.reset_for_restart()
-	_mechanic.cast(Vector3(0, 0, -10), 0.5)
+	_mechanic.cast(Vector3(12, 0, -10), 0.5)
 	_mechanic._on_casting_timer_timeout()
 	_mechanic._on_bite_timer_timeout()
 	_mechanic._is_fighting = true
