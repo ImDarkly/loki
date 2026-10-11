@@ -63,12 +63,9 @@ var _is_fighting: bool = false
 var _fight_initial_distance: float = 0.0
 @export var fighting_pull_strength: float = 0.5
 @export var fighting_spike_pull: float = 1.5
-@export var escape_time_threshold: float = 1.0
+@export var escape_time_threshold: float = 1.8
 @export var escape_launch_strength: float = 10.0
-@export var reel_in_rate: float = 0.5
-@export var drift_back_rate: float = 0.2
 var _fight_progress: float = 0.0
-var _fight_pull: float = 0.0
 var _fish_position: Vector3 = Vector3.ZERO
 var _fight_target: float = 0.0
 var _rod_tip_ref: Node3D = null
@@ -81,9 +78,6 @@ var _escape_telegraph_audio: AudioStreamPlayer = null
 const LINE_SEGMENTS: int = 4
 const SHORE_CONTACT_TOLERANCE: float = 0.75
 const CATCH_CLEANUP_DELAY: float = 0.7
-const FIGHT_TIME_PER_METER: float = 0.6
-const FIGHT_TIME_MIN: float = 5.0
-const FIGHT_TIME_MAX: float = 15.0
 
 
 func is_fighting() -> bool:
@@ -110,7 +104,6 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
-	_fight_pull = 0.0
 	_fight_progress = 0.0
 	_stop_telegraph()
 	_report_zone_leave()
@@ -130,28 +123,21 @@ func advance_fight(delta: float) -> void:
 	if hook_type == HookType.PLAYER:
 		return
 
-	var caster_node := get_parent() as Node3D
-	if caster_node and is_instance_valid(caster_node):
-		if caster_node.global_position.distance_to(cast_target_position) > max_tether_range:
+	var caster := get_parent() as Player
+	if caster and is_instance_valid(caster):
+		if caster.global_position.distance_to(cast_target_position) > max_tether_range:
 			_on_hook_rejected()
 			return
-
-	if _pull_spike_timer > 0:
-		_fight_pull += reel_in_rate * delta
-	else:
-		_fight_pull -= drift_back_rate * delta
-		_escape_timer += delta
-
-	_fight_pull = clampf(_fight_pull, 0.0, 1.0)
 	_fight_progress += delta
-	_update_telegraph()
 
-	if _escape_timer >= escape_time_threshold:
-		_trigger_escape_launch()
-		return
+	if hook_type != HookType.PLAYER:
+		_escape_timer += delta
+		_update_telegraph()
+		if _escape_timer >= escape_time_threshold:
+			_trigger_escape_launch()
+			return
 
-	var fish_pos := get_fish_position()
-	if _fight_progress >= _fight_target or MapConfig.is_within_radius(fish_pos, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS + SHORE_CONTACT_TOLERANCE):
+	if _fight_progress >= _fight_target:
 		_complete_fight_catch()
 
 
@@ -162,10 +148,6 @@ func _reset_scroll_timers() -> void:
 
 func get_fish_position() -> Vector3:
 	return _fish_position
-
-
-func get_fight_pull_strength(spiked: bool) -> float:
-	return fighting_spike_pull if spiked else fighting_pull_strength
 
 
 @rpc("any_peer", "reliable", "call_remote")
@@ -293,12 +275,9 @@ func _apply_predicted_player_hook(target: Player) -> void:
 	_is_fighting = true
 	_start_telegraph()
 	var player := get_parent() as Node3D
-	var dist := 10.0
 	if player and is_instance_valid(player):
 		_fight_initial_distance = player.global_position.distance_to(cast_target_position)
-		dist = maxf(_fight_initial_distance, 1.0)
-	_fight_target = clampf(dist * FIGHT_TIME_PER_METER, FIGHT_TIME_MIN, FIGHT_TIME_MAX)
-	_fight_pull = 0.0
+	_fight_target = randf_range(2.0, 8.0)
 	_fight_progress = 0.0
 	if bite_timer:
 		bite_timer.stop()
@@ -319,7 +298,6 @@ func _on_hook_rejected() -> void:
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
 	_pull_spike_timer = 0.0
-	_fight_pull = 0.0
 	_fight_progress = 0.0
 	_stop_telegraph()
 	_report_zone_leave()
@@ -356,7 +334,6 @@ func _trigger_escape_launch() -> void:
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
-	_fight_pull = 0.0
 	_fight_progress = 0.0
 	_stop_telegraph()
 	_report_zone_leave()
@@ -391,7 +368,6 @@ func _complete_fight_catch() -> void:
 		_is_fighting = false
 		_escape_timer = 0.0
 		_telegraph_intensity = 0.0
-		_fight_pull = 0.0
 		_fight_progress = 0.0
 		_stop_telegraph()
 		_report_zone_leave()
@@ -405,12 +381,20 @@ func _complete_fight_catch() -> void:
 
 	var caught_zone_index := _active_zone_index
 	var caught_source_position := cast_target_position
+	if hook_type == HookType.FISH:
+		_fight_progress = _fight_target
+		var from_pos := cast_target_position
+		from_pos.y = $FishManager.FISH_SWIM_DEPTH
+		var end_pos := _get_rod_tip_position()
+		end_pos.y = $FishManager.FISH_SWIM_DEPTH
+		_fish_position = end_pos
+		if is_local_render and is_instance_valid($FishManager):
+			$FishManager.update_fight_position(from_pos, end_pos, 1.0)
+		_rebuild_line()
 
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
-	_fight_pull = 0.0
-	_fight_progress = 0.0
 	_stop_telegraph()
 	current_state = State.SUCCESS
 	hook_type = HookType.NONE
@@ -710,12 +694,9 @@ func _process(delta: float) -> void:
 						_is_fighting = true
 						_start_telegraph()
 						var player := get_parent() as Node3D
-						var dist := 10.0
 						if player:
 							_fight_initial_distance = player.global_position.distance_to(cast_target_position)
-							dist = maxf(_fight_initial_distance, 1.0)
-						_fight_target = clampf(dist * FIGHT_TIME_PER_METER, FIGHT_TIME_MIN, FIGHT_TIME_MAX)
-						_fight_pull = 0.0
+						_fight_target = randf_range(2.0, 8.0)
 						_fight_progress = 0.0
 						if hook_type == HookType.FISH and is_local_render and is_instance_valid($FishManager):
 							$FishManager.set_fight_mode(true)
@@ -1022,7 +1003,6 @@ func reset_for_restart() -> void:
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
-	_fight_pull = 0.0
 	_fight_progress = 0.0
 	_stop_telegraph()
 	_wait_time = 0.0
@@ -1162,7 +1142,6 @@ func get_debug_state() -> Dictionary:
 		"hook_type": hook_name,
 		"tether_distance": dist_text,
 		"fight_progress": round(_fight_progress * 100) / 100.0,
-		"fight_pull": round(_fight_pull * 100) / 100.0,
 		"fish_position": str(_fish_position),
 		"escape_timer": round(_escape_timer * 100) / 100.0,
 		"pull_spike": round(_pull_spike_timer * 100) / 100.0,
