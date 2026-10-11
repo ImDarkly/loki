@@ -1074,6 +1074,11 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 
 	server_fishing.escape_time_threshold = 100.0
 	server_fishing._escape_timer = 0.0
+	server_fishing.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	assert_false(
+		MapConfig.is_within_radius(server_fishing.get_fish_position(), MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS + server_fishing.SHORE_CONTACT_TOLERANCE),
+		"catch test fish should start outside the shoreline radius"
+	)
 	server_fishing._fight_progress = 0.0
 	server_fishing._fight_target = 0.01
 	server_fishing.current_state = server_fishing.State.BITE
