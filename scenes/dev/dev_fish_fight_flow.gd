@@ -38,8 +38,10 @@ func _process(_delta: float) -> void:
 	var state_name := str(_mechanic.State.keys()[_mechanic.current_state]) if _mechanic.current_state < _mechanic.State.size() else str(_mechanic.current_state)
 	var hook_name := str(_mechanic.HookType.keys()[_mechanic.hook_type]) if _mechanic.hook_type < _mechanic.HookType.size() else str(_mechanic.hook_type)
 	var fight_pull: float = _mechanic._fight_pull
+	var fight_progress: float = _mechanic._fight_progress
+	var fight_target: float = _mechanic._fight_target
 	var fish_pos: Vector3 = _mechanic.get_fish_position()
-	_label.text = "State: %s | Hook: %s | Fight Pull: %.2f | Fish Pos: (%.1f, %.1f, %.1f)\n[F5] Cast & Bite  [Scroll Down / F6] Reel / Spike  [R] Reset" % [state_name, hook_name, fight_pull, fish_pos.x, fish_pos.y, fish_pos.z]
+	_label.text = "State: %s | Hook: %s | Progress: %.1f / %.1f | Pull: %.2f | Fish Pos: (%.1f, %.1f, %.1f)\n[F5] Cast & Bite  [Scroll Down / F6] Reel / Spike  [R] Reset" % [state_name, hook_name, fight_progress, fight_target, fight_pull, fish_pos.x, fish_pos.y, fish_pos.z]
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -68,7 +70,16 @@ func _force_cast_and_bite() -> void:
 	_mechanic._on_casting_timer_timeout()
 	_mechanic._on_bite_timer_timeout()
 	_mechanic._is_fighting = true
-	_mechanic._fight_target = 10.0
+	_mechanic._start_telegraph()
+	var dist := 10.0
+	if _player and is_instance_valid(_player):
+		dist = maxf(_player.global_position.distance_to(_mechanic.cast_target_position), 1.0)
+	_mechanic._fight_target = clampf(dist * _mechanic.FIGHT_TIME_PER_METER, _mechanic.FIGHT_TIME_MIN, _mechanic.FIGHT_TIME_MAX)
+	_mechanic._fight_pull = 0.0
+	_mechanic._fight_progress = 0.0
+	if _mechanic.hook_type == _mechanic.HookType.FISH and is_instance_valid(_mechanic.get_node_or_null("FishManager")):
+		_mechanic.get_node("FishManager").set_fight_mode(true)
+	print("Dev F5: dist %.1f -> target %.1f (formula clamp)" % [dist, _mechanic._fight_target])
 
 
 func _trigger_reel() -> void:

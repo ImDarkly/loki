@@ -86,7 +86,8 @@ func test_bite_click_hooks_fish_starts_fight() -> void:
 
 	assert_true(mechanic._is_fighting, "BITE reel click should set _is_fighting = true")
 	assert_eq(mechanic.current_state, 3, "Should remain in BITE (3) after hook")
-	assert_between(mechanic._fight_target, 5.0, 100.0, "fight_target should be distance-derived")
+	assert_between(mechanic._fight_target, 5.0, 15.0, "fight_target should be between 5.0 and 15.0")
+	assert_eq(mechanic._fight_progress, 0.0, "fight_progress should start at 0.0")
 	assert_eq(mechanic._fight_pull, 0.0, "fight_pull should start at 0.0")
 
 
@@ -111,12 +112,13 @@ func test_bite_miss_window_1_second_causes_escape() -> void:
 	assert_signal_emitted(mechanic, "reel_failure")
 
 
-func test_fight_auto_catches_when_time_elapsed() -> void:
+func test_fight_catches_when_progress_reaches_target() -> void:
 	mechanic.current_state = 3
 	mechanic._is_fighting = true
 	mechanic.personal_catch_count = 0
 	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
-	mechanic._fight_pull = 1.0
+	mechanic._fight_target = 2.0
+	mechanic._fight_progress = 2.0
 	mechanic._pull_spike_timer = 0.3
 
 	watch_signals(mechanic)
@@ -135,7 +137,8 @@ func test_fight_does_not_auto_catch_before_target() -> void:
 	mechanic._is_fighting = true
 	mechanic.personal_catch_count = 0
 	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
-	mechanic._fight_pull = 0.0
+	mechanic._fight_target = 99.0
+	mechanic._fight_progress = 0.0
 	mechanic._pull_spike_timer = 0.0
 	mechanic._escape_timer = 0.0
 	mechanic.escape_time_threshold = 99.0
@@ -180,6 +183,8 @@ func test_escape_triggers_after_threshold() -> void:
 func test_scroll_resets_escape_timer() -> void:
 	mechanic.current_state = 3
 	mechanic._is_fighting = true
+	mechanic._fight_target = 99.0
+	mechanic._fight_progress = 0.0
 	mechanic.escape_time_threshold = 1.0
 	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
 	mechanic._pull_spike_timer = 0.0
@@ -206,6 +211,8 @@ func test_scroll_dual_reset_local() -> void:
 func test_telegraph_intensity_ramps_before_trigger() -> void:
 	mechanic.current_state = 3
 	mechanic._is_fighting = true
+	mechanic._fight_target = 99.0
+	mechanic._fight_progress = 0.0
 	mechanic.escape_time_threshold = 2.0
 	mechanic._escape_timer = 0.0
 	mechanic._pull_spike_timer = 0.0
@@ -222,23 +229,71 @@ func test_fish_visual_position_at_progress_steps() -> void:
 	mechanic.current_state = 3
 	mechanic.hook_type = mechanic.HookType.FISH
 	mechanic._is_fighting = true
-	var rod_tip = autofree(Node3D.new())
+	var rod_tip: Node3D = autofree(Node3D.new())
 	add_child(rod_tip)
 	rod_tip.global_position = Vector3(1, 1.6, -1)
 	mechanic.set_rod_tip(rod_tip)
 	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
-	mechanic._fight_pull = 0.0
-	mechanic._process(0.0)
-	assert_almost_eq(mechanic.get_fish_position().x, (MapConfig.MAP_CENTER + Vector3(15, 0, 0)).x, 0.01, "0% progress should be at cast target")
+	mechanic._fight_target = 10.0
+	mechanic._fight_progress = 0.0
+	mechanic._create_line_node()
+	autofree(mechanic.visual_line_node)
+	var fish_mgr: Node3D = mechanic.get_node("FishManager")
+	fish_mgr.spawn(mechanic.cast_target_position)
+	fish_mgr.set_fight_mode(true)
 
-	mechanic._fight_pull = 0.5
+	# 0% progress
+	mechanic._fight_progress = 0.0
 	mechanic._process(0.0)
-	var mid_x = mechanic.get_fish_position().x
+	var fish: Node3D = fish_mgr.get_fish()
+	assert_not_null(fish, "Fish node should exist when spawned")
+	var expected_start: Vector3 = mechanic.cast_target_position
+	expected_start.y = fish_mgr.FISH_SWIM_DEPTH
+	assert_almost_eq(fish.global_position.x, expected_start.x, 0.01, "0% progress should be at cast target")
+	assert_almost_eq(mechanic.get_fish_position().x, expected_start.x, 0.01, "0% get_fish_position should be at cast target")
+
+	# 50% progress
+	mechanic._fight_progress = mechanic._fight_target * 0.5
+	mechanic._process(0.0)
+	var mid_x: float = mechanic.get_fish_position().x
 	assert_gt(mid_x, MapConfig.MAP_CENTER.x, "50% progress should move toward shore")
+	assert_almost_eq(fish.global_position.x, mechanic.get_fish_position().x, 0.01, "Fish node global_position should track _fish_position at 50%")
 
-	mechanic._fight_pull = 1.0
+	# 100% progress
+	mechanic._fight_progress = mechanic._fight_target
 	mechanic._process(0.0)
-	assert_almost_eq(mechanic.get_fish_position().x, rod_tip.global_position.x, 0.01, "100% progress should reach rod tip / shore target")
+	var end_pos: Vector3 = rod_tip.global_position
+	end_pos.y = fish_mgr.FISH_SWIM_DEPTH
+	assert_almost_eq(fish.global_position.x, end_pos.x, 0.01, "100% progress should reach rod tip / shore target")
+	assert_almost_eq(mechanic.get_fish_position().x, end_pos.x, 0.01, "_fish_position should reach rod tip at 100%")
+
+	fish_mgr.cleanup()
+
+
+func test_fight_progress_accrues_with_delta() -> void:
+	mechanic.current_state = 3
+	mechanic.hook_type = mechanic.HookType.FISH
+	mechanic._is_fighting = true
+	mechanic._fight_target = 10.0
+	mechanic._fight_progress = 0.0
+	mechanic.escape_time_threshold = 99.0
+	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	var fish_mgr: Node3D = mechanic.get_node("FishManager")
+	fish_mgr.spawn(mechanic.cast_target_position)
+	fish_mgr.set_fight_mode(true)
+
+	var prev_progress: float = mechanic._fight_progress
+	var prev_x: float = mechanic.get_fish_position().x
+
+	for i in range(5):
+		mechanic.advance_fight(0.5)
+		assert_gt(mechanic._fight_progress, prev_progress, "Fight progress should accrue monotonically with advance_fight delta")
+		var curr_x: float = mechanic.get_fish_position().x
+		assert_true(curr_x <= prev_x, "Fish visual position should move shoreward (monotonic X decrease toward MAP_CENTER/rod)")
+		prev_progress = mechanic._fight_progress
+		prev_x = curr_x
+
+	fish_mgr.cleanup()
 
 
 func test_arc_velocity_lands_at_target() -> void:

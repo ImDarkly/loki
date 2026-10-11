@@ -81,6 +81,9 @@ var _escape_telegraph_audio: AudioStreamPlayer = null
 const LINE_SEGMENTS: int = 4
 const SHORE_CONTACT_TOLERANCE: float = 0.75
 const CATCH_CLEANUP_DELAY: float = 0.7
+const FIGHT_TIME_PER_METER: float = 0.6
+const FIGHT_TIME_MIN: float = 5.0
+const FIGHT_TIME_MAX: float = 15.0
 
 
 func is_fighting() -> bool:
@@ -107,6 +110,8 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
+	_fight_pull = 0.0
+	_fight_progress = 0.0
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
@@ -138,6 +143,7 @@ func advance_fight(delta: float) -> void:
 		_escape_timer += delta
 
 	_fight_pull = clampf(_fight_pull, 0.0, 1.0)
+	_fight_progress += delta
 	_update_telegraph()
 
 	if _escape_timer >= escape_time_threshold:
@@ -145,7 +151,7 @@ func advance_fight(delta: float) -> void:
 		return
 
 	var fish_pos := get_fish_position()
-	if _fight_pull >= 1.0 or MapConfig.is_within_radius(fish_pos, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS + SHORE_CONTACT_TOLERANCE):
+	if _fight_progress >= _fight_target or MapConfig.is_within_radius(fish_pos, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS + SHORE_CONTACT_TOLERANCE):
 		_complete_fight_catch()
 
 
@@ -156,6 +162,10 @@ func _reset_scroll_timers() -> void:
 
 func get_fish_position() -> Vector3:
 	return _fish_position
+
+
+func get_fight_pull_strength(spiked: bool) -> float:
+	return fighting_spike_pull if spiked else fighting_pull_strength
 
 
 @rpc("any_peer", "reliable", "call_remote")
@@ -287,7 +297,7 @@ func _apply_predicted_player_hook(target: Player) -> void:
 	if player and is_instance_valid(player):
 		_fight_initial_distance = player.global_position.distance_to(cast_target_position)
 		dist = maxf(_fight_initial_distance, 1.0)
-	_fight_target = (dist / reel_in_rate) * 2.5
+	_fight_target = clampf(dist * FIGHT_TIME_PER_METER, FIGHT_TIME_MIN, FIGHT_TIME_MAX)
 	_fight_pull = 0.0
 	_fight_progress = 0.0
 	if bite_timer:
@@ -309,6 +319,8 @@ func _on_hook_rejected() -> void:
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
 	_pull_spike_timer = 0.0
+	_fight_pull = 0.0
+	_fight_progress = 0.0
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
@@ -344,6 +356,8 @@ func _trigger_escape_launch() -> void:
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
+	_fight_pull = 0.0
+	_fight_progress = 0.0
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
@@ -377,6 +391,8 @@ func _complete_fight_catch() -> void:
 		_is_fighting = false
 		_escape_timer = 0.0
 		_telegraph_intensity = 0.0
+		_fight_pull = 0.0
+		_fight_progress = 0.0
 		_stop_telegraph()
 		_report_zone_leave()
 		_snap_bobber_to_rod()
@@ -393,6 +409,8 @@ func _complete_fight_catch() -> void:
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
+	_fight_pull = 0.0
+	_fight_progress = 0.0
 	_stop_telegraph()
 	current_state = State.SUCCESS
 	hook_type = HookType.NONE
@@ -696,7 +714,7 @@ func _process(delta: float) -> void:
 						if player:
 							_fight_initial_distance = player.global_position.distance_to(cast_target_position)
 							dist = maxf(_fight_initial_distance, 1.0)
-						_fight_target = (dist / reel_in_rate) * 2.5
+						_fight_target = clampf(dist * FIGHT_TIME_PER_METER, FIGHT_TIME_MIN, FIGHT_TIME_MAX)
 						_fight_pull = 0.0
 						_fight_progress = 0.0
 						if hook_type == HookType.FISH and is_local_render and is_instance_valid($FishManager):
@@ -707,10 +725,11 @@ func _process(delta: float) -> void:
 				shore_target.y = $FishManager.FISH_SWIM_DEPTH
 				var from_pos := cast_target_position
 				from_pos.y = $FishManager.FISH_SWIM_DEPTH
-				_fish_position = from_pos.lerp(shore_target, clampf(_fight_pull, 0.0, 1.0))
+				var weight := clampf(_fight_progress / maxf(_fight_target, 0.01), 0.0, 1.0)
+				_fish_position = from_pos.lerp(shore_target, weight)
 				_fish_position.y = $FishManager.FISH_SWIM_DEPTH
 				if is_instance_valid($FishManager.get_fish()):
-					$FishManager.update_fight_position(from_pos, shore_target, _fight_pull)
+					$FishManager.update_fight_position(from_pos, shore_target, weight)
 
 			_update_bobber()
 			_rebuild_line()
@@ -1003,6 +1022,8 @@ func reset_for_restart() -> void:
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
+	_fight_pull = 0.0
+	_fight_progress = 0.0
 	_stop_telegraph()
 	_wait_time = 0.0
 	personal_catch_count = 0
