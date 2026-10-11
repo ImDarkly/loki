@@ -15,6 +15,10 @@ const GOLDFISH_SCENE := preload("res://systems/fishing/assets/Goldfish.glb")
 const CLOWNFISH_SCENE := preload("res://systems/fishing/assets/Clownfish.glb")
 const SHADOW_MATERIAL := preload("res://systems/fishing/assets/fish_shadow_material.tres")
 const SWIM_ANIMATION := "Fish_Armature|Swimming_Normal"
+const FIGHT_ANIMATION := "Fish_Armature|Swimming_Impulse"
+const CATCH_ANIMATION := "Fish_Armature|Out_Of_Water"
+const DEATH_ANIMATION := "Fish_Armature|Death"
+const FIGHT_SPEED_SCALE := 2.0
 
 
 func _ready() -> void:
@@ -58,6 +62,11 @@ func cleanup() -> void:
 		_fish_node = null
 
 
+func cleanup_fish_if_current(fish: Node3D) -> void:
+	if is_instance_valid(fish) and fish == _fish_node:
+		cleanup()
+
+
 func spawn_shadows(center: Vector3) -> void:
 	despawn_shadows()
 	_shadow_center = center
@@ -98,6 +107,66 @@ func _play_swim_animation(inst: Node) -> void:
 		if clip.loop_mode == Animation.LOOP_NONE:
 			clip.loop_mode = Animation.LOOP_LINEAR
 		player.play(SWIM_ANIMATION)
+
+
+func set_fight_mode(enabled: bool) -> void:
+	if not is_instance_valid(_fish_node):
+		return
+	for child in _fish_node.find_children("*", "AnimationPlayer", true, false):
+		var player := child as AnimationPlayer
+		if player == null:
+			continue
+		if enabled:
+			if player.has_animation(FIGHT_ANIMATION):
+				var clip := player.get_animation(FIGHT_ANIMATION)
+				if clip.loop_mode == Animation.LOOP_NONE:
+					clip.loop_mode = Animation.LOOP_LINEAR
+				player.speed_scale = FIGHT_SPEED_SCALE
+				player.play(FIGHT_ANIMATION)
+			elif player.has_animation(SWIM_ANIMATION):
+				var swim := player.get_animation(SWIM_ANIMATION)
+				if swim.loop_mode == Animation.LOOP_NONE:
+					swim.loop_mode = Animation.LOOP_LINEAR
+				player.speed_scale = FIGHT_SPEED_SCALE
+				player.play(SWIM_ANIMATION)
+		else:
+			if not player.has_animation(SWIM_ANIMATION):
+				continue
+			var clip := player.get_animation(SWIM_ANIMATION)
+			if clip.loop_mode == Animation.LOOP_NONE:
+				clip.loop_mode = Animation.LOOP_LINEAR
+			player.speed_scale = 1.0
+			player.play(SWIM_ANIMATION)
+
+
+func play_catch_clip() -> bool:
+	if not is_instance_valid(_fish_node):
+		return false
+	var played := false
+	for child in _fish_node.find_children("*", "AnimationPlayer", true, false):
+		var player := child as AnimationPlayer
+		if player == null:
+			continue
+		if player.has_animation(CATCH_ANIMATION):
+			var clip := player.get_animation(CATCH_ANIMATION)
+			clip.loop_mode = Animation.LOOP_NONE
+			player.speed_scale = 1.0
+			player.play(CATCH_ANIMATION)
+			played = true
+		elif player.has_animation(DEATH_ANIMATION):
+			var death_clip := player.get_animation(DEATH_ANIMATION)
+			death_clip.loop_mode = Animation.LOOP_NONE
+			player.speed_scale = 1.0
+			player.play(DEATH_ANIMATION)
+			played = true
+		elif player.has_animation(SWIM_ANIMATION):
+			var swim := player.get_animation(SWIM_ANIMATION)
+			if swim.loop_mode == Animation.LOOP_NONE:
+				swim.loop_mode = Animation.LOOP_LINEAR
+			player.speed_scale = 1.0
+			player.play(SWIM_ANIMATION)
+			played = true
+	return played
 
 
 func despawn_shadows() -> void:

@@ -80,6 +80,7 @@ var _escape_telegraph_audio: AudioStreamPlayer = null
 
 const LINE_SEGMENTS: int = 4
 const SHORE_CONTACT_TOLERANCE: float = 0.75
+const CATCH_CLEANUP_DELAY: float = 0.7
 
 
 func is_fighting() -> bool:
@@ -109,6 +110,8 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
+	if is_local_render and is_instance_valid($FishManager):
+		$FishManager.set_fight_mode(false)
 	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
@@ -309,6 +312,8 @@ func _on_hook_rejected() -> void:
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
+	if is_local_render and is_instance_valid($FishManager):
+		$FishManager.set_fight_mode(false)
 	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
@@ -342,6 +347,8 @@ func _trigger_escape_launch() -> void:
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
+	if is_local_render and is_instance_valid($FishManager):
+		$FishManager.set_fight_mode(false)
 	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
@@ -395,7 +402,13 @@ func _complete_fight_catch() -> void:
 	personal_catch_changed.emit(personal_catch_count)
 	reel_success.emit(personal_catch_count)
 	_report_zone_leave()
-	$FishManager.cleanup()
+	if is_local_render and is_instance_valid($FishManager):
+		var caught_fish: Node3D = $FishManager.get_fish()
+		$FishManager.play_catch_clip()
+		if is_instance_valid(caught_fish):
+			get_tree().create_timer(CATCH_CLEANUP_DELAY).timeout.connect($FishManager.cleanup_fish_if_current.bind(caught_fish))
+	else:
+		$FishManager.cleanup()
 	catch_feedback_manager.play_catch_success()
 
 	if caught_zone_index != -1 and is_instance_valid(_zone_manager_ref):
@@ -686,6 +699,8 @@ func _process(delta: float) -> void:
 						_fight_target = (dist / reel_in_rate) * 2.5
 						_fight_pull = 0.0
 						_fight_progress = 0.0
+						if hook_type == HookType.FISH and is_local_render and is_instance_valid($FishManager):
+							$FishManager.set_fight_mode(true)
 
 			if _is_fighting and hook_type == HookType.FISH:
 				var shore_target := _get_rod_tip_position()
@@ -957,6 +972,8 @@ func _cleanup_line() -> void:
 
 
 func _clear_fish_visuals() -> void:
+	if is_local_render and is_instance_valid($FishManager):
+		$FishManager.set_fight_mode(false)
 	$FishManager.cleanup()
 	$FishManager.despawn_shadows()
 
@@ -975,6 +992,8 @@ func _exit_tree() -> void:
 
 func reset_for_restart() -> void:
 	_report_zone_leave()
+	if is_local_render and is_instance_valid($FishManager):
+		$FishManager.set_fight_mode(false)
 	_cleanup_all()
 	bite_timer.stop()
 	current_state = State.IDLE
