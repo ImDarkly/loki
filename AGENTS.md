@@ -82,7 +82,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ### Structure
 - `entities/` — player, game objects
 - `systems/` — domain systems (fishing, health, quota, round, zones, danger, voice_chat)
-- `autoloads/` — singletons: `game_manager` (player tracking), `NetworkManager` (ENet host/join)
+- `autoloads/` — singletons: `game_manager` (player tracking), `NetworkManager` (EOS/EOSG host/join)
 - `tests/unit/` — GUT tests, prefix `test_`, `extends GutTest`
 
 ### Code Style
@@ -94,7 +94,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - No comments unless explaining non-obvious intent
 
 ### Multiplayer
-- `NetworkManager` (autoload) — ENet host/join via `host_game()`/`join_game()`
+- `NetworkManager` (autoload) — EOS/EOSG host/join; `host_game()` creates an EOS lobby and `EOSGMultiplayerPeer`, and `join_game()` takes a 6-digit room code
 - `game_manager` (autoload) — player list, `Player_<id>` naming
 - Server-gated: `if not multiplayer.is_server(): return`
 - RPC: `@rpc("authority", "reliable", "call_remote")` for server→client, `@rpc("any_peer", "unreliable", "call_remote")` for client→server
@@ -161,15 +161,14 @@ Before implementing any task:
 1. **Fetch the issue** (don't wait for the body to be pasted):
    `gh issue view <number>` (add `--repo <owner>/<repo>` if working outside the current repo's default remote)
    Read the full issue, including comments, before proceeding.
-2. Decide which GodotPrompter skills are relevant (check skill list)
-3. Use the `skill` tool to load relevant skills
-4. Switch to `master` branch: `git checkout master`
-5. Fetch remote: `git fetch origin`
-6. Create a new branch from master with a descriptive name, following the Branch naming convention above: `git checkout -b <branch-name>`
-7. If the feature adds a new `systems/<name>/<name>_manager.gd` with its own state machine or
+2. Check `.agents/skills/` for relevant skills and follow them.
+3. Switch to `master` branch: `git checkout master`
+4. Fetch remote: `git fetch origin`
+5. Create a new branch from master with a descriptive name, following the Branch naming convention above: `git checkout -b <branch-name>`
+6. If the feature adds a new `systems/<name>/<name>_manager.gd` with its own state machine or
    timers, include a `scenes/dev/dev_<name>_flow.tscn` per the Manual/Dev Testing convention
    above as part of the same slice.
-8. If the feature introduces a new `systems/<name>/<name>_manager.gd`, ensure it implements the Debug Overlay contract (`get_debug_state`, `get_debug_actions`, `debug_action`, and registration) and add its script path to `COVERED` in `tests/unit/test_debug_overlay_coverage.gd`.
+7. If the feature introduces a new `systems/<name>/<name>_manager.gd`, ensure it implements the Debug Overlay contract (`get_debug_state`, `get_debug_actions`, `debug_action`, and registration) and add its script path to `COVERED` in `tests/unit/test_debug_overlay_coverage.gd`.
 
 If anything is unclear — ambiguous requirements, missing acceptance criteria, conflicting instructions — stop and ask before proceeding. Do not guess and continue.
 
@@ -180,9 +179,27 @@ Whenever creating multiple issues with dependencies between them, use the `addBl
 
 When writing markdown with backticks (`` ` ``) to files in PowerShell:
 - **NEVER use `@"..."@` here-strings** — PowerShell interprets backticks as escape characters (`` `t `` → tab, `` `r `` → CR, `` `n `` → newline), corrupting `` `code` `` into garbage.
-- **ALWAYS use the `write` tool** to create any file containing backticks, even temp files.
-- If you must use a shell string, use `@'...'@` (single-quoted here-string) which disables all escape processing.
-- For `gh pr create --body`, write the body to a file via `write` tool, then pass `--body-file <path>`.
+- Write the file with your file-editing tool (or a single-quoted `@'...'@` here-string), never a double-quoted here-string.
+- For `gh pr create --body`, write the body to a file with your file-editing tool, then pass `--body-file <path>`.
 
 ### Addons
 - `addons/` is gitignored — not guaranteed to exist locally or match what's installed elsewhere. Always `view addons/` before referencing any addon path, plugin name, or class it provides.
+
+### Architecture Guardrails
+- Use `get_node_or_null("/root/...")` for cross-scene root lookups; avoid bare `get_node("/root/...")` calls.
+- Every `@export` in `systems/` must be read in the same file.
+
+### Codex
+- Subagents live in `.codex/agents/*.toml`.
+- The main session orchestrates plan → architect → implement → review → audit → test, then stops for human review.
+
+### Pipeline
+Choose the highest matching tier; do not raise it without a trigger. Use `codex -p <tier>`. Full routing details are in `AGENTS.routing.md`.
+
+| Tier | Triggers |
+|---|---|
+| deep | Network authority; lobby/session lifecycle; peer sync or RPC; restart/reset cleanup; EOS/EOSG/voice; `player.gd` or `fishing_mechanic.gd` internals |
+| standard | Features, bug fixes, or single-system changes; renaming an identifier used under `tests/unit/` |
+| cheap | Renames, text/UI, boilerplate, docs, or formatting |
+
+Keep a task to one behavior, about 3 files and 150 lines; the planner splits larger work. Run planner and implementer, then `scripts/verify.ps1 -Tier <tier>`. Add an architect for a new node, signal, autoload, network code, or system; add a reviewer for standard/deep and an auditor for deep. Run `scripts/verify.ps1 -Tier <tier> -Final` for standard/deep, then stop for owner review.
