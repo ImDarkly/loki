@@ -38,7 +38,11 @@ function Invoke-Check([string]$Id, [string[]]$GodotArgs, [int]$TimeoutSec) {
 }
 
 function Get-ScopedTests {
-	$files = @(git -C $Root diff --name-only master 2>$null) + @(git -C $Root ls-files --others --exclude-standard 2>$null)
+	$changedFiles = @(git -C $Root diff --name-only master 2>$null)
+	if ($LASTEXITCODE -ne 0) { Fail-Env "Failed to discover changed files with git diff --name-only master" }
+	$untrackedFiles = @(git -C $Root ls-files --others --exclude-standard 2>$null)
+	if ($LASTEXITCODE -ne 0) { Fail-Env "Failed to discover untracked files with git ls-files --others --exclude-standard" }
+	$files = $changedFiles + $untrackedFiles
 	$found = @()
 	foreach ($f in $files) {
 		if (-not ($f -match "\.(gd|tscn)$")) { continue }
