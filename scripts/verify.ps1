@@ -71,6 +71,6 @@ foreach ($t in $Tests) {
 	if (-not $t.StartsWith("res://")) {
 		if ($t.EndsWith(".gd")) { $t = "res://tests/unit/$t" } else { $t = "res://tests/unit/$t.gd" }
 	}
-	Invoke-Check "gut:$([System.IO.Path]::GetFileName($t))" @("--headless", "--path", ".", "-s", "addons/gut/gut_cmdln.gd", "-gtest=$t") 90
+	Invoke-Check "gut:$([System.IO.Path]::GetFileName($t))" @("--headless", "--path", ".", "-s", "addons/gut/gut_cmdln.gd", "-gselect=$t") 90
 }
 exit 0
