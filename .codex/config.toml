@@ -1,0 +1,13 @@
+# Project-level Codex config for Chum! (Godot 4.6.2).
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[features]
+multi_agent = true
+
+# Routing = picking a profile per task: `codex -p cheap "rename X to Y"`
+# Model names and reasoning effort live in user-level profile files.
+
+# Notion access for planner and lesson_logger. UNVERIFIED syntax: check the Codex MCP docs for your version.
+# [mcp_servers.notion]
+# url = "https://mcp.notion.com/mcp"

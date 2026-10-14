@@ -840,7 +840,6 @@ func _process_fight(delta: float) -> void:
 	var ct: Vector3 = Vector3.ZERO
 	var fd: float = 0.0
 	var fsp: Vector3 = Vector3.ZERO
-	var fs: int = 0
 	if not is_on_floor():
 		var mult := fall_gravity_multiplier if velocity.y < 0 else 1.0
 		velocity.y -= _gravity * mult * delta
@@ -855,6 +854,7 @@ func _process_fight(delta: float) -> void:
 
 		fishing_mechanic.advance_fight(delta)
 		if not fishing_mechanic._is_fighting:
+			_broadcast_fishing_state_if_changed()
 			return
 
 		var input_dir := Vector2.ZERO if _is_pause_open else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -891,14 +891,10 @@ func _process_fight(delta: float) -> void:
 			if multiplayer.has_multiplayer_peer():
 				rpc("_sync_flight_start", fsp)
 
-		fs = fishing_mechanic.current_state
-		if fs != _last_fish_state:
-			_last_fish_state = fs
-			if multiplayer.has_multiplayer_peer():
-				rpc("_sync_fishing_state", fs)
+		_broadcast_fishing_state_if_changed()
 		return
 
-	var fish_pos: Vector3 = fishing_mechanic.cast_target_position
+	var fish_pos: Vector3 = fishing_mechanic.get_fish_position() if fishing_mechanic.has_method("get_fish_position") else fishing_mechanic.cast_target_position
 	var to_fish: Vector3 = fish_pos - global_position
 	var dist: float = to_fish.length()
 	var dir: Vector3 = to_fish.normalized() if dist > 0.001 else Vector3.FORWARD
@@ -912,11 +908,12 @@ func _process_fight(delta: float) -> void:
 		if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 			fishing_mechanic.notify_scroll.rpc_id(1)
 	var is_spiked: bool = _pull_spike_timer > 0
-	var current_pull: float = fishing_mechanic.fighting_spike_pull if is_spiked else fishing_mechanic.fighting_pull_strength
+	var current_pull: float = fishing_mechanic.get_fight_pull_strength(is_spiked) if fishing_mechanic.has_method("get_fight_pull_strength") else (fishing_mechanic.fighting_spike_pull if is_spiked else fishing_mechanic.fighting_pull_strength)
 	var pull_force: Vector3 = dir * current_pull * pull_mult
 
 	fishing_mechanic.advance_fight(delta)
 	if not fishing_mechanic._is_fighting:
+		_broadcast_fishing_state_if_changed()
 		return
 
 	var input_dir := Vector2.ZERO if _is_pause_open else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -955,11 +952,16 @@ func _process_fight(delta: float) -> void:
 		if multiplayer.has_multiplayer_peer():
 			rpc("_sync_flight_start", fsp)
 
-	fs = fishing_mechanic.current_state
-	if fs != _last_fish_state:
-		_last_fish_state = fs
-		if multiplayer.has_multiplayer_peer():
-			rpc("_sync_fishing_state", fs)
+	_broadcast_fishing_state_if_changed()
+
+
+func _broadcast_fishing_state_if_changed() -> void:
+	var state: int = fishing_mechanic.current_state
+	if state == _last_fish_state:
+		return
+	_last_fish_state = state
+	if multiplayer.has_multiplayer_peer():
+		rpc("_sync_fishing_state", state)
 
 
 func _is_local_authority() -> bool:

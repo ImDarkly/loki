@@ -34,7 +34,11 @@ var current_state: State = State.IDLE
 var visual_line_node: MeshInstance3D = null
 var line_material: ORMMaterial3D = null
 var bobber_node: MeshInstance3D = null
-var cast_target_position: Vector3
+var cast_target_position: Vector3:
+	set(value):
+		cast_target_position = value
+		_fish_position = value
+		_fish_position.y = $FishManager.FISH_SWIM_DEPTH
 var _flight_start_position: Vector3
 var _flight_start_time: int
 var _launch_velocity: Vector3
@@ -62,6 +66,7 @@ var _fight_initial_distance: float = 0.0
 @export var escape_time_threshold: float = 1.8
 @export var escape_launch_strength: float = 10.0
 var _fight_progress: float = 0.0
+var _fish_position: Vector3 = Vector3.ZERO
 var _fight_target: float = 0.0
 var _rod_tip_ref: Node3D = null
 var _cached_fishing_active: bool = true
@@ -72,6 +77,7 @@ var _escape_telegraph_audio: AudioStreamPlayer = null
 
 const LINE_SEGMENTS: int = 4
 const SHORE_CONTACT_TOLERANCE: float = 0.75
+const CATCH_CLEANUP_DELAY: float = 0.7
 
 
 func is_fighting() -> bool:
@@ -98,9 +104,12 @@ func on_fish_fled(target_client_id: int = -1) -> void:
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
+	_fight_progress = 0.0
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
+	if is_local_render and is_instance_valid($FishManager):
+		$FishManager.set_fight_mode(false)
 	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
@@ -113,6 +122,7 @@ func advance_fight(delta: float) -> void:
 		return
 	if hook_type == HookType.PLAYER:
 		return
+
 	var caster := get_parent() as Player
 	if caster and is_instance_valid(caster):
 		if caster.global_position.distance_to(cast_target_position) > max_tether_range:
@@ -136,6 +146,10 @@ func _reset_scroll_timers() -> void:
 	_pull_spike_timer = 0.3
 
 
+func get_fish_position() -> Vector3:
+	return _fish_position
+
+
 @rpc("any_peer", "reliable", "call_remote")
 func notify_scroll() -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
@@ -157,8 +171,8 @@ func _process_pull(delta: float) -> void:
 	if dist < 1.5:
 		return
 	var dir := to_caster.normalized() if dist > 0.001 else Vector3.ZERO
-	var initial_dist: float = max(_fight_initial_distance, 0.01)
-	var pull_mult: float = clamp(dist / initial_dist, 0.1, 1.0)
+	var initial_dist: float = maxf(_fight_initial_distance, 0.01)
+	var pull_mult: float = clampf(dist / initial_dist, 0.1, 1.0)
 	var is_spiked := _pull_spike_timer > 0
 	var current_pull := fighting_spike_pull if is_spiked else 0.0
 	var pull_displacement: Vector3 = dir * current_pull * pull_mult * 10.0 * delta
@@ -284,9 +298,12 @@ func _on_hook_rejected() -> void:
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
 	_pull_spike_timer = 0.0
+	_fight_progress = 0.0
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
+	if is_local_render and is_instance_valid($FishManager):
+		$FishManager.set_fight_mode(false)
 	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
@@ -296,7 +313,7 @@ func _on_hook_rejected() -> void:
 
 
 func _update_telegraph() -> void:
-	var new_intensity: float = clamp(_escape_timer / escape_time_threshold, 0.0, 1.0)
+	var new_intensity: float = clampf(_escape_timer / escape_time_threshold, 0.0, 1.0)
 	if not is_equal_approx(new_intensity, _telegraph_intensity):
 		_telegraph_intensity = new_intensity
 		escape_telegraph_changed.emit(_telegraph_intensity)
@@ -317,9 +334,12 @@ func _trigger_escape_launch() -> void:
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
+	_fight_progress = 0.0
 	_stop_telegraph()
 	_report_zone_leave()
 	_snap_bobber_to_rod()
+	if is_local_render and is_instance_valid($FishManager):
+		$FishManager.set_fight_mode(false)
 	_clear_fish_visuals()
 	current_state = State.IDLE
 	hook_type = HookType.NONE
@@ -348,6 +368,7 @@ func _complete_fight_catch() -> void:
 		_is_fighting = false
 		_escape_timer = 0.0
 		_telegraph_intensity = 0.0
+		_fight_progress = 0.0
 		_stop_telegraph()
 		_report_zone_leave()
 		_snap_bobber_to_rod()
@@ -360,6 +381,16 @@ func _complete_fight_catch() -> void:
 
 	var caught_zone_index := _active_zone_index
 	var caught_source_position := cast_target_position
+	if hook_type == HookType.FISH:
+		_fight_progress = _fight_target
+		var from_pos := cast_target_position
+		from_pos.y = $FishManager.FISH_SWIM_DEPTH
+		var end_pos := _get_rod_tip_position()
+		end_pos.y = $FishManager.FISH_SWIM_DEPTH
+		_fish_position = end_pos
+		if is_local_render and is_instance_valid($FishManager):
+			$FishManager.update_fight_position(from_pos, end_pos, 1.0)
+		_rebuild_line()
 
 	_is_fighting = false
 	_escape_timer = 0.0
@@ -373,7 +404,13 @@ func _complete_fight_catch() -> void:
 	personal_catch_changed.emit(personal_catch_count)
 	reel_success.emit(personal_catch_count)
 	_report_zone_leave()
-	$FishManager.cleanup()
+	if is_local_render and is_instance_valid($FishManager):
+		var caught_fish: Node3D = $FishManager.get_fish()
+		$FishManager.play_catch_clip()
+		if is_instance_valid(caught_fish):
+			get_tree().create_timer(CATCH_CLEANUP_DELAY).timeout.connect($FishManager.cleanup_fish_if_current.bind(caught_fish))
+	else:
+		$FishManager.cleanup()
 	catch_feedback_manager.play_catch_success()
 
 	if caught_zone_index != -1 and is_instance_valid(_zone_manager_ref):
@@ -629,7 +666,7 @@ func _process(delta: float) -> void:
 		_handle_remote_transition(current_state)
 		_prev_remote_state = current_state
 
-	_pull_spike_timer = max(0.0, _pull_spike_timer - delta)
+	_pull_spike_timer = maxf(0.0, _pull_spike_timer - delta)
 
 	match current_state:
 		State.CASTING, State.WAITING, State.BITE:
@@ -661,6 +698,19 @@ func _process(delta: float) -> void:
 							_fight_initial_distance = player.global_position.distance_to(cast_target_position)
 						_fight_target = randf_range(2.0, 8.0)
 						_fight_progress = 0.0
+						if hook_type == HookType.FISH and is_local_render and is_instance_valid($FishManager):
+							$FishManager.set_fight_mode(true)
+
+			if _is_fighting and hook_type == HookType.FISH:
+				var shore_target := _get_rod_tip_position()
+				shore_target.y = $FishManager.FISH_SWIM_DEPTH
+				var from_pos := cast_target_position
+				from_pos.y = $FishManager.FISH_SWIM_DEPTH
+				var weight := clampf(_fight_progress / maxf(_fight_target, 0.01), 0.0, 1.0)
+				_fish_position = from_pos.lerp(shore_target, weight)
+				_fish_position.y = $FishManager.FISH_SWIM_DEPTH
+				if is_instance_valid($FishManager.get_fish()):
+					$FishManager.update_fight_position(from_pos, shore_target, weight)
 
 			_update_bobber()
 			_rebuild_line()
@@ -750,6 +800,8 @@ func cast(target_position: Vector3, flight_time: float) -> void:
 
 	cast_target_position = target_position
 	cast_target_position.y = 0.0
+	_fish_position = cast_target_position
+	_fish_position.y = $FishManager.FISH_SWIM_DEPTH
 
 	_current_flight_duration = flight_time
 	_flight_start_position = _get_rod_tip_position()
@@ -794,6 +846,8 @@ func _on_bite_timer_timeout() -> void:
 	current_state = State.BITE
 	_bite_time = 0.0
 	_is_fighting = false
+	_fish_position = cast_target_position
+	_fish_position.y = $FishManager.FISH_SWIM_DEPTH
 	if is_instance_valid(bobber_node):
 		bobber_node.visible = true
 	_play_bite_feedback()
@@ -836,7 +890,7 @@ func _rebuild_line() -> void:
 		return
 
 	var start := _get_rod_tip_position()
-	var end := bobber_node.position if current_state in [State.WAITING, State.BITE] and is_instance_valid(bobber_node) else _get_bobber_position()
+	var end := _fish_position if (_is_fighting and hook_type == HookType.FISH) else (bobber_node.position if current_state in [State.WAITING, State.BITE] and is_instance_valid(bobber_node) else _get_bobber_position())
 
 	line_material.albedo_color.a = 1.0
 
@@ -879,9 +933,14 @@ func _create_bobber(position: Vector3) -> void:
 
 
 func _update_bobber() -> void:
+	if hook_type == HookType.FISH and _is_fighting:
+		if is_instance_valid(bobber_node):
+			bobber_node.visible = false
+		return
 	if not is_instance_valid(bobber_node):
 		return
 
+	bobber_node.visible = true
 	bobber_node.position = _get_bobber_position()
 	if current_state == State.WAITING:
 		bobber_node.position.y += sin(_wait_time * 2.0) * 0.05
@@ -913,6 +972,8 @@ func _cleanup_line() -> void:
 
 
 func _clear_fish_visuals() -> void:
+	if is_local_render and is_instance_valid($FishManager):
+		$FishManager.set_fight_mode(false)
 	$FishManager.cleanup()
 	$FishManager.despawn_shadows()
 
@@ -931,6 +992,8 @@ func _exit_tree() -> void:
 
 func reset_for_restart() -> void:
 	_report_zone_leave()
+	if is_local_render and is_instance_valid($FishManager):
+		$FishManager.set_fight_mode(false)
 	_cleanup_all()
 	bite_timer.stop()
 	current_state = State.IDLE
@@ -940,6 +1003,7 @@ func reset_for_restart() -> void:
 	_is_fighting = false
 	_escape_timer = 0.0
 	_telegraph_intensity = 0.0
+	_fight_progress = 0.0
 	_stop_telegraph()
 	_wait_time = 0.0
 	personal_catch_count = 0
@@ -980,11 +1044,11 @@ func _generate_rumble_stream() -> AudioStreamWAV:
 		var tone4: float = sin(t * TAU * 550.0) * 0.08
 		var low: float = tone1 + tone2 + tone3 + tone4
 
-		var snap_env: float = clamp(1.0 - t / 0.025, 0.0, 1.0)
+		var snap_env: float = clampf(1.0 - t / 0.025, 0.0, 1.0)
 		var snap: float = randf_range(-1.0, 1.0) * snap_env * 0.3
 
 		var sample: float = (low + snap) * envelope
-		sample = clamp(sample, -1.0, 1.0)
+		sample = clampf(sample, -1.0, 1.0)
 
 		var s: int = clampi(int(sample * 16384), -32768, 32767)
 		var offset: int = i * 2
@@ -1016,7 +1080,7 @@ func _generate_telegraph_stream() -> AudioStreamWAV:
 		var tone3: float = sin(t * TAU * 200.0) * 0.08
 
 		var sample: float = tone1 + tone2 + tone3
-		sample = clamp(sample, -1.0, 1.0)
+		sample = clampf(sample, -1.0, 1.0)
 
 		var s: int = clampi(int(sample * 16384), -32768, 32767)
 		var offset: int = i * 2
@@ -1078,6 +1142,9 @@ func get_debug_state() -> Dictionary:
 		"hook_type": hook_name,
 		"tether_distance": dist_text,
 		"fight_progress": round(_fight_progress * 100) / 100.0,
+		"fish_position": str(_fish_position),
+		"escape_timer": round(_escape_timer * 100) / 100.0,
+		"pull_spike": round(_pull_spike_timer * 100) / 100.0,
 		"target_name": _tether_target.name if _tether_target and is_instance_valid(_tether_target) else "none",
 		"hooked_by": hooked_by_caster_id
 	}
