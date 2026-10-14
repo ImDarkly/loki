@@ -167,6 +167,7 @@ func _make_peer_fight(owner_index: int = 1) -> Array:
 		fm.is_local_render = i == owner_index
 		fm.max_tether_range = 100.0
 		fm.escape_time_threshold = 99.0
+		fm._cached_fishing_active = true
 		mechanics.append(fm)
 	for i in range(3):
 		var zones: Node3D = load("res://systems/zones/zone_manager.tscn").instantiate()

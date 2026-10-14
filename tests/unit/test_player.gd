@@ -1034,6 +1034,8 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	assert_ne(client_mp.get_unique_id(), 1, "client should obtain a unique id")
 	assert_true(server_mp.get_peers().has(client_mp.get_unique_id()), "server should see the connected client")
 
+	server_root.process_mode = Node.PROCESS_MODE_DISABLED
+	client_root.process_mode = Node.PROCESS_MODE_DISABLED
 	var server_copy := await _build_player("Player_1", server_players)
 	var client_copy := await _build_player("Player_1", client_players)
 	server_copy.set_physics_process(false)
@@ -1042,6 +1044,11 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 
 	var server_fishing := server_copy.fishing_mechanic
 	var client_fishing := client_copy.fishing_mechanic
+	server_fishing.set_physics_process(false)
+	client_fishing.set_physics_process(false)
+	server_root.process_mode = Node.PROCESS_MODE_INHERIT
+	client_root.process_mode = Node.PROCESS_MODE_INHERIT
+	server_fishing._fish_network_active = true
 	server_fishing.hook_type = server_fishing.HookType.FISH
 	server_fishing.max_tether_range = 1.0
 	server_fishing.cast_target_position = Vector3(2, 0, 0)
@@ -1050,14 +1057,16 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_copy._last_fish_state = server_fishing.State.BITE
 	client_fishing.current_state = client_fishing.State.BITE
 
-	server_copy._process_fight(0.016)
+	server_fishing._physics_process(0.016)
 	assert_eq(server_fishing.current_state, server_fishing.State.IDLE, "tether pop should end in IDLE")
 	for frame in range(2):
 		await get_tree().process_frame
 	assert_eq(client_fishing.current_state, server_fishing.State.IDLE, "remote fishing state should sync to IDLE after tether pop")
 
 	server_fishing.max_tether_range = 25.0
+	server_fishing.hook_type = server_fishing.HookType.FISH
 	server_fishing.escape_time_threshold = 0.01
+	server_fishing._fish_network_active = true
 	server_fishing._escape_timer = 0.0
 	server_fishing._fight_progress = 0.0
 	server_fishing._fight_target = 100.0
@@ -1066,13 +1075,17 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_copy._last_fish_state = server_fishing.State.BITE
 	client_fishing.current_state = server_fishing.State.BITE
 
-	server_copy._process_fight(0.02)
+	server_fishing._physics_process(0.02)
 	assert_eq(server_fishing.current_state, server_fishing.State.IDLE, "escape should end in IDLE")
 	for frame in range(2):
 		await get_tree().process_frame
 	assert_eq(client_fishing.current_state, server_fishing.State.IDLE, "remote fishing state should sync to IDLE after escape")
 
 	server_fishing.escape_time_threshold = 100.0
+	server_fishing.hook_type = server_fishing.HookType.FISH
+	server_fishing._fish_network_active = true
+	server_fishing.fish_pull_strength = 1000.0
+	server_fishing._reset_scroll_timers()
 	server_fishing._escape_timer = 0.0
 	server_fishing.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
 	assert_false(
@@ -1086,7 +1099,7 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_copy._last_fish_state = server_fishing.State.BITE
 	client_fishing.current_state = server_fishing.State.BITE
 
-	server_copy._process_fight(0.02)
+	server_fishing._physics_process(0.02)
 	assert_eq(server_fishing.current_state, server_fishing.State.SUCCESS, "ordinary fish catch should preserve SUCCESS")
 	for frame in range(2):
 		await get_tree().process_frame
