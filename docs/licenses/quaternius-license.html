@@ -1,0 +1,213 @@
+<!doctype html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/assets/css/normalize.css">
+  	<link rel="stylesheet" href="/assets/css/thumbnails.css">
+  	<link rel="stylesheet" href="/assets/css/style_new.css">
+    <link rel="shortcut icon" href="/assets/images/site/favicon.ico" />
+    <link rel="stylesheet" href="/assets/css/lightbox.min.css">
+    <link rel="stylesheet" href="/assets/css/lity.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script src="https://kit.fontawesome.com/f9d695b775.js" crossorigin="anonymous"></script>
+<script type="text/javascript">
+
+
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-99971748-1', 'auto');
+  ga('send', 'pageview');
+
+
+
+ $(document).ready(function(){
+ $('#search').keyup(function(){
+
+  // Search text
+  var text = $(this).val();
+
+  // Hide all content class element
+  $('.pack').hide();
+
+  // Search
+  $('.pack:contains("'+text+'")').closest('.pack').show();
+
+ //If the search bar gets emptied, show all packs
+ if(text == ''){
+       $('.pack').show();
+ }
+ });
+});
+
+//Case insensitive
+$.expr[":"].contains = $.expr.createPseudo(function(arg) {
+  return function( elem ) {
+   return $(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
+  };
+});
+
+function responsiveHamburger() {
+	var x = document.getElementById("navButtons-id");
+	if (x.className === "navButtons") {
+		x.className += " responsive";
+	} else {
+		x.className = "navButtons";
+	}
+}
+
+function setValue(tag) {
+
+			var text = document.getElementById("search").value;
+		$('.pack').hide();
+		$('.pack:contains("'+tag+'")').closest('.pack').show();
+
+	}
+
+	function showAll(){
+		 $('.pack').show();
+	}
+	function openTutorial(number) {
+		console.log(number);
+  var x = document.getElementById(number);
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+}
+
+	</script>
+
+  <div class="container">
+
+      <header>
+			<button class="btnHamb hamburger" id="hamburger" onclick="responsiveHamburger()"> <img src="/assets/svg/bars.svg" class="iconBig"></button>
+     	<div class="nav-menu">
+						<div class="navButtons" id ="navButtons-id">
+               <button class="btn btnNavBar"   onClick="window.location='/index.html'"; ><div class="navicon"><img src="/assets/svg/rook.svg" class="iconBig"></div> Assets</button>
+							 <button class="btn btnNavBar"   onClick="window.location='/tutorials.html'"; ><div class="navicon"><img src="/assets/svg/book.svg" class="iconBig"></div> Tutorials</button>
+							 <button class="btn btnNavBar"   onClick="window.location='/faq.html'"; ><div class="navicon"><img src="/assets/svg/question.svg" class="iconBig"></div> FAQ</button>
+						  <button class="btn btnNavBar"  onclick=" window.open('https://www.artstation.com/quaternius','_blank')"; ><div class="navicon"><img src="/assets/svg/frog.svg" class="iconBig"></div> Portfolio</button>
+
+
+							 </div>
+<div class="socials">
+	<button class="btn licensebtn"  style="padding-top:7px;"onClick="window.location='/license.html'"; ><div class="navicon"><img src="/assets/svg/book.svg" class="iconBig"></div> License</button>
+<button class="btn twitter"  onclick=" window.open('https://discord.gg/hXB2qTTEnJ','_blank')" ><div class="joinDiscord"><img src="/assets/svg/discord.svg" class="iconBig"> Join on Discord</div></button>
+
+				<button class="btn twitter"  onclick=" window.open('https://twitter.com/quaternius','_blank')" ><img src="/assets/svg/square-twitter.svg" class="iconBig"></button>
+
+
+			</div></div>
+
+            <a href="/index.html"><img src ="/assets/images/site/logo.png" class ="logo"/></a>
+</header>
+
+      <div id="patreonBanner">
+    <nav class="menu-text-center">
+        <a href="https://www.patreon.com/quaternius" style="text-decoration:none" target=blank><img src="/assets/images/site/PatreonBanner.png" /></a>
+
+    </nav>
+</div>
+
+
+  </div>
+</head>
+
+<body>
+  <div class="container">
+
+
+
+      <title>Quaternius • Quaternius Asset License (QAL)</title>
+<head>
+	<meta name="title" content="Quaternius • Free Game Assets"/>
+<meta name="description" content="A library of hundreds of free Low Poly 3D Models, using the CC0 License."/>
+
+<meta name="twitter:image" content="/assets/images/fullres/metadata.jpg">
+<meta name="twitter:card" value="summary_large_image">
+<meta property="twitter:title" content="Quaternius • Free Game Assets"/>
+<meta property="twitter:description" content="A library of hundreds of free Low Poly 3D Models, using the CC0 License."/>
+<meta property="twitter:site" content="@Quaternius">
+
+
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://quaternius.com">
+<meta property="og:site-name" content="Quaternius">
+<meta property="og:title" content="Quaternius • Free Game Assets">
+<meta property="og:description" content="A library of hundreds of free Low Poly 3D Models, using the CC0 License.">
+<meta property="og:image" content="/assets/images/fullres/metadata.jpg">
+<meta property="og:image:url" content="/assets/images/fullres/metadata.jpg">
+
+</head>
+<div class="license">
+
+<div style="background-color: #ee3a23; color:#f4edec; padding:15px"; class="indPackTitle">Quaternius Asset License (QAL) v1.0</div>
+<p><i>Last updated: 8/28/2026</i></p>
+
+<h2>In short</h2>
+<div class="singleFeature" style="padding:15px;margin-bottom:20px;font-size:23px;!padding-bottom:5px">You can use these assets, free of charge, in <b>personal</b>, <b>educational</b>, and <b>commercial games</b> and other projects, with <b>no credit required</b>. You just can't <b>resell or redistribute</b> the assets themselves as assets.
+</div>
+<p>The full terms below govern if there's ever a dispute; the summary above is just a plain-English guide.</p>
+
+<h2>Full Terms</h2>
+<p>This License is between you (the <b>"Licensee,"</b> <b>"you,"</b> or <b>"your"</b>) and Quaternius (the <b>"Licensor,"</b> <b>"we,"</b> <b>"us,"</b> or <b>"our"</b>), and governs your use of the digital content (the <b>"Assets"</b>) released by Quaternius under this License.</p>
+
+<h2>1. Definitions</h2>
+<ul>
+  <li><b>"Assets"</b> means the 3D models, animations, textures, source files, and other digital content made available by Quaternius under this License, regardless of the specific site or platform through which they were obtained.</li>
+  <li><b>"Product"</b> means any game, application, film, video, artwork, render, or other work created using or incorporating the Assets.</li>
+</ul>
+
+<h2>2. Grant of License</h2>
+<p>Subject to the restrictions in Section 3, we grant you a worldwide, royalty-free, non-exclusive, perpetual license, for personal, educational, or commercial purposes, to:</p>
+<ul>
+  <li>Use, copy, and modify the Assets;</li>
+  <li>Incorporate the Assets (in original or modified form) into a Product;</li>
+  <li>Publish, distribute, sell, sublicense, and otherwise commercially exploit that Product, without owing us any fee, royalty, or credit; and</li>
+  <li>Authorize contractors and collaborators to do the above on your behalf, solely for the purpose of working on your Product.</li>
+</ul>
+<p><b>No attribution is required.</b></p>
+
+<h2>3. Restrictions</h2>
+<p>You may <b>not</b>:</p>
+<p><b>a) Resell or redistribute the Assets themselves.</b> You may not extract, repackage, sublicense, sell, or otherwise redistribute the Assets (in original or modified form) as a standalone asset, asset pack, stock file, template, or similar product, whether for free or for payment, and whether alone or bundled with other assets. This restriction applies regardless of how much the Assets have been modified. It does not restrict distributing a completed Product that merely incorporates the Assets (see Section 2).</p>
+<p><b>b) Misrepresent authorship.</b> You may not falsely claim that you created or own the Assets, or falsely represent that Quaternius is affiliated with, endorses, or collaborated on your Product.</p>
+
+<h2>4. Ownership</h2>
+<p>We retain all intellectual property rights in the Assets. This License grants you permission to use them as described above; it does not transfer ownership of the Assets to you.</p>
+
+<h2>5. Termination</h2>
+<p>This License is perpetual and cannot be revoked, except that it will automatically terminate if you materially breach Section 3 and do not cure that breach within 30 days of receiving written notice from us. Termination does not affect Products already distributed prior to the breach, other than requiring you to cease further distribution and cure or remove the infringing use going forward.</p>
+
+<h2>6. No Warranty</h2>
+<p>The Assets are provided "as is," without warranty of any kind, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, and non-infringement. To the maximum extent permitted by law, we are not liable for any damages arising from your use of the Assets.</p>
+
+<h2>7. Changes to This License</h2>
+<p>We may publish updated versions of this License for future Asset releases. Changes will not apply retroactively to Assets you've already obtained under an earlier version; the version in effect at the time you obtained the Assets governs your use of them.</p>
+
+<h2>8. Severability</h2>
+<p>If any provision of this License is found to be invalid or unenforceable, that provision shall be enforced to the maximum extent permitted by law, and the remaining provisions shall remain in full force and effect.</p>
+
+<h2>9. Entire Agreement</h2>
+<p>This License constitutes the entire agreement between the Licensee and Licensor concerning the Assets, and supersedes any prior or contemporaneous understandings concerning their use.</p>
+
+<hr>
+
+</div>
+
+      <footer>
+        <a class="float-left" target="_blank" href="https://www.twitter.com/quaternius">	&copy; Quaternius</a>
+        <a class="float-right" >laulhet@gmail.com</a>
+	</footer>
+
+  </div>
+</body>
+</html>
