@@ -11,79 +11,6 @@
     <link rel="stylesheet" href="/assets/css/lity.min.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-<script src="https://kit.fontawesome.com/f9d695b775.js" crossorigin="anonymous"></script>
-<script type="text/javascript">
-
-
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-  ga('create', 'UA-99971748-1', 'auto');
-  ga('send', 'pageview');
-
-
-
- $(document).ready(function(){
- $('#search').keyup(function(){
-
-  // Search text
-  var text = $(this).val();
-
-  // Hide all content class element
-  $('.pack').hide();
-
-  // Search
-  $('.pack:contains("'+text+'")').closest('.pack').show();
-
- //If the search bar gets emptied, show all packs
- if(text == ''){
-       $('.pack').show();
- }
- });
-});
-
-//Case insensitive
-$.expr[":"].contains = $.expr.createPseudo(function(arg) {
-  return function( elem ) {
-   return $(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
-  };
-});
-
-function responsiveHamburger() {
-	var x = document.getElementById("navButtons-id");
-	if (x.className === "navButtons") {
-		x.className += " responsive";
-	} else {
-		x.className = "navButtons";
-	}
-}
-
-function setValue(tag) {
-
-			var text = document.getElementById("search").value;
-		$('.pack').hide();
-		$('.pack:contains("'+tag+'")').closest('.pack').show();
-
-	}
-
-	function showAll(){
-		 $('.pack').show();
-	}
-	function openTutorial(number) {
-		console.log(number);
-  var x = document.getElementById(number);
-  if (x.style.display === "none") {
-    x.style.display = "block";
-  } else {
-    x.style.display = "none";
-  }
-}
-
-	</script>
-
   <div class="container">
 
       <header>
@@ -128,12 +55,12 @@ function setValue(tag) {
       <title>Quaternius • Quaternius Asset License (QAL)</title>
 <head>
 	<meta name="title" content="Quaternius • Free Game Assets"/>
-<meta name="description" content="A library of hundreds of free Low Poly 3D Models, using the CC0 License."/>
+<meta name="description" content="Quaternius Asset License (QAL) v1.0, last updated 2026-08-28."/>
 
 <meta name="twitter:image" content="/assets/images/fullres/metadata.jpg">
 <meta name="twitter:card" value="summary_large_image">
 <meta property="twitter:title" content="Quaternius • Free Game Assets"/>
-<meta property="twitter:description" content="A library of hundreds of free Low Poly 3D Models, using the CC0 License."/>
+<meta property="twitter:description" content="Quaternius Asset License (QAL) v1.0, last updated 2026-08-28."/>
 <meta property="twitter:site" content="@Quaternius">
 
 
@@ -142,7 +69,7 @@ function setValue(tag) {
 <meta property="og:url" content="https://quaternius.com">
 <meta property="og:site-name" content="Quaternius">
 <meta property="og:title" content="Quaternius • Free Game Assets">
-<meta property="og:description" content="A library of hundreds of free Low Poly 3D Models, using the CC0 License.">
+<meta property="og:description" content="Quaternius Asset License (QAL) v1.0, last updated 2026-08-28.">
 <meta property="og:image" content="/assets/images/fullres/metadata.jpg">
 <meta property="og:image:url" content="/assets/images/fullres/metadata.jpg">
 
