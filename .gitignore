@@ -9,6 +9,12 @@ addons/
 thirdparty/
 build/
 
+# Quaternius Cute Fish Pack (install locally; see ASSETS.md)
+/systems/fishing/assets/Goldfish.glb
+/systems/fishing/assets/Clownfish.glb
+/systems/fishing/assets/Goldfish.glb.import
+/systems/fishing/assets/Clownfish.glb.import
+
 # Environment variables
 # EOS credentials (downloaded separately, per-machine)
 eos_credentials.cfg
