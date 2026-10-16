@@ -39,10 +39,11 @@ Use this skill whenever creating a GitHub issue for this repository. Do not crea
    }
    ```
 
-   For an issue blocked by another issue, use `addBlockedBy` with the blocked issue as `issueId` and its blocker as `blockingIssueId`. For a blocking relationship, apply that mutation to the other issue with the new issue as `blockingIssueId`. For a sub-issue, add the child to the known parent number with:
+   For an issue blocked by another issue, use `addBlockedBy` with the blocked issue as `issueId` and its blocker as `blockingIssueId`. For a blocking relationship, apply that mutation to the other issue with the new issue as `blockingIssueId`. For a sub-issue, resolve the child issue's database ID, then add it to the known parent number:
 
    ```powershell
-   gh api --method POST "repos/$repo/issues/<parent-number>/sub_issues" -F sub_issue_id=<child-number>
+   $child_issue_id = gh api "repos/$repo/issues/<child-number>" --jq .id
+   gh api --method POST "repos/$repo/issues/<parent-number>/sub_issues" -F sub_issue_id=$child_issue_id
    ```
 
    If GitHub rejects a requested relation because of permissions, repository boundaries, or unavailable API support, say so clearly in the issue report.
