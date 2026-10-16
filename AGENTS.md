@@ -172,6 +172,17 @@ Before implementing any task:
 
 If anything is unclear — ambiguous requirements, missing acceptance criteria, conflicting instructions — stop and ask before proceeding. Do not guess and continue.
 
+## GitHub issue hygiene (always)
+
+Use the repository-local `create-issue` skill for every GitHub issue creation.
+
+- List labels before creating an issue. Use only labels that already exist; never create labels. If a needed label is absent, ask first.
+- List existing milestones before creating an issue. Use one only when it already exists; never create a milestone. Ask if the intended milestone is absent.
+- Use native GitHub blocked-by, blocking, and sub-issue relationships whenever applicable, and include a `Blocked by` line in the issue body. If available tools cannot set a requested relationship, say so and do not fake it.
+- Assign new issues to `ImDarkly`. If a project exists, add the issue to it; ask when more than one project could apply.
+- After creation, read the issue back and present a table with exactly `number`, `title`, `labels`, `milestone`, and `relations` columns, then a checklist for the body, assignee, and project. Fix any omissions before reporting completion.
+- Format issues as `feat(scope): title` with `What`, `Why`, `Source`, `Acceptance criteria`, and `Blocked by` sections.
+
 ### GitHub issue relationships
 Whenever creating multiple issues with dependencies between them, use the `addBlockedBy` GraphQL mutation via `gh api graphql` to link them immediately after creation. The mutation takes `issueId` (the blocked issue) and `blockingIssueId` (the blocker). Get issue node IDs via a `repository(owner:, name:) { issue(number:) { id } }` query first.
 
