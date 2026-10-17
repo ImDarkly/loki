@@ -175,6 +175,7 @@ If anything is unclear — ambiguous requirements, missing acceptance criteria, 
 ## GitHub issue hygiene (always)
 
 Use the repository-local `create-issue` skill for every GitHub issue creation.
+When `to-tickets` creates issues, also follow this issue hygiene section.
 
 - List labels before creating an issue. Use only labels that already exist; never create labels. If a needed label is absent, ask first.
 - List existing milestones before creating an issue. Use one only when it already exists; never create a milestone. Ask if the intended milestone is absent.
@@ -182,6 +183,15 @@ Use the repository-local `create-issue` skill for every GitHub issue creation.
 - Assign new issues to `ImDarkly`. If a project exists, add the issue to it; ask when more than one project could apply.
 - After creation, read the issue back and present a table with exactly `number`, `title`, `labels`, `milestone`, and `relations` columns, then a checklist for the body, assignee, and project. Fix any omissions before reporting completion.
 - Format issues as `feat(scope): title` with `What`, `Why`, `Source`, `Acceptance criteria`, and `Blocked by` sections.
+
+## Pull requests and issues (always)
+
+- Every PR implements exactly one issue. Don't open a PR without an issue. If none exists, create it first with the create-issue skill.
+- Put "Fixes #N" in the PR description so GitHub links it and closes the issue on merge. If the PR only partly resolves it, use "Refs #N" instead and say what's left.
+- Name the branch with the issue number, e.g. feature/123-short-name.
+- Use the same labels and milestone as the issue, and add the PR to the same project board.
+- If the issue has a parent or is blocked by another, don't start work until the blocker is merged. Say so if it isn't.
+- After opening the PR, read it back and confirm the issue link shows on the PR and the issue.
 
 ### GitHub issue relationships
 Whenever creating multiple issues with dependencies between them, use the `addBlockedBy` GraphQL mutation via `gh api graphql` to link them immediately after creation. The mutation takes `issueId` (the blocked issue) and `blockingIssueId` (the blocker). Get issue node IDs via a `repository(owner:, name:) { issue(number:) { id } }` query first.
