@@ -7,6 +7,15 @@ description: Create a GitHub issue with this repository's required metadata, nat
 
 Use this skill whenever creating a GitHub issue for this repository. Do not create an issue until the user has authorized it.
 
+## Pull requests and issues (always)
+
+- Every PR implements exactly one issue. Don't open a PR without an issue. If none exists, create it first with the create-issue skill.
+- Put "Fixes #N" in the PR description so GitHub links it and closes the issue on merge. If the PR only partly resolves it, use "Refs #N" instead and say what's left.
+- Name the branch with the issue number, e.g. feature/123-short-name.
+- Use the same labels and milestone as the issue, and add the PR to the same project board.
+- If the issue has a parent or is blocked by another, don't start work until the blocker is merged. Say so if it isn't.
+- After opening the PR, read it back and confirm the issue link shows on the PR and the issue.
+
 1. Resolve the repository instead of guessing it:
 
    ```powershell
