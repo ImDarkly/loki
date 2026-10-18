@@ -152,25 +152,17 @@ Every system manager (`systems/<name>/<name>_manager.gd`) must implement the Deb
 - `debug_action(action_id: String) -> void` (server-gated: `if multiplayer.has_multiplayer_peer() and not multiplayer.is_server(): return`)
 - Automatic registration in `_ready()`: `var dbg = get_node_or_null("/root/DebugOverlay"); if dbg: dbg.register_system(name, self)`
 
-## Startup Workflow
+## Ticket Workflow
 
-Trigger: any message that references a GitHub issue, PR, or feature by number, name, or link (e.g. "work on issue #123", "start feature X"). You do not need the issue body pasted in — fetch it yourself.
-
-Before implementing any task:
-
-1. **Fetch the issue** (don't wait for the body to be pasted):
-   `gh issue view <number>` (add `--repo <owner>/<repo>` if working outside the current repo's default remote)
-   Read the full issue, including comments, before proceeding.
-2. Check `.agents/skills/` for relevant skills and follow them.
-3. Switch to `master` branch: `git checkout master`
-4. Fetch remote: `git fetch origin`
-5. Create a new branch from master with a descriptive name, following the Branch naming convention above: `git checkout -b <branch-name>`
-6. If the feature adds a new `systems/<name>/<name>_manager.gd` with its own state machine or
-   timers, include a `scenes/dev/dev_<name>_flow.tscn` per the Manual/Dev Testing convention
-   above as part of the same slice.
-7. If the feature introduces a new `systems/<name>/<name>_manager.gd`, ensure it implements the Debug Overlay contract (`get_debug_state`, `get_debug_actions`, `debug_action`, and registration) and add its script path to `COVERED` in `tests/unit/test_debug_overlay_coverage.gd`.
-
-If anything is unclear — ambiguous requirements, missing acceptance criteria, conflicting instructions — stop and ask before proceeding. Do not guess and continue.
+1. **Intake** → before planner: fetch the issue and all comments. Stop on ambiguity or an unmerged blocker.
+2. **Preconditions** → before planner: `master` must be clean and equal to `origin/master`; otherwise stop and report. Never reset automatically.
+3. **Worktree** → before planner: create one worktree per ticket here before the planner starts. The planner does not create branches.
+4. **Skills** → planner: load applicable skills, then the [game-feel reference](https://app.notion.com/p/Game-feel-reference-3fd351013fca8168a650ee174e5dec0e), then `docs/reference/` if it exists.
+5. **Goal first** → planner: state the outcome in the player's terms, then the plan. Tier selection stays with the planner.
+6. **Pipeline** → existing tiered pipeline: run the existing tiered pipeline below as is.
+7. **Retry limit** → execution/gates: after three failed attempts at the same problem, stop and report.
+8. **PR** → PR stage: open a PR with `What`, `Why`, `How`, `Testing` (only checks actually run), and `Fixes #N`. Never merge.
+9. **Report** → PR stage: make the last PR section `Report`, no more than four lines: asked vs. shipped; where it got stuck or retried; what the instructions or agents got wrong or missed; and one concrete suggestion for `AGENTS.md` or an agent file. “All went well” is not acceptable for line three.
 
 ## GitHub issue hygiene (always)
 
