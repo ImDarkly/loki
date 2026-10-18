@@ -30,6 +30,7 @@ test_output.txt
 test_results.txt
 
 # Local artifacts (logs / ad-hoc runners)
+.codex-remote-attachments/
 *.log
 version.txt
 run_all_tests.gd
