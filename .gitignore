@@ -15,6 +15,9 @@ build/
 /systems/fishing/assets/Goldfish.glb.import
 /systems/fishing/assets/Clownfish.glb.import
 
+# KayKit Adventurers (install locally; see ASSETS.md)
+/entities/player/assets/kaykit_adventurers/
+
 # Environment variables
 # EOS credentials (downloaded separately, per-machine)
 eos_credentials.cfg

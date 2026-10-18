@@ -13,26 +13,10 @@ func _build_player(node_name: String = "", parent: Node = null) -> Player:
 	if not node_name.is_empty():
 		player_node.name = node_name
 
-	var head := Node3D.new()
-	head.name = "Head"
-	head.position = Vector3(0, 1.6, 0)
-	player_node.add_child(head)
-
-	var camera := Camera3D.new()
-	camera.name = "Camera3D"
-	head.add_child(camera)
-
-	var hand_left := MeshInstance3D.new()
-	hand_left.name = "HandLeft"
-	head.add_child(hand_left)
-
-	var hand_right := MeshInstance3D.new()
-	hand_right.name = "HandRight"
-	head.add_child(hand_right)
-
-	var body_mesh := MeshInstance3D.new()
-	body_mesh.name = "BodyMesh"
-	player_node.add_child(body_mesh)
+	var visual_rig_scene: PackedScene = load("res://entities/player/player_visual_rig.tscn")
+	var visual_rig := visual_rig_scene.instantiate()
+	visual_rig.name = "PlayerVisualRig"
+	player_node.add_child(visual_rig)
 
 	var fishing_scene = load("res://systems/fishing/fishing_mechanic.tscn")
 	var fishing_mechanic = fishing_scene.instantiate()
@@ -87,11 +71,50 @@ func test_enable_player_turns_on_voice_chat_process() -> void:
 	assert_true(vcm.is_processing(), "VoiceChatManager process should be on after _enable_player")
 
 
+func test_enable_player_hides_local_body() -> void:
+	player._enable_player()
+	assert_false(player.visual_rig._body_meshes[0].visible, "Local player body should be hidden from the first-person camera")
+
+
+func test_visual_rig_attaches_camera_and_held_items_to_kaykit_bones() -> void:
+	var skeleton := player.visual_rig._find_skeleton(player.visual_rig.body_mesh)
+	assert_not_null(skeleton, "KayKit rig should contain a Skeleton3D")
+	assert_almost_eq(player.visual_rig.body_mesh.rotation.y, PI, 0.001, "KayKit forward should align with Godot forward")
+	assert_eq(player.head.get_parent().bone_name, &"head", "Camera look pivot should attach to the KayKit head bone")
+	assert_almost_eq(player.head.rotation.y, PI, 0.001, "Camera should compensate for the visual rig forward correction")
+	assert_eq(player.camera.get_parent(), player.head, "Camera should follow the KayKit head attachment through the look pivot")
+	assert_eq(player.right_item_anchor.bone_name, &"handslot.r", "Held visuals should attach to the KayKit right hand slot")
+	assert_eq(player._rod_pivot.get_parent(), player.right_item_anchor, "Rod should attach to the right hand slot")
+	assert_eq(player._rod_pivot.transform, player.visual_rig.rod_hand_transform, "Rod should use the rig-owned hand-relative pose")
+	player.start_carrying()
+	assert_eq(player._held_fish.get_parent(), player.right_item_anchor, "Held fish should attach to the right hand slot")
+	assert_eq(player._held_fish.transform, player.visual_rig.held_item_transform, "Held fish should use the rig-owned hand-relative pose")
+	player._hide_held_fish_remote()
+	player._show_held_rock_remote()
+	assert_eq(player._held_rock_mesh.transform, player.visual_rig.held_item_transform, "Held rock should use the rig-owned hand-relative pose")
+	player._hide_held_rock_remote()
+	player._show_held_bait_remote()
+	assert_eq(player._held_bait_mesh.transform, player.visual_rig.held_item_transform, "Held bait should use the rig-owned hand-relative pose")
+
+
+func test_visual_rig_removes_legacy_hand_meshes() -> void:
+	assert_null(player.get_node_or_null("Head"), "Legacy root head should not remain")
+	assert_null(player.get_node_or_null("BodyMesh"), "Legacy body mesh should not remain")
+	assert_null(player.get_node_or_null("Head/HandLeft"), "Legacy left hand mesh should not remain")
+	assert_null(player.get_node_or_null("Head/HandRight"), "Legacy right hand mesh should not remain")
+
+
 func test_disable_player_turns_off_voice_chat_process() -> void:
 	var vcm = player.get_node("VoiceChatManager")
 	vcm.set_process(true)
 	player._disable_player()
 	assert_false(vcm.is_processing(), "VoiceChatManager process should be off after _disable_player")
+
+
+func test_disable_player_shows_remote_body() -> void:
+	player.visual_rig.set_local_view(true)
+	player._disable_player()
+	assert_true(player.visual_rig._body_meshes[0].visible, "Remote player body should remain visible")
 
 
 func test_enable_player_connects_yelling_signal() -> void:

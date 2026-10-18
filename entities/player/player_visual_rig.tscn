@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://entities/player/player_visual_rig.gd" id="1_rig"]
+[ext_resource type="PackedScene" path="res://entities/player/assets/kaykit_adventurers/Knight.glb" id="2_knight"]
+
+[node name="PlayerVisualRig" type="Node3D"]
+script = ExtResource("1_rig")
+
+[node name="Knight" parent="." instance=ExtResource("2_knight")]

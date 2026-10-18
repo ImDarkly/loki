@@ -12,7 +12,7 @@ func _ready() -> void:
 	_label = get_node_or_null("HUD/Label") as Label
 	if _player:
 		_mechanic = _player.fishing_mechanic
-		var cam := _player.get_node_or_null("Head/Camera3D") as Camera3D
+		var cam := _player.camera
 		if cam:
 			cam.current = true
 
