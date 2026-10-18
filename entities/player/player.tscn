@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://q81wy3dp7niu"]
 
 [ext_resource type="Script" uid="uid://i4odkxdn61c8" path="res://entities/player/player.gd" id="1_q6y7j"]
+[ext_resource type="PackedScene" path="res://entities/player/player_visual_rig.tscn" id="2_rig"]
 [ext_resource type="PackedScene" path="res://systems/fishing/fishing_mechanic.tscn" id="2_jg4e3"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/voice_chat_manager.tscn" id="3_lh5f4"]
 [ext_resource type="PackedScene" path="res://systems/voice_chat/mic_level_bar.tscn" id="4_yshjx"]
@@ -14,18 +15,7 @@
 collision_layer = 2
 script = ExtResource("1_q6y7j")
 
-[node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=2046980014]
-
-[node name="Head" type="Node3D" parent="." unique_id=1799613204]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
-
-[node name="Camera3D" type="Camera3D" parent="Head" unique_id=364228253]
-near = 0.1
-far = 1000.0
-
-[node name="HandLeft" type="MeshInstance3D" parent="Head" unique_id=1175910510]
-
-[node name="HandRight" type="MeshInstance3D" parent="Head" unique_id=1476154063]
+[node name="PlayerVisualRig" parent="." instance=ExtResource("2_rig")]
 
 [node name="FishingMechanic" parent="." unique_id=637666390 instance=ExtResource("2_jg4e3")]
 

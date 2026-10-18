@@ -16,7 +16,7 @@ func _ready() -> void:
 	if _rescuer:
 		_rescuer.global_position = Vector3(3, 0, -10)
 		_mechanic = _rescuer.fishing_mechanic
-		var rescuer_cam := _rescuer.get_node_or_null("Head/Camera3D") as Camera3D
+		var rescuer_cam := _rescuer.camera
 		if rescuer_cam:
 			rescuer_cam.current = true
 
@@ -24,7 +24,7 @@ func _ready() -> void:
 		_victim.global_position = _victim_start
 		_victim.player_state = Player.PlayerState.FLOATING
 		_victim._float_time = 0.0
-		var victim_cam := _victim.get_node_or_null("Head/Camera3D") as Camera3D
+		var victim_cam := _victim.camera
 		if victim_cam:
 			victim_cam.current = false
 

@@ -150,7 +150,7 @@ func _process(_delta: float) -> void:
 	var cam_forward := Vector3.FORWARD
 	if _player:
 		player_pos = _player.global_position
-		var cam := _player.get_node_or_null("Head/Camera3D") as Camera3D
+		var cam := _player.camera
 		if cam:
 			cam_forward = -cam.global_transform.basis.z
 
@@ -291,7 +291,7 @@ func _try_place_inside() -> void:
 func _get_camera_water_position() -> Vector3:
 	if _player == null:
 		return MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 3.0, 0, 0)
-	var cam := _player.get_node_or_null("Head/Camera3D") as Camera3D
+	var cam := _player.camera
 	var origin := _player.global_position if cam == null else cam.global_position
 	var dir := Vector3.FORWARD if cam == null else -cam.global_transform.basis.z
 	var target := origin + dir * 3.0

@@ -234,21 +234,10 @@ func test_reset_for_restart_hides_and_re_randomizes_timer() -> void:
 func _build_player_for_seagull(parent: Node3D) -> Player:
 	var player_node := CharacterBody3D.new()
 	player_node.name = "Player_1"
-	var head := Node3D.new()
-	head.name = "Head"
-	player_node.add_child(head)
-	var camera := Camera3D.new()
-	camera.name = "Camera3D"
-	head.add_child(camera)
-	var hand_left := MeshInstance3D.new()
-	hand_left.name = "HandLeft"
-	head.add_child(hand_left)
-	var hand_right := MeshInstance3D.new()
-	hand_right.name = "HandRight"
-	head.add_child(hand_right)
-	var body_mesh := MeshInstance3D.new()
-	body_mesh.name = "BodyMesh"
-	player_node.add_child(body_mesh)
+	var visual_rig_scene: PackedScene = load("res://entities/player/player_visual_rig.tscn")
+	var visual_rig := visual_rig_scene.instantiate()
+	visual_rig.name = "PlayerVisualRig"
+	player_node.add_child(visual_rig)
 	var fishing_scene = load("res://systems/fishing/fishing_mechanic.tscn")
 	var fishing_mechanic = fishing_scene.instantiate()
 	fishing_mechanic.name = "FishingMechanic"

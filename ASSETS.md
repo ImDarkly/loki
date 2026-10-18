@@ -40,6 +40,18 @@ Copy the team-verified files to the local install paths above, then check their 
 | `Goldfish.glb` | `028B880BF2DF64237748D1173D6DF1EAA1B23B3C01D35E936C3B76CF032CB35B` |
 | `Clownfish.glb` | `D1D0B1F83848337299EF163B7EC5B207B5C34E3933DA1367000E1DCD6D856BF1` |
 
+## KayKit Adventurers
+
+- **Pack:** KayKit - Character Pack: Adventurers, Free 2.0
+- **Source:** <https://kaylousberg.itch.io/kaykit-adventurers>
+- **License:** CC0 1.0 Universal. The free pack includes the standard characters as GLTF files.
+- **Selected body:** `Knight.glb`, the stock/default Knight character from the free pack.
+- **Local install paths:** `entities/player/assets/kaykit_adventurers/Knight.glb` and `entities/player/assets/kaykit_adventurers/knight_texture.png`
+
+### Setup after cloning
+
+Download the free Adventurers pack from its [source page](https://kaylousberg.itch.io/kaykit-adventurers), then copy its stock Knight GLB and texture to the local install paths above. Keep the raw pack outside version control. The player asset directory and Godot-generated import sidecars are ignored by Git. Open the project in Godot after copying the files so Godot imports `Knight.glb` before loading the player scene.
+
 ## Audit note
 
 The repository audit found no Pirate Kit or Kenney asset files or references in this checkout.

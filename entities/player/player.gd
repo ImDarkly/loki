@@ -4,11 +4,6 @@ class_name Player extends CharacterBody3D
 @export var jump_height: float = 2.0
 @export var mouse_sensitivity: float = 0.002
 @export var fall_gravity_multiplier: float = 1.5
-@export var hand_follow_speed_left: float = 8.0
-@export var hand_follow_speed_right: float = 5.0
-@export var yaw_speed_variation: float = 4.0
-@export var walk_squish_strength: float = 0.05
-@export var walk_squish_decay: float = 8.0
 @export var shake_lateral: float = 0.01
 @export var shake_vertical: float = 0.0075
 @export var shake_forward: float = 0.005
@@ -21,9 +16,6 @@ class_name Player extends CharacterBody3D
 @export var land_bounce_impulse: float = 0.18
 @export var bounce_stiffness: float = 50.0
 @export var bounce_damping: float = 8.0
-@export var hand_jump_raise: float = 0.03
-@export var hand_land_drop: float = 0.025
-@export var hand_bounce_decay: float = 10.0
 @export var jump_cut_multiplier: float = 0.5
 @export var spawn_index: int = 0
 @export var launch_speed: float = 15.0
@@ -33,12 +25,11 @@ class_name Player extends CharacterBody3D
 @export var float_timeout: float = 30.0
 
 
-@onready var head: Node3D = $Head
-@onready var camera: Camera3D = $Head/Camera3D
+@onready var visual_rig: PlayerVisualRig = $PlayerVisualRig
+@onready var head: Node3D = visual_rig.head
+@onready var camera: Camera3D = visual_rig.camera
+@onready var right_item_anchor: Node3D = visual_rig.right_item_anchor
 @onready var fishing_mechanic: Node3D = $FishingMechanic
-@onready var hand_left: MeshInstance3D = $Head/HandLeft
-@onready var hand_right: MeshInstance3D = $Head/HandRight
-@onready var body_mesh: MeshInstance3D = $BodyMesh
 @onready var _voice_chat: Node = $VoiceChatManager
 @onready var mic_level_bar: CanvasLayer = get_node_or_null("MicLevelBar")
 @onready var health_label: CanvasLayer = get_node_or_null("HealthLabel")
@@ -55,15 +46,9 @@ var assigned_fireplace_seat: Node3D = null
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _jump_velocity: float
 
-var _hand_base_left: Vector3
-var _hand_base_right: Vector3
-var _prev_yaw: float = 0.0
-var _was_moving: bool = false
-var _walk_squish_offset: float = 0.0
 var _cam_home: Vector3
 var _bounce_pos: float = 0.0
 var _bounce_vel: float = 0.0
-var _hand_bounce: float = 0.0
 var is_yelling: bool = false
 
 enum PlayerState { ALIVE, FLOATING, SPECTATE }
@@ -166,8 +151,9 @@ func _ready() -> void:
 	_jump_velocity = sqrt(2.0 * _gravity * jump_height)
 
 	_setup_collision_shape()
-	_setup_meshes()
 	_setup_input_actions()
+	_rod_pivot = visual_rig.rod_pivot
+	fishing_mechanic.set_rod_tip(visual_rig.rod_pivot.get_node("RodTip"))
 
 	_setup_authority_from_name()
 
@@ -268,72 +254,6 @@ func _setup_collision_shape() -> void:
 	collision_shape.shape = shape
 	collision_shape.position.y = 1.0
 	add_child(collision_shape)
-
-
-func _setup_meshes() -> void:
-	var body_mesh_resource := CylinderMesh.new()
-	body_mesh_resource.height = 2.0
-	body_mesh_resource.top_radius = 0.3
-	body_mesh_resource.bottom_radius = 0.3
-	body_mesh.mesh = body_mesh_resource
-
-	var body_mat := StandardMaterial3D.new()
-	body_mat.albedo_color = Color(0.2, 0.6, 1.0, 0.5)
-	body_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	body_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	body_mesh.material_override = body_mat
-
-	_setup_hand(hand_left, Vector3(-0.25, -0.2, -0.35))
-	_setup_hand(hand_right, Vector3(0.25, -0.2, -0.35))
-
-	_hand_base_left = hand_left.position
-	_hand_base_right = hand_right.position
-
-	_setup_fishing_rod()
-	_rod_pivot = $Head/HandRight/FishingRod
-	fishing_mechanic.set_rod_tip($Head/HandRight/FishingRod/RodTip)
-
-
-func _setup_fishing_rod() -> void:
-	var rod_pivot := Node3D.new()
-	rod_pivot.name = "FishingRod"
-	rod_pivot.rotation.x = deg_to_rad(45)
-
-	var rod_mesh := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.height = 0.8
-	cyl.top_radius = 0.005
-	cyl.bottom_radius = 0.015
-	rod_mesh.mesh = cyl
-	rod_mesh.rotation.x = deg_to_rad(-90)
-	rod_mesh.position = Vector3(0, 0, -0.4)
-
-	var rod_mat := StandardMaterial3D.new()
-	rod_mat.albedo_color = Color(0.35, 0.2, 0.1)
-	rod_mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
-	rod_mesh.material_override = rod_mat
-
-	rod_pivot.add_child(rod_mesh)
-
-	var tip := Marker3D.new()
-	tip.name = "RodTip"
-	tip.position = Vector3(0, 0, -0.8)
-	rod_pivot.add_child(tip)
-
-	hand_right.add_child(rod_pivot)
-
-
-func _setup_hand(hand: MeshInstance3D, position_offset: Vector3) -> void:
-	var hand_mesh := SphereMesh.new()
-	hand_mesh.radius = 0.08
-	hand_mesh.height = 0.16
-	hand.mesh = hand_mesh
-	hand.position = position_offset
-
-	var hand_mat := StandardMaterial3D.new()
-	hand_mat.albedo_color = Color(1.0, 0.8, 0.6)
-	hand_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	hand.material_override = hand_mat
 
 
 func _setup_input_actions() -> void:
@@ -599,20 +519,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	if player_state == PlayerState.FLOATING:
 		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			rotate_y(-event.relative.x * mouse_sensitivity)
-			head.rotate_x(-event.relative.y * mouse_sensitivity)
+			head.rotate_x(event.relative.y * mouse_sensitivity)
 			head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 		return
 
 	if is_slapped:
 		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			rotate_y(-event.relative.x * mouse_sensitivity)
-			head.rotate_x(-event.relative.y * mouse_sensitivity)
+			head.rotate_x(event.relative.y * mouse_sensitivity)
 			head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * mouse_sensitivity)
-		head.rotate_x(-event.relative.y * mouse_sensitivity)
+		head.rotate_x(event.relative.y * mouse_sensitivity)
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 
 	if event.is_action_pressed("cast_line"):
@@ -740,7 +660,6 @@ func _physics_process(delta: float) -> void:
 	if not _is_pause_open and Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = _jump_velocity
 		_bounce_vel = -jump_bounce_impulse
-		_hand_bounce = hand_jump_raise
 
 	if not _is_pause_open and Input.is_action_just_released("jump") and velocity.y > 0.0:
 		velocity.y *= jump_cut_multiplier
@@ -755,40 +674,8 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, move_speed)
 		velocity.z = move_toward(velocity.z, 0.0, move_speed)
 
-	var was_on_floor := is_on_floor()
 	move_and_slide()
 	_check_fell_off_island()
-
-	if not was_on_floor and is_on_floor():
-		_hand_bounce = -hand_land_drop
-
-	var is_moving := Vector2(velocity.x, velocity.z).length() > 0.1
-	if is_moving and not _was_moving:
-		_walk_squish_offset = -walk_squish_strength
-	_walk_squish_offset = lerp(_walk_squish_offset, 0.0, walk_squish_decay * delta)
-	_was_moving = is_moving
-
-	var yaw_delta: float = fmod(rotation.y - _prev_yaw, TAU)
-	if yaw_delta > PI:
-		yaw_delta -= TAU
-	elif yaw_delta < -PI:
-		yaw_delta += TAU
-	var yaw_sign: float = sign(yaw_delta)
-	var speed_l: float = hand_follow_speed_left + yaw_sign * yaw_speed_variation
-	var speed_r: float = hand_follow_speed_right - yaw_sign * yaw_speed_variation
-
-	var pitch_factor: float = head.rotation.x / deg_to_rad(89.0)
-	var target_y: float = _hand_base_left.y + pitch_factor * 0.04 + _walk_squish_offset + _hand_bounce
-	hand_left.position.y = lerp(hand_left.position.y, target_y, speed_l * delta)
-	hand_right.position.y = lerp(hand_right.position.y, target_y, speed_r * delta)
-
-	var yaw_sway: float = -yaw_delta * 2.0
-	hand_left.position.x = lerp(hand_left.position.x, _hand_base_left.x + yaw_sway, speed_l * delta)
-	hand_right.position.x = lerp(hand_right.position.x, _hand_base_right.x + yaw_sway, speed_r * delta)
-
-	_hand_bounce = lerp(_hand_bounce, 0.0, hand_bounce_decay * delta)
-
-	_prev_yaw = rotation.y
 
 	_sync_tick += 1
 	if _sync_tick >= 2:
@@ -1259,6 +1146,7 @@ func _parse_owner_id() -> int:
 func _enable_player() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	camera.current = true
+	visual_rig.set_local_view(true)
 	set_process(true)
 	set_physics_process(true)
 	set_process_unhandled_input(true)
@@ -1276,6 +1164,7 @@ func _enable_player() -> void:
 
 func _disable_player() -> void:
 	camera.current = false
+	visual_rig.set_local_view(false)
 	set_process(false)
 	var keep_physics := player_state == PlayerState.FLOATING
 	set_physics_process(keep_physics)
@@ -1476,8 +1365,7 @@ func _show_held_fish_remote() -> void:
 	fish_mat.albedo_color = Color(1.0, 0.5, 0.0)
 	fish_mat.shading_mode = ORMMaterial3D.SHADING_MODE_UNSHADED
 	_held_fish.material_override = fish_mat
-	_held_fish.position = Vector3(0, -0.1, -0.5)
-	head.add_child(_held_fish)
+	visual_rig.attach_held_item(_held_fish)
 
 
 func _hide_held_fish_remote() -> void:
@@ -1499,8 +1387,7 @@ func _show_held_rock_remote() -> void:
 	rock_mat.albedo_color = Color(0.5, 0.5, 0.5)
 	rock_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_held_rock_mesh.material_override = rock_mat
-	_held_rock_mesh.position = Vector3(0, -0.1, -0.5)
-	head.add_child(_held_rock_mesh)
+	visual_rig.attach_held_item(_held_rock_mesh)
 
 
 func _hide_held_rock_remote() -> void:
@@ -1522,8 +1409,7 @@ func _show_held_bait_remote() -> void:
 	bait_mat.albedo_color = Color(0.9, 0.2, 0.2)
 	bait_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_held_bait_mesh.material_override = bait_mat
-	_held_bait_mesh.position = Vector3(0, -0.1, -0.5)
-	head.add_child(_held_bait_mesh)
+	visual_rig.attach_held_item(_held_bait_mesh)
 
 
 func _hide_held_bait_remote() -> void:
