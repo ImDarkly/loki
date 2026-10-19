@@ -1,6 +1,7 @@
 extends GutTest
 
 const PLAYER_SCENE := preload("res://entities/player/player.tscn")
+const TOOLS_ANIMATION_PATH := "res://entities/player/assets/kaykit_animations/Rig_Medium_Tools.glb"
 
 
 func _build_player() -> Player:
@@ -9,6 +10,38 @@ func _build_player() -> Player:
 	autofree(player)
 	await get_tree().process_frame
 	return player
+
+
+func test_a_missing_tools_asset_keeps_locomotion_available() -> void:
+	var asset_path := ProjectSettings.globalize_path(TOOLS_ANIMATION_PATH)
+	var import_path := "%s.import" % asset_path
+	var hidden_asset_path := "%s.test_missing" % asset_path
+	var hidden_import_path := "%s.test_missing" % import_path
+	var asset_rename := DirAccess.rename_absolute(asset_path, hidden_asset_path)
+	if asset_rename != OK:
+		assert_eq(asset_rename, OK)
+		return
+	var has_import := FileAccess.file_exists(import_path)
+	if has_import:
+		var import_rename := DirAccess.rename_absolute(import_path, hidden_import_path)
+		if import_rename != OK:
+			DirAccess.rename_absolute(hidden_asset_path, asset_path)
+			assert_eq(import_rename, OK)
+			return
+
+	var player := await _build_player()
+	if has_import:
+		assert_eq(DirAccess.rename_absolute(hidden_import_path, import_path), OK)
+	assert_eq(DirAccess.rename_absolute(hidden_asset_path, asset_path), OK)
+	var rig := player.visual_rig
+	var locomotion_player := rig.get_node("PlayerLocomotionAnimation/AnimationPlayer") as AnimationPlayer
+	var fishing_player := rig.get_node("PlayerFishingAnimation/AnimationPlayer") as AnimationPlayer
+	rig.apply_fishing_state(PlayerFishingAnimation.State.CAST)
+	rig.apply_locomotion_state(PlayerLocomotionAnimation.State.WALK)
+
+	assert_push_error("Fishing animation setup error: missing %s. Install and import it as documented in ASSETS.md." % TOOLS_ANIMATION_PATH)
+	assert_false(fishing_player.is_playing(), "missing tools asset should skip fishing playback")
+	assert_true(locomotion_player.is_playing(), "missing tools asset should retain locomotion playback")
 
 
 func test_fishing_component_maps_presentation_states_to_tools_clips() -> void:

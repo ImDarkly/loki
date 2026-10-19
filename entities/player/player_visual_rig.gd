@@ -7,7 +7,6 @@ signal rig_ready
 @onready var _fishing_animation: AnimationPlayer = $PlayerFishingAnimation/AnimationPlayer
 @onready var _general_animations: Node = $GeneralAnimations
 @onready var _movement_animations: Node = $MovementAnimations
-@onready var _tools_animations: Node = $ToolsAnimations
 
 var head: Node3D
 var camera: Camera3D
@@ -16,10 +15,12 @@ var rod_pivot: Node3D
 var _body_meshes: Array[MeshInstance3D] = []
 var _locomotion_clip: StringName = &"general/Idle_A"
 var _fishing_active := false
+var _tools_loaded := false
 var held_item_transform := Transform3D(Basis.from_euler(Vector3(0.0, deg_to_rad(90.0), 0.0)), Vector3(0.0, 0.02, -0.12))
 var rod_hand_transform := Transform3D(Basis.from_euler(Vector3(deg_to_rad(45.0), 0.0, 0.0)), Vector3(0.0, 0.02, -0.08))
 
 const LOCOMOTION_BLEND_TIME := 0.15
+const TOOLS_ANIMATION_PATH := "res://entities/player/assets/kaykit_animations/Rig_Medium_Tools.glb"
 const LOCOMOTION_ANIMATIONS := {
 	PlayerLocomotionAnimation.State.IDLE: &"general/Idle_A",
 	PlayerLocomotionAnimation.State.WALK: &"movement/Walking_A",
@@ -56,7 +57,7 @@ func _ready() -> void:
 	body_mesh.rotation.y = PI
 	_add_animation_library(_general_animations, &"general")
 	_add_animation_library(_movement_animations, &"movement")
-	_add_animation_library(_tools_animations, &"tools", _fishing_animation)
+	_tools_loaded = _load_tools_animations()
 	_set_looping_locomotion_animations()
 	_set_looping_fishing_animations()
 	for mesh in body_mesh.find_children("*", "MeshInstance3D", true, false):
@@ -105,9 +106,13 @@ func apply_fishing_state(state: PlayerFishingAnimation.State) -> void:
 		if not _locomotion_animation.is_playing():
 			_locomotion_animation.play(_locomotion_clip, LOCOMOTION_BLEND_TIME)
 		return
+	if not _tools_loaded:
+		return
+	var animation: StringName = FISHING_ANIMATIONS.get(state, &"tools/Fishing_Idle")
+	if not _fishing_animation.has_animation(animation):
+		return
 	_fishing_active = true
 	_locomotion_animation.stop()
-	var animation: StringName = FISHING_ANIMATIONS.get(state, &"tools/Fishing_Idle")
 	if not _fishing_animation.is_playing() or _fishing_animation.current_animation != animation:
 		_fishing_animation.play(animation, LOCOMOTION_BLEND_TIME)
 
@@ -124,6 +129,20 @@ func _add_animation_library(source: Node, library_name: StringName, target: Anim
 		target.add_animation_library(library_name, library)
 
 
+func _load_tools_animations() -> bool:
+	if not ResourceLoader.exists(TOOLS_ANIMATION_PATH, "PackedScene"):
+		push_error("Fishing animation setup error: missing %s. Install and import it as documented in ASSETS.md." % TOOLS_ANIMATION_PATH)
+		return false
+	var tools_scene := ResourceLoader.load(TOOLS_ANIMATION_PATH, "PackedScene") as PackedScene
+	if tools_scene == null:
+		push_error("Fishing animation setup error: could not load %s. Reimport it as documented in ASSETS.md." % TOOLS_ANIMATION_PATH)
+		return false
+	var tools_animations := tools_scene.instantiate()
+	_add_animation_library(tools_animations, &"tools", _fishing_animation)
+	tools_animations.free()
+	return _fishing_animation.has_animation(&"tools/Fishing_Idle")
+
+
 func _set_looping_locomotion_animations() -> void:
 	for animation_name in LOOPING_LOCOMOTION_ANIMATIONS:
 		_locomotion_animation.get_animation(animation_name).loop_mode = Animation.LOOP_LINEAR
@@ -131,7 +150,8 @@ func _set_looping_locomotion_animations() -> void:
 
 func _set_looping_fishing_animations() -> void:
 	for animation_name in LOOPING_FISHING_ANIMATIONS:
-		_fishing_animation.get_animation(animation_name).loop_mode = Animation.LOOP_LINEAR
+		if _fishing_animation.has_animation(animation_name):
+			_fishing_animation.get_animation(animation_name).loop_mode = Animation.LOOP_LINEAR
 
 
 func set_local_view(is_local: bool) -> void:

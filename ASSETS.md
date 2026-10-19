@@ -63,7 +63,7 @@ Download the free Adventurers pack from its [source page](https://kaylousberg.it
 
 ### Setup after cloning
 
-Download `KayKit_Character_Animations_1.1.zip` from the source page and extract only these GLBs from `Animations/gltf/Rig_Medium/` into the local install path above. The assets and Godot-generated import sidecars are ignored by Git. Open the project in Godot after copying them so Godot imports the scenes before loading the player.
+Download `KayKit_Character_Animations_1.1.zip` from the source page and extract only these GLBs from `Animations/gltf/Rig_Medium/` into the local install path above. Fishing animation playback expects `res://entities/player/assets/kaykit_animations/Rig_Medium_Tools.glb`; if it is absent or has not been imported, locomotion remains available and Godot logs these installation instructions. The assets and Godot-generated import sidecars are ignored by Git. Open the project in Godot after copying them so Godot imports the scenes before loading the player.
 
 | File | SHA-256 |
 | --- | --- |
