@@ -1,10 +1,12 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://entities/player/player_visual_rig.gd" id="1_rig"]
 [ext_resource type="PackedScene" path="res://entities/player/assets/kaykit_adventurers/Knight.glb" id="2_knight"]
 [ext_resource type="Script" path="res://entities/player/player_locomotion_animation.gd" id="3_locomotion"]
 [ext_resource type="PackedScene" path="res://entities/player/assets/kaykit_animations/Rig_Medium_General.glb" id="4_general"]
 [ext_resource type="PackedScene" path="res://entities/player/assets/kaykit_animations/Rig_Medium_MovementBasic.glb" id="5_movement"]
+[ext_resource type="Script" path="res://entities/player/player_fishing_animation.gd" id="6_fishing"]
+[ext_resource type="PackedScene" path="res://entities/player/assets/kaykit_animations/Rig_Medium_Tools.glb" id="7_tools"]
 
 [node name="PlayerVisualRig" type="Node3D"]
 script = ExtResource("1_rig")
@@ -17,8 +19,17 @@ script = ExtResource("3_locomotion")
 [node name="AnimationPlayer" type="AnimationPlayer" parent="PlayerLocomotionAnimation"]
 root_node = NodePath("../../Knight")
 
+[node name="PlayerFishingAnimation" type="Node" parent="."]
+script = ExtResource("6_fishing")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="PlayerFishingAnimation"]
+root_node = NodePath("../../Knight")
+
 [node name="GeneralAnimations" parent="." instance=ExtResource("4_general")]
 visible = false
 
 [node name="MovementAnimations" parent="." instance=ExtResource("5_movement")]
+visible = false
+
+[node name="ToolsAnimations" parent="." instance=ExtResource("7_tools")]
 visible = false

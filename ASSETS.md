@@ -57,8 +57,8 @@ Download the free Adventurers pack from its [source page](https://kaylousberg.it
 - **Pack:** KayKit Character Animations 1.1
 - **Source:** <https://kaylousberg.itch.io/kaykit-character-animations>
 - **License:** CC0 1.0 Universal.
-- **Local install paths:** `entities/player/assets/kaykit_animations/Rig_Medium_General.glb` and `entities/player/assets/kaykit_animations/Rig_Medium_MovementBasic.glb`
-- **Used clips:** `Idle_A`, `Walking_A`, `Jump_Start`, `Jump_Idle`, and `Jump_Land`.
+- **Local install paths:** `entities/player/assets/kaykit_animations/Rig_Medium_General.glb`, `entities/player/assets/kaykit_animations/Rig_Medium_MovementBasic.glb`, and `entities/player/assets/kaykit_animations/Rig_Medium_Tools.glb`
+- **Used clips:** `Idle_A`, `Walking_A`, `Jump_Start`, `Jump_Idle`, `Jump_Land`, `Fishing_Cast`, `Fishing_Bite`, `Fishing_Catch`, `Fishing_Idle`, `Fishing_Reeling`, `Fishing_Struggling`, and `Fishing_Tug`.
 - **Deferred clip:** `Running_A` is installed in `Rig_Medium_MovementBasic.glb` but intentionally unused; #339 A-lite does not add sprint state or controls.
 
 ### Setup after cloning
@@ -70,6 +70,7 @@ Download `KayKit_Character_Animations_1.1.zip` from the source page and extract 
 | `KayKit_Character_Animations_1.1.zip` | `65882F31F905AD2E953819648A59287CDEAB8F623908D5EF701971D3758BE20F` |
 | `Rig_Medium_General.glb` | `5F725C0F745F36078C7238968CD5C04843CBC6260689EB6E7F5E2BBD7FFDD7AD` |
 | `Rig_Medium_MovementBasic.glb` | `11422AFD50ABF7E8C92EA107E2E0BC94ABD38023D6D15F55AD580347EFBFA29E` |
+| `Rig_Medium_Tools.glb` | `E3B62DC122C5073373376A846E354137ADD2088DDCCE8731C389FC5C20734AAD` |
 
 ## Audit note
 
