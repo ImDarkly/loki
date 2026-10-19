@@ -21,6 +21,7 @@ var rod_hand_transform := Transform3D(Basis.from_euler(Vector3(deg_to_rad(45.0),
 
 const LOCOMOTION_BLEND_TIME := 0.15
 const TOOLS_ANIMATION_PATH := "res://entities/player/assets/kaykit_animations/Rig_Medium_Tools.glb"
+const FISHING_ROD_PATH := "res://entities/player/assets/quaternius/FishingRod_Lvl1.glb"
 const LOCOMOTION_ANIMATIONS := {
 	PlayerLocomotionAnimation.State.IDLE: &"general/Idle_A",
 	PlayerLocomotionAnimation.State.WALK: &"movement/Walking_A",
@@ -187,23 +188,22 @@ func _setup_fishing_rod() -> void:
 	rod_pivot.name = "FishingRod"
 	rod_pivot.transform = rod_hand_transform
 
-	var rod_mesh := MeshInstance3D.new()
-	var cylinder := CylinderMesh.new()
-	cylinder.height = 0.8
-	cylinder.top_radius = 0.005
-	cylinder.bottom_radius = 0.015
-	rod_mesh.mesh = cylinder
-	rod_mesh.rotation.x = deg_to_rad(-90.0)
-	rod_mesh.position = Vector3(0, 0, -0.4)
-
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.35, 0.2, 0.1)
-	material.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
-	rod_mesh.material_override = material
-	rod_pivot.add_child(rod_mesh)
-
 	var tip := Marker3D.new()
 	tip.name = "RodTip"
 	tip.position = Vector3(0, 0, -0.8)
 	rod_pivot.add_child(tip)
 	right_item_anchor.add_child(rod_pivot)
+
+	if not ResourceLoader.exists(FISHING_ROD_PATH, "PackedScene"):
+		push_error("Fishing rod setup error: missing %s. Install and import it as documented in ASSETS.md." % FISHING_ROD_PATH)
+		return
+	var rod_scene := ResourceLoader.load(FISHING_ROD_PATH, "PackedScene") as PackedScene
+	if rod_scene == null:
+		push_error("Fishing rod setup error: could not load %s. Reimport it as documented in ASSETS.md." % FISHING_ROD_PATH)
+		return
+	var rod_model := rod_scene.instantiate() as Node3D
+	rod_model.name = "RodModel"
+	# Align the source grip-to-tip vector with the existing 0.8 m RodTip marker.
+	rod_model.rotation.x = -atan2(4.9163, 0.188626)
+	rod_model.scale = Vector3.ONE * (0.8 / Vector2(4.9163, 0.188626).length())
+	rod_pivot.add_child(rod_model)

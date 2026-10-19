@@ -97,6 +97,73 @@ func test_visual_rig_attaches_camera_and_held_items_to_kaykit_bones() -> void:
 	assert_eq(player._held_bait_mesh.transform, player.visual_rig.held_item_transform, "Held bait should use the rig-owned hand-relative pose")
 
 
+func test_fishing_rod_uses_imported_mesh_and_preserves_line_marker() -> void:
+	var rod := player._rod_pivot
+	var model := rod.get_node_or_null("RodModel") as Node3D
+	assert_not_null(model, "Rod should instantiate the Quaternius model")
+	if model == null:
+		return
+	var meshes := model.find_children("*", "MeshInstance3D", true, false)
+	assert_gt(meshes.size(), 0, "Imported rod must contain real meshes")
+	for mesh: MeshInstance3D in meshes:
+		assert_true(mesh.mesh is ArrayMesh, "Rod should use imported geometry")
+		assert_false(mesh.mesh is CylinderMesh, "Generated cylinder must be removed")
+		assert_gt(mesh.mesh.get_surface_count(), 0)
+		for surface in mesh.mesh.get_surface_count():
+			var material := mesh.mesh.surface_get_material(surface) as StandardMaterial3D
+			assert_not_null(material, "Imported rod surface should retain its material")
+			if material != null:
+				assert_eq(material.albedo_color.a, 1.0, "Imported wood must be opaque")
+		assert_false(player.visual_rig._body_meshes.has(mesh), "Local body hiding must exclude the rod")
+	assert_eq(rod.name, &"FishingRod")
+	assert_eq(rod.get_parent(), player.right_item_anchor)
+	assert_eq(rod.transform, player.visual_rig.rod_hand_transform)
+	var tip := rod.get_node("RodTip") as Marker3D
+	assert_eq(tip.position, Vector3(0, 0, -0.8))
+	assert_true((model.transform * Vector3(0, 4.9163, -0.188626)).is_equal_approx(tip.position), "Imported visual tip should meet the line marker")
+
+
+func test_imported_fishing_rod_stays_visible_in_local_and_remote_views() -> void:
+	var model := player._rod_pivot.get_node_or_null("RodModel") as Node3D
+	assert_not_null(model)
+	if model == null:
+		return
+	for is_local in [true, false]:
+		player.visual_rig.set_local_view(is_local)
+		for mesh: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+			assert_true(mesh.is_visible_in_tree(), "Rod should remain visible in both views")
+	player.start_carrying()
+	assert_false(model.is_visible_in_tree(), "Imported rod should hide with the carry pivot")
+	player.deposit_carried_fish()
+	assert_true(model.is_visible_in_tree(), "Imported rod should return after carrying")
+
+
+func test_imported_fishing_rod_follows_hand_through_clips_and_player_motion() -> void:
+	var rig := player.visual_rig
+	var model := player._rod_pivot.get_node_or_null("RodModel") as Node3D
+	assert_not_null(model)
+	if model == null:
+		return
+	player.set_physics_process(false)
+	rig.get_node("PlayerFishingAnimation").set_physics_process(false)
+	rig.get_node("PlayerLocomotionAnimation").set_physics_process(false)
+	var animation := rig.get_node("PlayerFishingAnimation/AnimationPlayer") as AnimationPlayer
+	var initial_transform := model.global_transform
+	for state in [PlayerFishingAnimation.State.CAST, PlayerFishingAnimation.State.WAIT, PlayerFishingAnimation.State.BITE, PlayerFishingAnimation.State.REEL, PlayerFishingAnimation.State.STRUGGLE, PlayerFishingAnimation.State.TUG, PlayerFishingAnimation.State.CATCH]:
+		rig.apply_fishing_state(state)
+		assert_eq(animation.current_animation, rig.FISHING_ANIMATIONS[state])
+		animation.advance(0.3)
+		await get_tree().process_frame
+		assert_eq(model.get_parent(), rig.rod_pivot)
+		assert_true(model.global_transform.is_equal_approx(rig.right_item_anchor.global_transform * rig.rod_hand_transform * model.transform), "Rod should follow the animated right hand")
+	assert_false(model.global_transform.is_equal_approx(initial_transform), "Fishing clips should move the imported rod with the hand")
+	var before_motion := model.global_transform
+	player.position += Vector3(2, 0, -3)
+	player.rotation.y += PI / 2.0
+	assert_false(model.global_transform.is_equal_approx(before_motion))
+	assert_true(model.global_transform.is_equal_approx(rig.right_item_anchor.global_transform * rig.rod_hand_transform * model.transform), "Player movement and rotation must preserve attachment")
+
+
 func test_visual_rig_removes_legacy_hand_meshes() -> void:
 	assert_null(player.get_node_or_null("Head"), "Legacy root head should not remain")
 	assert_null(player.get_node_or_null("BodyMesh"), "Legacy body mesh should not remain")
@@ -1071,7 +1138,6 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	client_fishing.set_physics_process(false)
 	server_root.process_mode = Node.PROCESS_MODE_INHERIT
 	client_root.process_mode = Node.PROCESS_MODE_INHERIT
-	server_fishing._fish_network_active = true
 	server_fishing.hook_type = server_fishing.HookType.FISH
 	server_fishing.max_tether_range = 1.0
 	server_fishing.cast_target_position = Vector3(2, 0, 0)
@@ -1080,7 +1146,7 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_copy._last_fish_state = server_fishing.State.BITE
 	client_fishing.current_state = client_fishing.State.BITE
 
-	server_fishing._physics_process(0.016)
+	server_copy._process_fight(0.016)
 	assert_eq(server_fishing.current_state, server_fishing.State.IDLE, "tether pop should end in IDLE")
 	for frame in range(2):
 		await get_tree().process_frame
@@ -1089,7 +1155,6 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_fishing.max_tether_range = 25.0
 	server_fishing.hook_type = server_fishing.HookType.FISH
 	server_fishing.escape_time_threshold = 0.01
-	server_fishing._fish_network_active = true
 	server_fishing._escape_timer = 0.0
 	server_fishing._fight_progress = 0.0
 	server_fishing._fight_target = 100.0
@@ -1098,7 +1163,7 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_copy._last_fish_state = server_fishing.State.BITE
 	client_fishing.current_state = server_fishing.State.BITE
 
-	server_fishing._physics_process(0.02)
+	server_copy._process_fight(0.02)
 	assert_eq(server_fishing.current_state, server_fishing.State.IDLE, "escape should end in IDLE")
 	for frame in range(2):
 		await get_tree().process_frame
@@ -1106,8 +1171,6 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 
 	server_fishing.escape_time_threshold = 100.0
 	server_fishing.hook_type = server_fishing.HookType.FISH
-	server_fishing._fish_network_active = true
-	server_fishing.fish_pull_strength = 1000.0
 	server_fishing._reset_scroll_timers()
 	server_fishing._escape_timer = 0.0
 	server_fishing.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
@@ -1122,7 +1185,7 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_copy._last_fish_state = server_fishing.State.BITE
 	client_fishing.current_state = server_fishing.State.BITE
 
-	server_fishing._physics_process(0.02)
+	server_copy._process_fight(0.02)
 	assert_eq(server_fishing.current_state, server_fishing.State.SUCCESS, "ordinary fish catch should preserve SUCCESS")
 	for frame in range(2):
 		await get_tree().process_frame

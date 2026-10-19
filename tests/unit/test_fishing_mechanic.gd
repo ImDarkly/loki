@@ -23,7 +23,7 @@ func before_each() -> void:
 
 
 func _line_endpoint_position() -> Vector3:
-	var line_arrays := mechanic.visual_line_node.mesh.surface_get_arrays(0)
+	var line_arrays: Array = mechanic.visual_line_node.mesh.surface_get_arrays(0)
 	var vertices: PackedVector3Array = line_arrays[Mesh.ARRAY_VERTEX]
 	var last_vertex := vertices.size() - 2
 	var endpoint := (vertices[last_vertex] + vertices[last_vertex + 1]) * 0.5
@@ -927,16 +927,15 @@ func test_hook_request_peer_round_trip() -> void:
 	assert_true(server_mp.get_peers().has(client_mp.get_unique_id()), "server should see the connected client")
 
 	var client_id := client_mp.get_unique_id()
-	# Spawn the client copies before the server victim: the server holds
-	# Player_1's authority, so its sync broadcasts need the client's Player_1
-	# to exist first, otherwise the engine logs "Failed to get path from RPC".
+	# Pause both peers until every counterpart exists, including animation RPC paths.
+	server_root.process_mode = Node.PROCESS_MODE_DISABLED
+	client_root.process_mode = Node.PROCESS_MODE_DISABLED
 	var server_caster := await _spawn_peer_player(server_players, "Player_%d" % client_id, Vector3(0, 0, -20), Player.PlayerState.ALIVE)
 	var client_caster := await _spawn_peer_player(client_players, "Player_%d" % client_id, Vector3(0, 0, -20), Player.PlayerState.ALIVE)
 	var client_victim := await _spawn_peer_player(client_players, "Player_%d" % VICTIM_ID, Vector3(5, 0, -20), Player.PlayerState.FLOATING)
 	var server_victim := await _spawn_peer_player(server_players, "Player_%d" % VICTIM_ID, Vector3(5, 0, -20), Player.PlayerState.FLOATING)
 
-	# The void has no floor, so everyone fell while spawning: re-pin positions
-	# and states right before the request so the caster is ALIVE on execution.
+	# Pin positions and states before processing resumes in the floorless fixture.
 	server_caster.global_position = Vector3(0, 0, -20)
 	server_victim.global_position = Vector3(5, 0, -20)
 	client_caster.global_position = Vector3(0, 0, -20)
@@ -952,6 +951,8 @@ func test_hook_request_peer_round_trip() -> void:
 	# Remote ALIVE players run with physics off; without this the server copy
 	# broadcasts authority-mode _sync_transform the server may not send.
 	server_caster.set_physics_process(false)
+	server_root.process_mode = Node.PROCESS_MODE_INHERIT
+	client_root.process_mode = Node.PROCESS_MODE_INHERIT
 
 	var server_mech = server_caster.fishing_mechanic
 	var client_mech = client_caster.fishing_mechanic
