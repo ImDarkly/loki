@@ -866,6 +866,9 @@ func _enter_spectate() -> void:
 		assigned_fireplace.release_seat_for_player(self)
 	if _sitting_heal:
 		_sitting_heal.reset()
+	var fishing_animation := visual_rig.get_node_or_null("PlayerFishingAnimation") as PlayerFishingAnimation
+	if fishing_animation:
+		fishing_animation.reset()
 	player_state = PlayerState.SPECTATE
 	camera.current = false
 	spectate_cam_camera.current = true
@@ -1057,6 +1060,9 @@ func _enter_floating() -> void:
 		sync_holding_rock.rpc(false)
 	clear_holding_shark_bait()
 	fishing_mechanic.reset_for_restart()
+	var fishing_animation := visual_rig.get_node_or_null("PlayerFishingAnimation") as PlayerFishingAnimation
+	if fishing_animation:
+		fishing_animation.reset()
 	if _sitting_heal:
 		_sitting_heal.reset()
 	player_state = PlayerState.FLOATING
@@ -1287,6 +1293,9 @@ func reset_for_restart() -> void:
 		assigned_fireplace.release_seat_for_player(self)
 	if _sitting_heal:
 		_sitting_heal.reset()
+	var fishing_animation := visual_rig.get_node_or_null("PlayerFishingAnimation") as PlayerFishingAnimation
+	if fishing_animation:
+		fishing_animation.reset()
 	_fell_off_island_reported = false
 	_entered_water_reported = false
 	_water_report_retry = 0
