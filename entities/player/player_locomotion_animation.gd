@@ -9,6 +9,7 @@ var _state: State = State.IDLE
 var _was_airborne := false
 var _rig_ready := false
 var _land_time_left := 0.0
+var _snapshot_requested := false
 
 @onready var _visual_rig := get_parent() as PlayerVisualRig
 @onready var _player := _visual_rig.get_parent() as Player
@@ -17,8 +18,6 @@ var _land_time_left := 0.0
 func _ready() -> void:
 	set_multiplayer_authority(1)
 	_visual_rig.rig_ready.connect(_on_rig_ready)
-	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
-		_request_snapshot_from_server.call_deferred()
 
 
 func _exit_tree() -> void:
@@ -27,6 +26,7 @@ func _exit_tree() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_request_snapshot_when_connected()
 	if _player == null:
 		return
 	if multiplayer.has_multiplayer_peer() and _player.get_multiplayer_authority() != multiplayer.get_unique_id():
@@ -87,8 +87,11 @@ func _apply_synced_state(state: State) -> void:
 		if multiplayer.is_server():
 			if sender_id != 0:
 				return
-		elif sender_id != 1:
-			return
+		else:
+			if sender_id != 1:
+				return
+			if _player and _player.get_multiplayer_authority() == multiplayer.get_unique_id():
+				return
 	if state != _state:
 		_set_state(state)
 
@@ -100,8 +103,10 @@ func _request_snapshot() -> void:
 	_apply_synced_state.rpc_id(multiplayer.get_remote_sender_id(), _state)
 
 
-func _request_snapshot_from_server() -> void:
-	_request_snapshot.rpc_id(1)
+func _request_snapshot_when_connected() -> void:
+	if not _snapshot_requested and multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		_snapshot_requested = true
+		_request_snapshot.rpc_id(1)
 
 
 func _set_state(state: State) -> void:
