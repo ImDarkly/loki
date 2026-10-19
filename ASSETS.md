@@ -55,7 +55,7 @@ Alternatively copy the team-verified GLB to that path. Open Godot and let it imp
 
 The FBX importer sets the wood material's Principled BSDF alpha to zero. The conversion restores alpha to one before export so the rod is opaque; geometry and colors remain unchanged.
 
-The source grip is at the origin and its tip center imports at Godot `(0, 4.9163, -0.188626)` meters. `PlayerVisualRig` rotates only `RodModel` by approximately -87.8028 degrees around X and scales it uniformly by approximately 0.162604, aligning the tip with the unchanged `RodTip` at `(0, 0, -0.8)`. The hand attachment and fishing-line target retain their existing transforms.
+The source grip is at the origin and its tip center imports at Godot `(0, 4.9163, -0.188626)` meters. `PlayerVisualRig` rotates only `RodModel` by approximately +2.1972 degrees around X and scales it uniformly by approximately 0.162604, aligning its tip with `RodTip` at `(0, 0.8, 0)` along the fishing clips' authored `handslot.r` +Y axis. The character rig, eye height, and collision dimensions are halved while the physics root stays at unit scale. The rod pivot compensates with uniform scale 2, keeping the grip-to-tip length at 0.8 world meters and making the rod larger relative to the character. Tension bends the pivot relative to this calibrated grip and restores it when tension ends. The raw GLB remains unchanged.
 
 | File | SHA-256 |
 | --- | --- |

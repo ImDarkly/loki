@@ -997,6 +997,8 @@ func test_hook_request_peer_round_trip() -> void:
 
 func test_second_hook_rejected() -> void:
 	var container = autofree(Node3D.new())
+	# Reservation ordering needs stationary players in this floorless fixture.
+	container.process_mode = Node.PROCESS_MODE_DISABLED
 	add_child(container)
 	var caster_a = await _spawn_peer_player(container, "Player_1", Vector3(0, 0, 0), Player.PlayerState.ALIVE)
 	var caster_b = await _spawn_peer_player(container, "Player_3", Vector3(2, 0, 0), Player.PlayerState.ALIVE)

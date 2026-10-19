@@ -119,8 +119,9 @@ func test_fishing_rod_uses_imported_mesh_and_preserves_line_marker() -> void:
 	assert_eq(rod.get_parent(), player.right_item_anchor)
 	assert_eq(rod.transform, player.visual_rig.rod_hand_transform)
 	var tip := rod.get_node("RodTip") as Marker3D
-	assert_eq(tip.position, Vector3(0, 0, -0.8))
+	assert_eq(tip.position, Vector3(0, 0.8, 0))
 	assert_true((model.transform * Vector3(0, 4.9163, -0.188626)).is_equal_approx(tip.position), "Imported visual tip should meet the line marker")
+	assert_almost_eq(model.to_global(Vector3.ZERO).distance_to(model.to_global(Vector3(0, 4.9163, -0.188626))), 0.8, 0.0001, "Rod must retain its world length on the smaller character")
 
 
 func test_imported_fishing_rod_stays_visible_in_local_and_remote_views() -> void:
@@ -156,12 +157,59 @@ func test_imported_fishing_rod_follows_hand_through_clips_and_player_motion() ->
 		await get_tree().process_frame
 		assert_eq(model.get_parent(), rig.rod_pivot)
 		assert_true(model.global_transform.is_equal_approx(rig.right_item_anchor.global_transform * rig.rod_hand_transform * model.transform), "Rod should follow the animated right hand")
+		var grip := model.to_global(Vector3.ZERO)
+		var tip := model.to_global(Vector3(0, 4.9163, -0.188626))
+		assert_almost_eq(grip.distance_to(tip), 0.8, 0.0001)
+		assert_true(grip.is_equal_approx(rig.right_item_anchor.global_position), "Rod grip must sit at the authored hand slot")
+		assert_almost_eq((tip - grip).normalized().dot(rig.right_item_anchor.global_basis.y.normalized()), 1.0, 0.0001, "Fishing clips expect the rod along the hand slot's +Y axis")
 	assert_false(model.global_transform.is_equal_approx(initial_transform), "Fishing clips should move the imported rod with the hand")
 	var before_motion := model.global_transform
 	player.position += Vector3(2, 0, -3)
 	player.rotation.y += PI / 2.0
 	assert_false(model.global_transform.is_equal_approx(before_motion))
 	assert_true(model.global_transform.is_equal_approx(rig.right_item_anchor.global_transform * rig.rod_hand_transform * model.transform), "Player movement and rotation must preserve attachment")
+
+
+func test_character_halves_body_collision_and_eye_height_with_unit_physics_root() -> void:
+	var rig := player.visual_rig
+	assert_eq(player.scale, Vector3.ONE)
+	assert_eq(rig.scale, Vector3.ONE * 0.5)
+	var collisions := player.find_children("*", "CollisionShape3D", false, false)
+	assert_eq(collisions.size(), 1)
+	var collision := collisions[0] as CollisionShape3D
+	var cylinder := collision.shape as CylinderShape3D
+	assert_eq(cylinder.height, 1.0)
+	assert_almost_eq(cylinder.radius, 0.15, 0.0001)
+	assert_eq(collision.position.y, 0.5)
+	var half_eye_height := player.to_local(player.camera.global_position).y
+	assert_gt(half_eye_height, 0.0)
+	rig.scale = Vector3.ONE
+	var full_eye_height := player.to_local(player.camera.global_position).y
+	assert_almost_eq(half_eye_height, full_eye_height * 0.5, 0.0001)
+	rig.scale = Vector3.ONE * PlayerVisualRig.CHARACTER_SCALE
+
+
+func test_rod_tension_bends_from_calibrated_grip_without_scale_loss_or_drift() -> void:
+	var rig := player.visual_rig
+	var rod := player._rod_pivot
+	player._on_escape_telegraph_changed(1.0)
+	var bent := rod.transform
+	var direction := bent.basis.y.normalized()
+	assert_almost_eq(direction.x, sin(deg_to_rad(25.0)), 0.0001)
+	assert_almost_eq(direction.y, cos(deg_to_rad(25.0)), 0.0001)
+	assert_almost_eq(direction.z, 0.0, 0.0001)
+	assert_true(rod.scale.is_equal_approx(Vector3.ONE * 2.0))
+	assert_eq(rod.position, Vector3.ZERO)
+	player._on_escape_telegraph_changed(1.0)
+	assert_true(rod.transform.is_equal_approx(bent), "Repeated tension must not accumulate")
+	player._on_escape_telegraph_changed(2.0)
+	assert_true(rod.transform.is_equal_approx(bent), "Tension must clamp to its maximum")
+	var tip := rod.get_node("RodTip") as Marker3D
+	assert_almost_eq(rod.global_position.distance_to(tip.global_position), 0.8, 0.0001)
+	player._on_escape_telegraph_changed(0.0)
+	assert_eq(rod.transform, rig.rod_hand_transform)
+	player._on_escape_telegraph_changed(-1.0)
+	assert_eq(rod.transform, rig.rod_hand_transform)
 
 
 func test_visual_rig_removes_legacy_hand_meshes() -> void:

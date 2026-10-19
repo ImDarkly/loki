@@ -17,8 +17,9 @@ var _locomotion_clip: StringName = &"general/Idle_A"
 var _fishing_active := false
 var _tools_loaded := false
 var held_item_transform := Transform3D(Basis.from_euler(Vector3(0.0, deg_to_rad(90.0), 0.0)), Vector3(0.0, 0.02, -0.12))
-var rod_hand_transform := Transform3D(Basis.from_euler(Vector3(deg_to_rad(45.0), 0.0, 0.0)), Vector3(0.0, 0.02, -0.08))
+var rod_hand_transform := Transform3D(Basis.IDENTITY.scaled(Vector3.ONE / CHARACTER_SCALE), Vector3.ZERO)
 
+const CHARACTER_SCALE := 0.5
 const LOCOMOTION_BLEND_TIME := 0.15
 const TOOLS_ANIMATION_PATH := "res://entities/player/assets/kaykit_animations/Rig_Medium_Tools.glb"
 const FISHING_ROD_PATH := "res://entities/player/assets/quaternius/FishingRod_Lvl1.glb"
@@ -55,6 +56,7 @@ const LOOPING_FISHING_ANIMATIONS := [
 
 
 func _ready() -> void:
+	scale = Vector3.ONE * CHARACTER_SCALE
 	body_mesh.rotation.y = PI
 	_add_animation_library(_general_animations, &"general")
 	_add_animation_library(_movement_animations, &"movement")
@@ -160,6 +162,11 @@ func set_local_view(is_local: bool) -> void:
 		mesh.visible = not is_local
 
 
+func apply_rod_tension(intensity: float) -> void:
+	rod_pivot.transform = rod_hand_transform
+	rod_pivot.basis = rod_hand_transform.basis * Basis(Vector3.FORWARD, deg_to_rad(25.0) * clampf(intensity, 0.0, 1.0))
+
+
 func attach_held_item(item: Node3D) -> void:
 	item.transform = held_item_transform
 	right_item_anchor.add_child(item)
@@ -190,7 +197,7 @@ func _setup_fishing_rod() -> void:
 
 	var tip := Marker3D.new()
 	tip.name = "RodTip"
-	tip.position = Vector3(0, 0, -0.8)
+	tip.position = Vector3(0, 0.8, 0)
 	rod_pivot.add_child(tip)
 	right_item_anchor.add_child(rod_pivot)
 
@@ -203,7 +210,7 @@ func _setup_fishing_rod() -> void:
 		return
 	var rod_model := rod_scene.instantiate() as Node3D
 	rod_model.name = "RodModel"
-	# Align the source grip-to-tip vector with the existing 0.8 m RodTip marker.
-	rod_model.rotation.x = -atan2(4.9163, 0.188626)
+	# Fishing clips author the rod along handslot.r's local +Y axis.
+	rod_model.rotation.x = atan2(0.188626, 4.9163)
 	rod_model.scale = Vector3.ONE * (0.8 / Vector2(4.9163, 0.188626).length())
 	rod_pivot.add_child(rod_model)
