@@ -1,9 +1,24 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://entities/player/player_visual_rig.gd" id="1_rig"]
 [ext_resource type="PackedScene" path="res://entities/player/assets/kaykit_adventurers/Knight.glb" id="2_knight"]
+[ext_resource type="Script" path="res://entities/player/player_locomotion_animation.gd" id="3_locomotion"]
+[ext_resource type="PackedScene" path="res://entities/player/assets/kaykit_animations/Rig_Medium_General.glb" id="4_general"]
+[ext_resource type="PackedScene" path="res://entities/player/assets/kaykit_animations/Rig_Medium_MovementBasic.glb" id="5_movement"]
 
 [node name="PlayerVisualRig" type="Node3D"]
 script = ExtResource("1_rig")
 
 [node name="Knight" parent="." instance=ExtResource("2_knight")]
+
+[node name="PlayerLocomotionAnimation" type="Node" parent="."]
+script = ExtResource("3_locomotion")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="PlayerLocomotionAnimation"]
+root_node = NodePath("../../Knight")
+
+[node name="GeneralAnimations" parent="." instance=ExtResource("4_general")]
+visible = false
+
+[node name="MovementAnimations" parent="." instance=ExtResource("5_movement")]
+visible = false
