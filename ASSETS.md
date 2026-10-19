@@ -52,6 +52,25 @@ Copy the team-verified files to the local install paths above, then check their 
 
 Download the free Adventurers pack from its [source page](https://kaylousberg.itch.io/kaykit-adventurers), then copy its stock Knight GLB and texture to the local install paths above. Keep the raw pack outside version control. The player asset directory and Godot-generated import sidecars are ignored by Git. Open the project in Godot after copying the files so Godot imports `Knight.glb` before loading the player scene.
 
+## KayKit Character Animations
+
+- **Pack:** KayKit Character Animations 1.1
+- **Source:** <https://kaylousberg.itch.io/kaykit-character-animations>
+- **License:** CC0 1.0 Universal.
+- **Local install paths:** `entities/player/assets/kaykit_animations/Rig_Medium_General.glb` and `entities/player/assets/kaykit_animations/Rig_Medium_MovementBasic.glb`
+- **Used clips:** `Idle_A`, `Walking_A`, `Jump_Start`, `Jump_Idle`, and `Jump_Land`.
+- **Deferred clip:** `Running_A` is installed in `Rig_Medium_MovementBasic.glb` but intentionally unused; #339 A-lite does not add sprint state or controls.
+
+### Setup after cloning
+
+Download `KayKit_Character_Animations_1.1.zip` from the source page and extract only these GLBs from `Animations/gltf/Rig_Medium/` into the local install path above. The assets and Godot-generated import sidecars are ignored by Git. Open the project in Godot after copying them so Godot imports the scenes before loading the player.
+
+| File | SHA-256 |
+| --- | --- |
+| `KayKit_Character_Animations_1.1.zip` | `65882F31F905AD2E953819648A59287CDEAB8F623908D5EF701971D3758BE20F` |
+| `Rig_Medium_General.glb` | `5F725C0F745F36078C7238968CD5C04843CBC6260689EB6E7F5E2BBD7FFDD7AD` |
+| `Rig_Medium_MovementBasic.glb` | `11422AFD50ABF7E8C92EA107E2E0BC94ABD38023D6D15F55AD580347EFBFA29E` |
+
 ## Audit note
 
 The repository audit found no Pirate Kit or Kenney asset files or references in this checkout.

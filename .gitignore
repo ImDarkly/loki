@@ -17,6 +17,7 @@ build/
 
 # KayKit Adventurers (install locally; see ASSETS.md)
 /entities/player/assets/kaykit_adventurers/
+/entities/player/assets/kaykit_animations/
 
 # Environment variables
 # EOS credentials (downloaded separately, per-machine)
