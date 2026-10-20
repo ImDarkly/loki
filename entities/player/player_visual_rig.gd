@@ -17,10 +17,12 @@ var _locomotion_clip: StringName = &"general/Idle_A"
 var _fishing_active := false
 var _tools_loaded := false
 var held_item_transform := Transform3D(Basis.from_euler(Vector3(0.0, deg_to_rad(90.0), 0.0)), Vector3(0.0, 0.02, -0.12))
-var rod_hand_transform := Transform3D(Basis.from_euler(Vector3(deg_to_rad(45.0), 0.0, 0.0)), Vector3(0.0, 0.02, -0.08))
+var rod_hand_transform := Transform3D(Basis.from_euler(Vector3(deg_to_rad(8.0), 0.0, 0.0)).scaled(Vector3.ONE / CHARACTER_SCALE), Vector3.ZERO)
 
+const CHARACTER_SCALE := 0.5
 const LOCOMOTION_BLEND_TIME := 0.15
 const TOOLS_ANIMATION_PATH := "res://entities/player/assets/kaykit_animations/Rig_Medium_Tools.glb"
+const FISHING_ROD_PATH := "res://entities/player/assets/quaternius/FishingRod_Lvl2.glb"
 const LOCOMOTION_ANIMATIONS := {
 	PlayerLocomotionAnimation.State.IDLE: &"general/Idle_A",
 	PlayerLocomotionAnimation.State.WALK: &"movement/Walking_A",
@@ -54,6 +56,7 @@ const LOOPING_FISHING_ANIMATIONS := [
 
 
 func _ready() -> void:
+	scale = Vector3.ONE * CHARACTER_SCALE
 	body_mesh.rotation.y = PI
 	_add_animation_library(_general_animations, &"general")
 	_add_animation_library(_movement_animations, &"movement")
@@ -68,11 +71,11 @@ func _ready() -> void:
 		push_error("KayKit Knight is missing its Skeleton3D")
 		return
 
-	var head_attachment := _create_attachment(skeleton, "HeadAttachment", &"head")
 	head = Node3D.new()
 	head.name = "LookPivot"
-	head.rotation.y = PI
-	head_attachment.add_child(head)
+	add_child(head)
+	# Aim follows the authored eye height without inheriting animation sway.
+	head.position = to_local(skeleton.to_global(skeleton.get_bone_global_rest(skeleton.find_bone("head")).origin))
 
 	camera = Camera3D.new()
 	camera.name = "Camera3D"
@@ -101,20 +104,49 @@ func get_locomotion_animation_length(state: PlayerLocomotionAnimation.State) -> 
 
 func apply_fishing_state(state: PlayerFishingAnimation.State) -> void:
 	if state == PlayerFishingAnimation.State.IDLE:
-		_fishing_active = false
-		_fishing_animation.stop()
-		if not _locomotion_animation.is_playing():
+		if _fishing_active:
+			_blend_animation_handoff(_fishing_animation, _locomotion_animation, _locomotion_clip)
+		elif not _locomotion_animation.is_playing():
 			_locomotion_animation.play(_locomotion_clip, LOCOMOTION_BLEND_TIME)
+		_fishing_active = false
 		return
 	if not _tools_loaded:
 		return
 	var animation: StringName = FISHING_ANIMATIONS.get(state, &"tools/Fishing_Idle")
 	if not _fishing_animation.has_animation(animation):
 		return
+	if not _fishing_active:
+		_blend_animation_handoff(_locomotion_animation, _fishing_animation, animation)
+	elif not _fishing_animation.is_playing() or _fishing_animation.current_animation != animation:
+		_blend_animation_handoff(_fishing_animation, _fishing_animation, animation)
 	_fishing_active = true
-	_locomotion_animation.stop()
-	if not _fishing_animation.is_playing() or _fishing_animation.current_animation != animation:
-		_fishing_animation.play(animation, LOCOMOTION_BLEND_TIME)
+
+
+func _blend_animation_handoff(source: AnimationPlayer, target: AnimationPlayer, animation: StringName) -> void:
+	var skeleton := _find_skeleton(body_mesh)
+	skeleton.force_update_all_bone_transforms()
+	var pose := Animation.new()
+	var skeleton_path := target.get_node(target.root_node).get_path_to(skeleton)
+	for bone in skeleton.get_bone_count():
+		var path := NodePath("%s:%s" % [skeleton_path, skeleton.get_bone_name(bone)])
+		var types := [Animation.TYPE_POSITION_3D, Animation.TYPE_ROTATION_3D, Animation.TYPE_SCALE_3D]
+		var values := [skeleton.get_bone_pose_position(bone), skeleton.get_bone_pose_rotation(bone), skeleton.get_bone_pose_scale(bone)]
+		for index in types.size():
+			var track := pose.add_track(types[index])
+			pose.track_set_path(track, path)
+			pose.track_insert_key(track, 0.0, values[index])
+	source.stop(true)
+	target.stop(true)
+	if not target.has_animation_library(&"handoff"):
+		target.add_animation_library(&"handoff", AnimationLibrary.new())
+	var library := target.get_animation_library(&"handoff")
+	if library.has_animation(&"pose"):
+		library.remove_animation(&"pose")
+	library.add_animation(&"pose", pose)
+	# Freeze the rendered blend, including rapid cancellations, before changing mixers.
+	target.play(&"handoff/pose")
+	target.advance(0.0)
+	target.play(animation, LOCOMOTION_BLEND_TIME)
 
 
 func _add_animation_library(source: Node, library_name: StringName, target: AnimationPlayer = null) -> void:
@@ -159,6 +191,11 @@ func set_local_view(is_local: bool) -> void:
 		mesh.visible = not is_local
 
 
+func apply_rod_tension(intensity: float) -> void:
+	rod_pivot.transform = rod_hand_transform
+	rod_pivot.basis = rod_hand_transform.basis * Basis(Vector3.FORWARD, deg_to_rad(25.0) * clampf(intensity, 0.0, 1.0))
+
+
 func attach_held_item(item: Node3D) -> void:
 	item.transform = held_item_transform
 	right_item_anchor.add_child(item)
@@ -187,23 +224,22 @@ func _setup_fishing_rod() -> void:
 	rod_pivot.name = "FishingRod"
 	rod_pivot.transform = rod_hand_transform
 
-	var rod_mesh := MeshInstance3D.new()
-	var cylinder := CylinderMesh.new()
-	cylinder.height = 0.8
-	cylinder.top_radius = 0.005
-	cylinder.bottom_radius = 0.015
-	rod_mesh.mesh = cylinder
-	rod_mesh.rotation.x = deg_to_rad(-90.0)
-	rod_mesh.position = Vector3(0, 0, -0.4)
-
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.35, 0.2, 0.1)
-	material.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
-	rod_mesh.material_override = material
-	rod_pivot.add_child(rod_mesh)
-
 	var tip := Marker3D.new()
 	tip.name = "RodTip"
-	tip.position = Vector3(0, 0, -0.8)
+	tip.position = Vector3(0, 0.8, 0)
 	rod_pivot.add_child(tip)
 	right_item_anchor.add_child(rod_pivot)
+
+	if not ResourceLoader.exists(FISHING_ROD_PATH, "PackedScene"):
+		push_error("Fishing rod setup error: missing %s. Install and import it as documented in ASSETS.md." % FISHING_ROD_PATH)
+		return
+	var rod_scene := ResourceLoader.load(FISHING_ROD_PATH, "PackedScene") as PackedScene
+	if rod_scene == null:
+		push_error("Fishing rod setup error: could not load %s. Reimport it as documented in ASSETS.md." % FISHING_ROD_PATH)
+		return
+	var rod_model := rod_scene.instantiate() as Node3D
+	rod_model.name = "RodModel"
+	# Fishing clips author the rod along handslot.r's local +Y axis.
+	rod_model.basis = Basis(Vector3.UP, -PI / 2.0) * Basis(Vector3.RIGHT, atan2(0.23781153, 4.9471223))
+	rod_model.scale = Vector3.ONE * (0.8 / Vector2(4.9471223, 0.23781153).length())
+	rod_pivot.add_child(rod_model)

@@ -248,11 +248,11 @@ func _setup_interact_prompt() -> void:
 
 func _setup_collision_shape() -> void:
 	var shape := CylinderShape3D.new()
-	shape.height = 2.0
-	shape.radius = 0.3
+	shape.height = 2.0 * PlayerVisualRig.CHARACTER_SCALE
+	shape.radius = 0.3 * PlayerVisualRig.CHARACTER_SCALE
 	var collision_shape := CollisionShape3D.new()
 	collision_shape.shape = shape
-	collision_shape.position.y = 1.0
+	collision_shape.position.y = shape.height / 2.0
 	add_child(collision_shape)
 
 
@@ -519,20 +519,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	if player_state == PlayerState.FLOATING:
 		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			rotate_y(-event.relative.x * mouse_sensitivity)
-			head.rotate_x(event.relative.y * mouse_sensitivity)
+			head.rotate_x(-event.relative.y * mouse_sensitivity)
 			head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 		return
 
 	if is_slapped:
 		if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			rotate_y(-event.relative.x * mouse_sensitivity)
-			head.rotate_x(event.relative.y * mouse_sensitivity)
+			head.rotate_x(-event.relative.y * mouse_sensitivity)
 			head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * mouse_sensitivity)
-		head.rotate_x(event.relative.y * mouse_sensitivity)
+		head.rotate_x(-event.relative.y * mouse_sensitivity)
 		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-89.0), deg_to_rad(89.0))
 
 	if event.is_action_pressed("cast_line"):
@@ -1198,7 +1198,7 @@ func _on_escape_launch(direction: Vector3, strength: float) -> void:
 func _on_escape_telegraph_changed(intensity: float) -> void:
 	if not _rod_pivot:
 		return
-	_rod_pivot.rotation.x = deg_to_rad(45.0 + intensity * 25.0)
+	visual_rig.apply_rod_tension(intensity)
 
 
 func _on_shop_toggled(is_open: bool) -> void:

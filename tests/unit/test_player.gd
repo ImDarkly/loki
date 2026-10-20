@@ -76,13 +76,35 @@ func test_enable_player_hides_local_body() -> void:
 	assert_false(player.visual_rig._body_meshes[0].visible, "Local player body should be hidden from the first-person camera")
 
 
-func test_visual_rig_attaches_camera_and_held_items_to_kaykit_bones() -> void:
+func test_vertical_mouse_motion_looks_in_the_same_world_direction_in_each_player_state() -> void:
+	var previous_mouse_mode := Input.mouse_mode
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		Input.mouse_mode = previous_mouse_mode
+		pending("Requires a rendered display with mouse capture")
+		return
+	var motion := InputEventMouseMotion.new()
+	for state in ["alive", "floating", "slapped"]:
+		player.player_state = Player.PlayerState.FLOATING if state == "floating" else Player.PlayerState.ALIVE
+		if state == "slapped":
+			player.apply_slap(3.5)
+		player.head.rotation = Vector3.ZERO
+		motion.relative = Vector2(0, -20)
+		player._unhandled_input(motion)
+		assert_gt((-player.camera.global_basis.z).y, 0.0, "Mouse up should look above the horizon while %s" % state)
+		motion.relative = Vector2(0, 40)
+		player._unhandled_input(motion)
+		assert_lt((-player.camera.global_basis.z).y, 0.0, "Mouse down should look below the horizon while %s" % state)
+	Input.mouse_mode = previous_mouse_mode
+
+
+func test_visual_rig_keeps_camera_stable_and_attaches_held_items_to_kaykit_bones() -> void:
 	var skeleton := player.visual_rig._find_skeleton(player.visual_rig.body_mesh)
 	assert_not_null(skeleton, "KayKit rig should contain a Skeleton3D")
 	assert_almost_eq(player.visual_rig.body_mesh.rotation.y, PI, 0.001, "KayKit forward should align with Godot forward")
-	assert_eq(player.head.get_parent().bone_name, &"head", "Camera look pivot should attach to the KayKit head bone")
-	assert_almost_eq(player.head.rotation.y, PI, 0.001, "Camera should compensate for the visual rig forward correction")
-	assert_eq(player.camera.get_parent(), player.head, "Camera should follow the KayKit head attachment through the look pivot")
+	assert_eq(player.head.get_parent(), player.visual_rig, "Camera look pivot should remain outside the animated skeleton")
+	assert_almost_eq(player.head.rotation.y, 0.0, 0.001, "Camera should align with player forward")
+	assert_eq(player.camera.get_parent(), player.head, "Camera should follow the stable look pivot")
 	assert_eq(player.right_item_anchor.bone_name, &"handslot.r", "Held visuals should attach to the KayKit right hand slot")
 	assert_eq(player._rod_pivot.get_parent(), player.right_item_anchor, "Rod should attach to the right hand slot")
 	assert_eq(player._rod_pivot.transform, player.visual_rig.rod_hand_transform, "Rod should use the rig-owned hand-relative pose")
@@ -95,6 +117,183 @@ func test_visual_rig_attaches_camera_and_held_items_to_kaykit_bones() -> void:
 	player._hide_held_rock_remote()
 	player._show_held_bait_remote()
 	assert_eq(player._held_bait_mesh.transform, player.visual_rig.held_item_transform, "Held bait should use the rig-owned hand-relative pose")
+
+
+func test_fishing_rod_uses_imported_mesh_and_preserves_line_marker() -> void:
+	var rod := player._rod_pivot
+	var model := rod.get_node_or_null("RodModel") as Node3D
+	assert_not_null(model, "Rod should instantiate the Quaternius model")
+	if model == null:
+		return
+	assert_eq(model.scene_file_path, "res://entities/player/assets/quaternius/FishingRod_Lvl2.glb", "Rod should use the selected Level 2 model")
+	var meshes := model.find_children("*", "MeshInstance3D", true, false)
+	assert_gt(meshes.size(), 0, "Imported rod must contain real meshes")
+	for mesh: MeshInstance3D in meshes:
+		assert_true(mesh.mesh is ArrayMesh, "Rod should use imported geometry")
+		assert_false(mesh.mesh is CylinderMesh, "Generated cylinder must be removed")
+		assert_gt(mesh.mesh.get_surface_count(), 0)
+		for surface in mesh.mesh.get_surface_count():
+			var material := mesh.mesh.surface_get_material(surface) as StandardMaterial3D
+			assert_not_null(material, "Imported rod surface should retain its material")
+			if material != null:
+				assert_eq(material.albedo_color.a, 1.0, "Imported wood must be opaque")
+		assert_false(player.visual_rig._body_meshes.has(mesh), "Local body hiding must exclude the rod")
+	assert_eq(rod.name, &"FishingRod")
+	assert_eq(rod.get_parent(), player.right_item_anchor)
+	assert_eq(rod.transform, player.visual_rig.rod_hand_transform)
+	var tip := rod.get_node("RodTip") as Marker3D
+	assert_eq(tip.position, Vector3(0, 0.8, 0))
+	assert_true((model.transform * Vector3(0, 4.9471223, -0.23781153)).is_equal_approx(tip.position), "Imported visual tip should meet the line marker")
+	assert_almost_eq(model.to_global(Vector3.ZERO).distance_to(model.to_global(Vector3(0, 4.9471223, -0.23781153))), 0.8, 0.0001, "Rod must retain its world length on the smaller character")
+
+
+func test_imported_fishing_rod_stays_visible_in_local_and_remote_views() -> void:
+	var model := player._rod_pivot.get_node_or_null("RodModel") as Node3D
+	assert_not_null(model)
+	if model == null:
+		return
+	for is_local in [true, false]:
+		player.visual_rig.set_local_view(is_local)
+		for mesh: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+			assert_true(mesh.is_visible_in_tree(), "Rod should remain visible in both views")
+	player.start_carrying()
+	assert_false(model.is_visible_in_tree(), "Imported rod should hide with the carry pivot")
+	player.deposit_carried_fish()
+	assert_true(model.is_visible_in_tree(), "Imported rod should return after carrying")
+
+
+func test_imported_fishing_rod_follows_hand_through_clips_and_player_motion() -> void:
+	var rig := player.visual_rig
+	var model := player._rod_pivot.get_node_or_null("RodModel") as Node3D
+	assert_not_null(model)
+	if model == null:
+		return
+	player.set_physics_process(false)
+	rig.get_node("PlayerFishingAnimation").set_physics_process(false)
+	rig.get_node("PlayerLocomotionAnimation").set_physics_process(false)
+	var animation := rig.get_node("PlayerFishingAnimation/AnimationPlayer") as AnimationPlayer
+	var initial_transform := model.global_transform
+	for state in [PlayerFishingAnimation.State.CAST, PlayerFishingAnimation.State.WAIT, PlayerFishingAnimation.State.BITE, PlayerFishingAnimation.State.REEL, PlayerFishingAnimation.State.STRUGGLE, PlayerFishingAnimation.State.TUG, PlayerFishingAnimation.State.CATCH]:
+		rig.apply_fishing_state(state)
+		assert_eq(animation.current_animation, rig.FISHING_ANIMATIONS[state])
+		animation.advance(0.3)
+		await get_tree().process_frame
+		assert_eq(model.get_parent(), rig.rod_pivot)
+		assert_true(model.global_transform.is_equal_approx(rig.right_item_anchor.global_transform * rig.rod_hand_transform * model.transform), "Rod should follow the animated right hand")
+		var grip := model.to_global(Vector3.ZERO)
+		var tip := model.to_global(Vector3(0, 4.9471223, -0.23781153))
+		assert_almost_eq(grip.distance_to(tip), 0.8, 0.0001)
+		assert_true(grip.is_equal_approx(rig.right_item_anchor.global_position), "Rod grip must sit at the authored hand slot")
+		var expected_axis := (rig.right_item_anchor.global_basis * rig.rod_hand_transform.basis).y.normalized()
+		assert_almost_eq((tip - grip).normalized().dot(expected_axis), 1.0, 0.0001, "Fishing clips should preserve the calibrated hand-relative rod direction")
+	assert_false(model.global_transform.is_equal_approx(initial_transform), "Fishing clips should move the imported rod with the hand")
+	var before_motion := model.global_transform
+	player.position += Vector3(2, 0, -3)
+	player.rotation.y += PI / 2.0
+	assert_false(model.global_transform.is_equal_approx(before_motion))
+	assert_true(model.global_transform.is_equal_approx(rig.right_item_anchor.global_transform * rig.rod_hand_transform * model.transform), "Player movement and rotation must preserve attachment")
+
+
+func test_waiting_rod_appears_straight_in_neutral_first_person_view() -> void:
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	var rig := player.visual_rig
+	var locomotion := rig.get_node("PlayerLocomotionAnimation/AnimationPlayer") as AnimationPlayer
+	var fishing := rig.get_node("PlayerFishingAnimation/AnimationPlayer") as AnimationPlayer
+	locomotion.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	fishing.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	var skeleton := rig._find_skeleton(rig.body_mesh)
+	var tip := rig.rod_pivot.get_node("RodTip") as Marker3D
+	rig.apply_fishing_state(PlayerFishingAnimation.State.WAIT)
+	for sample in range(4):
+		fishing.advance(0.5)
+		fishing.advance(0.0)
+		skeleton.force_update_all_bone_transforms()
+		await get_tree().process_frame
+		var grip_screen := rig.camera.unproject_position(rig.rod_pivot.global_position)
+		var tip_screen := rig.camera.unproject_position(tip.global_position)
+		var shaft_screen := tip_screen - grip_screen
+		var tilt := absf(rad_to_deg(atan2(shaft_screen.x, -shaft_screen.y)))
+		assert_lt(tilt, 1.0, "Waiting rod should appear upright at %.1f seconds" % (0.5 * (sample + 1)))
+
+
+func test_waiting_rod_line_guides_face_forward_instead_of_left() -> void:
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	var rig := player.visual_rig
+	var locomotion := rig.get_node("PlayerLocomotionAnimation/AnimationPlayer") as AnimationPlayer
+	var fishing := rig.get_node("PlayerFishingAnimation/AnimationPlayer") as AnimationPlayer
+	locomotion.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	fishing.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	rig.apply_fishing_state(PlayerFishingAnimation.State.WAIT)
+	fishing.advance(0.5)
+	fishing.advance(0.0)
+	rig._find_skeleton(rig.body_mesh).force_update_all_bone_transforms()
+	await get_tree().process_frame
+	var model := rig.rod_pivot.get_node("RodModel") as Node3D
+	var guide_min := Vector3(INF, INF, INF)
+	var guide_max := Vector3(-INF, -INF, -INF)
+	var guide_vertex_count := 0
+	for mesh: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		for surface in mesh.mesh.get_surface_count():
+			var vertices: PackedVector3Array = mesh.mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]
+			for vertex in vertices:
+				var source_vertex := model.to_local(mesh.to_global(vertex))
+				if absf(source_vertex.y - 4.0597777) < 0.0001:
+					guide_min = guide_min.min(source_vertex)
+					guide_max = guide_max.max(source_vertex)
+					guide_vertex_count += 1
+	assert_gt(guide_vertex_count, 0, "Imported upper line guide must be found in the actual rod mesh")
+	if guide_vertex_count == 0:
+		return
+	var guide_center := (guide_min + guide_max) * 0.5
+	var grip := rig.rod_pivot.global_position
+	var tip := rig.rod_pivot.get_node("RodTip") as Marker3D
+	var shaft_direction := (tip.global_position - grip).normalized()
+	var guide_offset := model.to_global(guide_center) - grip
+	var radial_direction := (guide_offset - shaft_direction * guide_offset.dot(shaft_direction)).normalized()
+	assert_gt(radial_direction.dot(-player.global_basis.z), 0.9, "Line guides should face the player's casting direction")
+	assert_lt(absf(radial_direction.dot(player.global_basis.x)), 0.15, "Line guides should not face sideways to the left")
+
+
+func test_character_halves_body_collision_and_eye_height_with_unit_physics_root() -> void:
+	var rig := player.visual_rig
+	assert_eq(player.scale, Vector3.ONE)
+	assert_eq(rig.scale, Vector3.ONE * 0.5)
+	var collisions := player.find_children("*", "CollisionShape3D", false, false)
+	assert_eq(collisions.size(), 1)
+	var collision := collisions[0] as CollisionShape3D
+	var cylinder := collision.shape as CylinderShape3D
+	assert_eq(cylinder.height, 1.0)
+	assert_almost_eq(cylinder.radius, 0.15, 0.0001)
+	assert_eq(collision.position.y, 0.5)
+	var half_eye_height := player.to_local(player.camera.global_position).y
+	assert_gt(half_eye_height, 0.0)
+	rig.scale = Vector3.ONE
+	var full_eye_height := player.to_local(player.camera.global_position).y
+	assert_almost_eq(half_eye_height, full_eye_height * 0.5, 0.0001)
+	rig.scale = Vector3.ONE * PlayerVisualRig.CHARACTER_SCALE
+
+
+func test_rod_tension_bends_from_calibrated_grip_without_scale_loss_or_drift() -> void:
+	var rig := player.visual_rig
+	var rod := player._rod_pivot
+	player._on_escape_telegraph_changed(1.0)
+	var bent := rod.transform
+	var direction := (rig.rod_hand_transform.basis.orthonormalized().inverse() * bent.basis.y).normalized()
+	assert_almost_eq(direction.x, sin(deg_to_rad(25.0)), 0.0001)
+	assert_almost_eq(direction.y, cos(deg_to_rad(25.0)), 0.0001)
+	assert_almost_eq(direction.z, 0.0, 0.0001)
+	assert_true(rod.scale.is_equal_approx(Vector3.ONE * 2.0))
+	assert_eq(rod.position, Vector3.ZERO)
+	player._on_escape_telegraph_changed(1.0)
+	assert_true(rod.transform.is_equal_approx(bent), "Repeated tension must not accumulate")
+	player._on_escape_telegraph_changed(2.0)
+	assert_true(rod.transform.is_equal_approx(bent), "Tension must clamp to its maximum")
+	var tip := rod.get_node("RodTip") as Marker3D
+	assert_almost_eq(rod.global_position.distance_to(tip.global_position), 0.8, 0.0001)
+	player._on_escape_telegraph_changed(0.0)
+	assert_eq(rod.transform, rig.rod_hand_transform)
+	player._on_escape_telegraph_changed(-1.0)
+	assert_eq(rod.transform, rig.rod_hand_transform)
 
 
 func test_visual_rig_removes_legacy_hand_meshes() -> void:
@@ -1071,7 +1270,6 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	client_fishing.set_physics_process(false)
 	server_root.process_mode = Node.PROCESS_MODE_INHERIT
 	client_root.process_mode = Node.PROCESS_MODE_INHERIT
-	server_fishing._fish_network_active = true
 	server_fishing.hook_type = server_fishing.HookType.FISH
 	server_fishing.max_tether_range = 1.0
 	server_fishing.cast_target_position = Vector3(2, 0, 0)
@@ -1080,7 +1278,7 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_copy._last_fish_state = server_fishing.State.BITE
 	client_fishing.current_state = client_fishing.State.BITE
 
-	server_fishing._physics_process(0.016)
+	server_copy._process_fight(0.016)
 	assert_eq(server_fishing.current_state, server_fishing.State.IDLE, "tether pop should end in IDLE")
 	for frame in range(2):
 		await get_tree().process_frame
@@ -1089,7 +1287,6 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_fishing.max_tether_range = 25.0
 	server_fishing.hook_type = server_fishing.HookType.FISH
 	server_fishing.escape_time_threshold = 0.01
-	server_fishing._fish_network_active = true
 	server_fishing._escape_timer = 0.0
 	server_fishing._fight_progress = 0.0
 	server_fishing._fight_target = 100.0
@@ -1098,7 +1295,7 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_copy._last_fish_state = server_fishing.State.BITE
 	client_fishing.current_state = server_fishing.State.BITE
 
-	server_fishing._physics_process(0.02)
+	server_copy._process_fight(0.02)
 	assert_eq(server_fishing.current_state, server_fishing.State.IDLE, "escape should end in IDLE")
 	for frame in range(2):
 		await get_tree().process_frame
@@ -1106,8 +1303,6 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 
 	server_fishing.escape_time_threshold = 100.0
 	server_fishing.hook_type = server_fishing.HookType.FISH
-	server_fishing._fish_network_active = true
-	server_fishing.fish_pull_strength = 1000.0
 	server_fishing._reset_scroll_timers()
 	server_fishing._escape_timer = 0.0
 	server_fishing.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
@@ -1122,7 +1317,7 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_copy._last_fish_state = server_fishing.State.BITE
 	client_fishing.current_state = server_fishing.State.BITE
 
-	server_fishing._physics_process(0.02)
+	server_copy._process_fight(0.02)
 	assert_eq(server_fishing.current_state, server_fishing.State.SUCCESS, "ordinary fish catch should preserve SUCCESS")
 	for frame in range(2):
 		await get_tree().process_frame

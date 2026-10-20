@@ -40,6 +40,28 @@ Copy the team-verified files to the local install paths above, then check their 
 | `Goldfish.glb` | `028B880BF2DF64237748D1173D6DF1EAA1B23B3C01D35E936C3B76CF032CB35B` |
 | `Clownfish.glb` | `D1D0B1F83848337299EF163B7EC5B207B5C34E3933DA1367000E1DCD6D856BF1` |
 
+### Fishing rod
+
+The same Cute Fish Pack includes the selected `FBX/FishingRod_Lvl2.fbx`, governed by the QAL v1.0 license above. Install its converted GLB at `entities/player/assets/quaternius/FishingRod_Lvl2.glb`. This directory, including import sidecars, is ignored by Git; keep the raw pack outside the repository.
+
+Create the destination directory, then convert the existing FBX with Blender (the verified conversion used Blender 5.2.1):
+
+```powershell
+New-Item -ItemType Directory -Force entities/player/assets/quaternius
+blender --background --factory-startup --offline-mode --python-expr 'import bpy, sys; args = sys.argv[sys.argv.index("--") + 1:]; bpy.ops.object.select_all(action="SELECT"); bpy.ops.object.delete(use_global=False); bpy.ops.import_scene.fbx(filepath=args[0]); [setattr(node.inputs["Alpha"], "default_value", 1.0) for material in bpy.data.materials if material.use_nodes for node in material.node_tree.nodes if node.type == "BSDF_PRINCIPLED"]; bpy.ops.export_scene.gltf(filepath=args[1], export_format="GLB", export_animations=False)' -- "$pack\FBX\FishingRod_Lvl2.fbx" "entities/player/assets/quaternius/FishingRod_Lvl2.glb"
+```
+
+Alternatively copy the team-verified GLB to that path. Open Godot and let it import before running. Missing or unimported rods log installation instructions; the hand pivot and line marker remain available.
+
+The FBX importer sets the wood material's Principled BSDF alpha to zero. The conversion restores alpha to one before export so the rod is opaque; geometry and colors remain unchanged.
+
+The source grip is at the origin. Averaging the six unique vertices on the source tip endcap gives a tip center that imports at Godot `(0, 4.9471223, -0.23781153)` meters. `PlayerVisualRig` first rotates only `RodModel` by approximately +2.7521 degrees around X to align its shaft with +Y, then rotates it -90 degrees around that aligned +Y axis so the reel and line guides face the player's casting direction. It scales the model uniformly by approximately 0.161524, aligning its tip with `RodTip` at `(0, 0.8, 0)` along the rod pivot's +Y axis. Separately, the rod pivot rotates +8 degrees around the hand slot's local X axis to remove the visible left lean in the neutral first-person waiting pose while retaining the authored hand animation. The character rig, eye height, and collision dimensions are halved while the physics root stays at unit scale. The rod pivot compensates with uniform scale 2, keeping the grip-to-tip length at 0.8 world meters and making the rod larger relative to the character. Tension bends the pivot relative to this calibrated grip and restores it when tension ends. The raw GLB remains unchanged.
+
+| File | SHA-256 |
+| --- | --- |
+| `FishingRod_Lvl2.fbx` | `54CC6F070BDC8684BDF7A286C6219A2517EA0AA7FCD3C7322FBE434E6ED42382` |
+| `FishingRod_Lvl2.glb` | `9451DD5C356A49B3F6D1F1C0BC41860EDE1569619AC6B532AADB53D2C695872B` |
+
 ## KayKit Adventurers
 
 - **Pack:** KayKit - Character Pack: Adventurers, Free 2.0
