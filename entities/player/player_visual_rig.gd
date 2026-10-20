@@ -17,7 +17,7 @@ var _locomotion_clip: StringName = &"general/Idle_A"
 var _fishing_active := false
 var _tools_loaded := false
 var held_item_transform := Transform3D(Basis.from_euler(Vector3(0.0, deg_to_rad(90.0), 0.0)), Vector3(0.0, 0.02, -0.12))
-var rod_hand_transform := Transform3D(Basis.IDENTITY.scaled(Vector3.ONE / CHARACTER_SCALE), Vector3.ZERO)
+var rod_hand_transform := Transform3D(Basis.from_euler(Vector3(deg_to_rad(8.0), 0.0, 0.0)).scaled(Vector3.ONE / CHARACTER_SCALE), Vector3.ZERO)
 
 const CHARACTER_SCALE := 0.5
 const LOCOMOTION_BLEND_TIME := 0.15

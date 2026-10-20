@@ -184,13 +184,36 @@ func test_imported_fishing_rod_follows_hand_through_clips_and_player_motion() ->
 		var tip := model.to_global(Vector3(0, 4.9471223, -0.23781153))
 		assert_almost_eq(grip.distance_to(tip), 0.8, 0.0001)
 		assert_true(grip.is_equal_approx(rig.right_item_anchor.global_position), "Rod grip must sit at the authored hand slot")
-		assert_almost_eq((tip - grip).normalized().dot(rig.right_item_anchor.global_basis.y.normalized()), 1.0, 0.0001, "Fishing clips expect the rod along the hand slot's +Y axis")
+		var expected_axis := (rig.right_item_anchor.global_basis * rig.rod_hand_transform.basis).y.normalized()
+		assert_almost_eq((tip - grip).normalized().dot(expected_axis), 1.0, 0.0001, "Fishing clips should preserve the calibrated hand-relative rod direction")
 	assert_false(model.global_transform.is_equal_approx(initial_transform), "Fishing clips should move the imported rod with the hand")
 	var before_motion := model.global_transform
 	player.position += Vector3(2, 0, -3)
 	player.rotation.y += PI / 2.0
 	assert_false(model.global_transform.is_equal_approx(before_motion))
 	assert_true(model.global_transform.is_equal_approx(rig.right_item_anchor.global_transform * rig.rod_hand_transform * model.transform), "Player movement and rotation must preserve attachment")
+
+
+func test_waiting_rod_appears_straight_in_neutral_first_person_view() -> void:
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	var rig := player.visual_rig
+	var locomotion := rig.get_node("PlayerLocomotionAnimation/AnimationPlayer") as AnimationPlayer
+	var fishing := rig.get_node("PlayerFishingAnimation/AnimationPlayer") as AnimationPlayer
+	locomotion.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	fishing.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	var skeleton := rig._find_skeleton(rig.body_mesh)
+	var tip := rig.rod_pivot.get_node("RodTip") as Marker3D
+	rig.apply_fishing_state(PlayerFishingAnimation.State.WAIT)
+	for sample in range(4):
+		fishing.advance(0.5)
+		fishing.advance(0.0)
+		skeleton.force_update_all_bone_transforms()
+		await get_tree().process_frame
+		var grip_screen := rig.camera.unproject_position(rig.rod_pivot.global_position)
+		var tip_screen := rig.camera.unproject_position(tip.global_position)
+		var shaft_screen := tip_screen - grip_screen
+		var tilt := absf(rad_to_deg(atan2(shaft_screen.x, -shaft_screen.y)))
+		assert_lt(tilt, 1.0, "Waiting rod should appear upright at %.1f seconds" % (0.5 * (sample + 1)))
 
 
 func test_character_halves_body_collision_and_eye_height_with_unit_physics_root() -> void:
@@ -217,7 +240,7 @@ func test_rod_tension_bends_from_calibrated_grip_without_scale_loss_or_drift() -
 	var rod := player._rod_pivot
 	player._on_escape_telegraph_changed(1.0)
 	var bent := rod.transform
-	var direction := bent.basis.y.normalized()
+	var direction := (rig.rod_hand_transform.basis.orthonormalized().inverse() * bent.basis.y).normalized()
 	assert_almost_eq(direction.x, sin(deg_to_rad(25.0)), 0.0001)
 	assert_almost_eq(direction.y, cos(deg_to_rad(25.0)), 0.0001)
 	assert_almost_eq(direction.z, 0.0, 0.0001)
