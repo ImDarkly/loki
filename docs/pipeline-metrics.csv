@@ -2,3 +2,4 @@ date,task,tier,attempts,tokens,result
 2026-10-19,#330,deep,6,unavailable,draft authorized; 189 scoped tests pass; final full suite 609/633 passes
 2026-10-19,#330 visual feedback,deep,3,unavailable,draft revision; 193 scoped tests pass; final full suite 612/635 passes
 2026-10-20,#330 cast and camera feedback,deep,4,unavailable,owner authorized Astra retry; 197 scoped tests pass; full suite 616/639 passes
+2026-10-20,#330 vertical mouse correction,deep,1,unavailable,rendered input 6/6 asserts pass; scoped 197 pass and 1 pending; full 615 pass 24 fail 1 pending

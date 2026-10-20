@@ -76,6 +76,28 @@ func test_enable_player_hides_local_body() -> void:
 	assert_false(player.visual_rig._body_meshes[0].visible, "Local player body should be hidden from the first-person camera")
 
 
+func test_vertical_mouse_motion_looks_in_the_same_world_direction_in_each_player_state() -> void:
+	var previous_mouse_mode := Input.mouse_mode
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		Input.mouse_mode = previous_mouse_mode
+		pending("Requires a rendered display with mouse capture")
+		return
+	var motion := InputEventMouseMotion.new()
+	for state in ["alive", "floating", "slapped"]:
+		player.player_state = Player.PlayerState.FLOATING if state == "floating" else Player.PlayerState.ALIVE
+		if state == "slapped":
+			player.apply_slap(3.5)
+		player.head.rotation = Vector3.ZERO
+		motion.relative = Vector2(0, -20)
+		player._unhandled_input(motion)
+		assert_gt((-player.camera.global_basis.z).y, 0.0, "Mouse up should look above the horizon while %s" % state)
+		motion.relative = Vector2(0, 40)
+		player._unhandled_input(motion)
+		assert_lt((-player.camera.global_basis.z).y, 0.0, "Mouse down should look below the horizon while %s" % state)
+	Input.mouse_mode = previous_mouse_mode
+
+
 func test_visual_rig_keeps_camera_stable_and_attaches_held_items_to_kaykit_bones() -> void:
 	var skeleton := player.visual_rig._find_skeleton(player.visual_rig.body_mesh)
 	assert_not_null(skeleton, "KayKit rig should contain a Skeleton3D")
