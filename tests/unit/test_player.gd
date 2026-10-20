@@ -125,6 +125,7 @@ func test_fishing_rod_uses_imported_mesh_and_preserves_line_marker() -> void:
 	assert_not_null(model, "Rod should instantiate the Quaternius model")
 	if model == null:
 		return
+	assert_eq(model.scene_file_path, "res://entities/player/assets/quaternius/FishingRod_Lvl2.glb", "Rod should use the selected Level 2 model")
 	var meshes := model.find_children("*", "MeshInstance3D", true, false)
 	assert_gt(meshes.size(), 0, "Imported rod must contain real meshes")
 	for mesh: MeshInstance3D in meshes:
@@ -142,8 +143,8 @@ func test_fishing_rod_uses_imported_mesh_and_preserves_line_marker() -> void:
 	assert_eq(rod.transform, player.visual_rig.rod_hand_transform)
 	var tip := rod.get_node("RodTip") as Marker3D
 	assert_eq(tip.position, Vector3(0, 0.8, 0))
-	assert_true((model.transform * Vector3(0, 4.9163, -0.188626)).is_equal_approx(tip.position), "Imported visual tip should meet the line marker")
-	assert_almost_eq(model.to_global(Vector3.ZERO).distance_to(model.to_global(Vector3(0, 4.9163, -0.188626))), 0.8, 0.0001, "Rod must retain its world length on the smaller character")
+	assert_true((model.transform * Vector3(0, 4.9471223, -0.23781153)).is_equal_approx(tip.position), "Imported visual tip should meet the line marker")
+	assert_almost_eq(model.to_global(Vector3.ZERO).distance_to(model.to_global(Vector3(0, 4.9471223, -0.23781153))), 0.8, 0.0001, "Rod must retain its world length on the smaller character")
 
 
 func test_imported_fishing_rod_stays_visible_in_local_and_remote_views() -> void:
@@ -180,7 +181,7 @@ func test_imported_fishing_rod_follows_hand_through_clips_and_player_motion() ->
 		assert_eq(model.get_parent(), rig.rod_pivot)
 		assert_true(model.global_transform.is_equal_approx(rig.right_item_anchor.global_transform * rig.rod_hand_transform * model.transform), "Rod should follow the animated right hand")
 		var grip := model.to_global(Vector3.ZERO)
-		var tip := model.to_global(Vector3(0, 4.9163, -0.188626))
+		var tip := model.to_global(Vector3(0, 4.9471223, -0.23781153))
 		assert_almost_eq(grip.distance_to(tip), 0.8, 0.0001)
 		assert_true(grip.is_equal_approx(rig.right_item_anchor.global_position), "Rod grip must sit at the authored hand slot")
 		assert_almost_eq((tip - grip).normalized().dot(rig.right_item_anchor.global_basis.y.normalized()), 1.0, 0.0001, "Fishing clips expect the rod along the hand slot's +Y axis")

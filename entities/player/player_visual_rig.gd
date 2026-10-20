@@ -22,7 +22,7 @@ var rod_hand_transform := Transform3D(Basis.IDENTITY.scaled(Vector3.ONE / CHARAC
 const CHARACTER_SCALE := 0.5
 const LOCOMOTION_BLEND_TIME := 0.15
 const TOOLS_ANIMATION_PATH := "res://entities/player/assets/kaykit_animations/Rig_Medium_Tools.glb"
-const FISHING_ROD_PATH := "res://entities/player/assets/quaternius/FishingRod_Lvl1.glb"
+const FISHING_ROD_PATH := "res://entities/player/assets/quaternius/FishingRod_Lvl2.glb"
 const LOCOMOTION_ANIMATIONS := {
 	PlayerLocomotionAnimation.State.IDLE: &"general/Idle_A",
 	PlayerLocomotionAnimation.State.WALK: &"movement/Walking_A",
@@ -240,6 +240,6 @@ func _setup_fishing_rod() -> void:
 	var rod_model := rod_scene.instantiate() as Node3D
 	rod_model.name = "RodModel"
 	# Fishing clips author the rod along handslot.r's local +Y axis.
-	rod_model.rotation.x = atan2(0.188626, 4.9163)
-	rod_model.scale = Vector3.ONE * (0.8 / Vector2(4.9163, 0.188626).length())
+	rod_model.rotation.x = atan2(0.23781153, 4.9471223)
+	rod_model.scale = Vector3.ONE * (0.8 / Vector2(4.9471223, 0.23781153).length())
 	rod_pivot.add_child(rod_model)
