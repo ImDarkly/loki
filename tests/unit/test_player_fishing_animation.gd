@@ -152,6 +152,9 @@ func test_fishing_yields_to_walking_pose_after_cancel_catch_and_reset() -> void:
 	locomotion_player.advance(0.2)
 	reference_locomotion.advance(0.2)
 	fishing_player.advance(0.2)
+	# A single tick crossing the blend duration updates weights on the next evaluation.
+	locomotion_player.advance(0.0)
+	reference_locomotion.advance(0.0)
 	assert_true(_same_bone_poses(skeleton, reference_skeleton), "walking pose must resume after catch and reset")
 
 
@@ -162,3 +165,91 @@ func _same_bone_poses(left: Skeleton3D, right: Skeleton3D) -> bool:
 		if not left.get_bone_pose(bone).is_equal_approx(right.get_bone_pose(bone)):
 			return false
 	return true
+
+
+func test_cast_transitions_blend_from_idle_and_walking_without_pose_jumps() -> void:
+	var player := await _build_player()
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	var rig := player.visual_rig
+	for state in [PlayerLocomotionAnimation.State.IDLE, PlayerLocomotionAnimation.State.WALK]:
+		rig.apply_locomotion_state(state)
+		_advance_rig(rig, 0.3)
+		_assert_smooth_transition(rig, PlayerFishingAnimation.State.CAST, "cast entry")
+		rig.apply_fishing_state(PlayerFishingAnimation.State.IDLE)
+		_advance_rig(rig, 0.3)
+		_assert_smooth_transition(rig, PlayerFishingAnimation.State.CAST, "repeated cast")
+		rig.apply_fishing_state(PlayerFishingAnimation.State.IDLE)
+		_advance_rig(rig, 0.3)
+
+
+func test_short_and_finished_casts_blend_to_wait_and_cancel_back_to_walking() -> void:
+	var player := await _build_player()
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	var rig := player.visual_rig
+	for cast_duration in [0.05, 0.2, 2.2]:
+		rig.apply_fishing_state(PlayerFishingAnimation.State.CAST)
+		_advance_rig(rig, cast_duration)
+		_assert_smooth_transition(rig, PlayerFishingAnimation.State.WAIT, "cast to wait")
+		rig.apply_locomotion_state(PlayerLocomotionAnimation.State.WALK)
+		_assert_smooth_transition(rig, PlayerFishingAnimation.State.IDLE, "cancel to walking")
+		var locomotion := rig.get_node("PlayerLocomotionAnimation/AnimationPlayer") as AnimationPlayer
+		assert_eq(locomotion.current_animation, "movement/Walking_A")
+		assert_true(locomotion.is_playing())
+		assert_false((rig.get_node("PlayerFishingAnimation/AnimationPlayer") as AnimationPlayer).is_playing())
+		_advance_rig(rig, 0.3)
+
+
+func test_rapid_cancel_and_recast_preserve_the_current_blended_pose() -> void:
+	var player := await _build_player()
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	var rig := player.visual_rig
+	rig.apply_locomotion_state(PlayerLocomotionAnimation.State.WALK)
+	_advance_rig(rig, 0.3)
+	_assert_smooth_transition(rig, PlayerFishingAnimation.State.CAST, "quick cast", 3)
+	_assert_smooth_transition(rig, PlayerFishingAnimation.State.WAIT, "quick wait", 3)
+	_assert_smooth_transition(rig, PlayerFishingAnimation.State.IDLE, "quick cancel", 3)
+	_assert_smooth_transition(rig, PlayerFishingAnimation.State.CAST, "quick recast")
+	_assert_smooth_transition(rig, PlayerFishingAnimation.State.IDLE, "recast cancel")
+
+
+func test_cast_does_not_move_camera_with_fixed_look_input() -> void:
+	var player := await _build_player()
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	var rig := player.visual_rig
+	player.rotation.y = 0.4
+	player.head.rotation.x = -0.2
+	await get_tree().process_frame
+	var initial_camera := player.camera.global_transform
+	var skeleton := rig._find_skeleton(rig.body_mesh)
+	var rest_head := skeleton.global_transform * skeleton.get_bone_global_rest(skeleton.find_bone("head"))
+	assert_almost_eq(player.camera.global_position.y, rest_head.origin.y, 0.0001)
+	for state in [PlayerFishingAnimation.State.CAST, PlayerFishingAnimation.State.WAIT, PlayerFishingAnimation.State.IDLE]:
+		rig.apply_fishing_state(state)
+		for frame in 24:
+			_advance_rig(rig, 1.0 / 60.0)
+			await get_tree().process_frame
+			assert_true(player.camera.global_transform.is_equal_approx(initial_camera), "animation must not move or rotate the aiming camera")
+	player.head.rotation.x += 0.1
+	assert_false(player.camera.global_basis.is_equal_approx(initial_camera.basis), "direct look input must still rotate the camera")
+
+
+func _advance_rig(rig: PlayerVisualRig, delta: float) -> void:
+	for path in ["PlayerLocomotionAnimation/AnimationPlayer", "PlayerFishingAnimation/AnimationPlayer"]:
+		var animation := rig.get_node(path) as AnimationPlayer
+		if animation.is_playing():
+			animation.advance(delta)
+	rig._find_skeleton(rig.body_mesh).force_update_all_bone_transforms()
+
+
+func _assert_smooth_transition(rig: PlayerVisualRig, state: PlayerFishingAnimation.State, label: String, frames: int = 12) -> void:
+	var skeleton := rig._find_skeleton(rig.body_mesh)
+	var hand := skeleton.find_bone("handslot.r")
+	var previous := skeleton.global_transform * skeleton.get_bone_global_pose(hand)
+	rig.apply_fishing_state(state)
+	for frame in frames:
+		_advance_rig(rig, 1.0 / 60.0)
+		var current := skeleton.global_transform * skeleton.get_bone_global_pose(hand)
+		assert_lt(current.origin.distance_to(previous.origin), 0.08, "%s: hand position must blend" % label)
+		var angle := previous.basis.orthonormalized().get_rotation_quaternion().angle_to(current.basis.orthonormalized().get_rotation_quaternion())
+		assert_lt(rad_to_deg(angle), 25.0, "%s: hand rotation must blend" % label)
+		previous = current

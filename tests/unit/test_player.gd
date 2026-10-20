@@ -76,13 +76,13 @@ func test_enable_player_hides_local_body() -> void:
 	assert_false(player.visual_rig._body_meshes[0].visible, "Local player body should be hidden from the first-person camera")
 
 
-func test_visual_rig_attaches_camera_and_held_items_to_kaykit_bones() -> void:
+func test_visual_rig_keeps_camera_stable_and_attaches_held_items_to_kaykit_bones() -> void:
 	var skeleton := player.visual_rig._find_skeleton(player.visual_rig.body_mesh)
 	assert_not_null(skeleton, "KayKit rig should contain a Skeleton3D")
 	assert_almost_eq(player.visual_rig.body_mesh.rotation.y, PI, 0.001, "KayKit forward should align with Godot forward")
-	assert_eq(player.head.get_parent().bone_name, &"head", "Camera look pivot should attach to the KayKit head bone")
-	assert_almost_eq(player.head.rotation.y, PI, 0.001, "Camera should compensate for the visual rig forward correction")
-	assert_eq(player.camera.get_parent(), player.head, "Camera should follow the KayKit head attachment through the look pivot")
+	assert_eq(player.head.get_parent(), player.visual_rig, "Camera look pivot should remain outside the animated skeleton")
+	assert_almost_eq(player.head.rotation.y, 0.0, 0.001, "Camera should align with player forward")
+	assert_eq(player.camera.get_parent(), player.head, "Camera should follow the stable look pivot")
 	assert_eq(player.right_item_anchor.bone_name, &"handslot.r", "Held visuals should attach to the KayKit right hand slot")
 	assert_eq(player._rod_pivot.get_parent(), player.right_item_anchor, "Rod should attach to the right hand slot")
 	assert_eq(player._rod_pivot.transform, player.visual_rig.rod_hand_transform, "Rod should use the rig-owned hand-relative pose")

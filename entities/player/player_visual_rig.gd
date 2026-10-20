@@ -71,11 +71,11 @@ func _ready() -> void:
 		push_error("KayKit Knight is missing its Skeleton3D")
 		return
 
-	var head_attachment := _create_attachment(skeleton, "HeadAttachment", &"head")
 	head = Node3D.new()
 	head.name = "LookPivot"
-	head.rotation.y = PI
-	head_attachment.add_child(head)
+	add_child(head)
+	# Aim follows the authored eye height without inheriting animation sway.
+	head.position = to_local(skeleton.to_global(skeleton.get_bone_global_rest(skeleton.find_bone("head")).origin))
 
 	camera = Camera3D.new()
 	camera.name = "Camera3D"
@@ -104,20 +104,49 @@ func get_locomotion_animation_length(state: PlayerLocomotionAnimation.State) -> 
 
 func apply_fishing_state(state: PlayerFishingAnimation.State) -> void:
 	if state == PlayerFishingAnimation.State.IDLE:
-		_fishing_active = false
-		_fishing_animation.stop()
-		if not _locomotion_animation.is_playing():
+		if _fishing_active:
+			_blend_animation_handoff(_fishing_animation, _locomotion_animation, _locomotion_clip)
+		elif not _locomotion_animation.is_playing():
 			_locomotion_animation.play(_locomotion_clip, LOCOMOTION_BLEND_TIME)
+		_fishing_active = false
 		return
 	if not _tools_loaded:
 		return
 	var animation: StringName = FISHING_ANIMATIONS.get(state, &"tools/Fishing_Idle")
 	if not _fishing_animation.has_animation(animation):
 		return
+	if not _fishing_active:
+		_blend_animation_handoff(_locomotion_animation, _fishing_animation, animation)
+	elif not _fishing_animation.is_playing() or _fishing_animation.current_animation != animation:
+		_blend_animation_handoff(_fishing_animation, _fishing_animation, animation)
 	_fishing_active = true
-	_locomotion_animation.stop()
-	if not _fishing_animation.is_playing() or _fishing_animation.current_animation != animation:
-		_fishing_animation.play(animation, LOCOMOTION_BLEND_TIME)
+
+
+func _blend_animation_handoff(source: AnimationPlayer, target: AnimationPlayer, animation: StringName) -> void:
+	var skeleton := _find_skeleton(body_mesh)
+	skeleton.force_update_all_bone_transforms()
+	var pose := Animation.new()
+	var skeleton_path := target.get_node(target.root_node).get_path_to(skeleton)
+	for bone in skeleton.get_bone_count():
+		var path := NodePath("%s:%s" % [skeleton_path, skeleton.get_bone_name(bone)])
+		var types := [Animation.TYPE_POSITION_3D, Animation.TYPE_ROTATION_3D, Animation.TYPE_SCALE_3D]
+		var values := [skeleton.get_bone_pose_position(bone), skeleton.get_bone_pose_rotation(bone), skeleton.get_bone_pose_scale(bone)]
+		for index in types.size():
+			var track := pose.add_track(types[index])
+			pose.track_set_path(track, path)
+			pose.track_insert_key(track, 0.0, values[index])
+	source.stop(true)
+	target.stop(true)
+	if not target.has_animation_library(&"handoff"):
+		target.add_animation_library(&"handoff", AnimationLibrary.new())
+	var library := target.get_animation_library(&"handoff")
+	if library.has_animation(&"pose"):
+		library.remove_animation(&"pose")
+	library.add_animation(&"pose", pose)
+	# Freeze the rendered blend, including rapid cancellations, before changing mixers.
+	target.play(&"handoff/pose")
+	target.advance(0.0)
+	target.play(animation, LOCOMOTION_BLEND_TIME)
 
 
 func _add_animation_library(source: Node, library_name: StringName, target: AnimationPlayer = null) -> void:
