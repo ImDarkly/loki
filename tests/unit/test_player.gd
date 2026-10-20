@@ -216,6 +216,44 @@ func test_waiting_rod_appears_straight_in_neutral_first_person_view() -> void:
 		assert_lt(tilt, 1.0, "Waiting rod should appear upright at %.1f seconds" % (0.5 * (sample + 1)))
 
 
+func test_waiting_rod_line_guides_face_forward_instead_of_left() -> void:
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	var rig := player.visual_rig
+	var locomotion := rig.get_node("PlayerLocomotionAnimation/AnimationPlayer") as AnimationPlayer
+	var fishing := rig.get_node("PlayerFishingAnimation/AnimationPlayer") as AnimationPlayer
+	locomotion.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	fishing.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	rig.apply_fishing_state(PlayerFishingAnimation.State.WAIT)
+	fishing.advance(0.5)
+	fishing.advance(0.0)
+	rig._find_skeleton(rig.body_mesh).force_update_all_bone_transforms()
+	await get_tree().process_frame
+	var model := rig.rod_pivot.get_node("RodModel") as Node3D
+	var guide_min := Vector3(INF, INF, INF)
+	var guide_max := Vector3(-INF, -INF, -INF)
+	var guide_vertex_count := 0
+	for mesh: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		for surface in mesh.mesh.get_surface_count():
+			var vertices: PackedVector3Array = mesh.mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]
+			for vertex in vertices:
+				var source_vertex := model.to_local(mesh.to_global(vertex))
+				if absf(source_vertex.y - 4.0597777) < 0.0001:
+					guide_min = guide_min.min(source_vertex)
+					guide_max = guide_max.max(source_vertex)
+					guide_vertex_count += 1
+	assert_gt(guide_vertex_count, 0, "Imported upper line guide must be found in the actual rod mesh")
+	if guide_vertex_count == 0:
+		return
+	var guide_center := (guide_min + guide_max) * 0.5
+	var grip := rig.rod_pivot.global_position
+	var tip := rig.rod_pivot.get_node("RodTip") as Marker3D
+	var shaft_direction := (tip.global_position - grip).normalized()
+	var guide_offset := model.to_global(guide_center) - grip
+	var radial_direction := (guide_offset - shaft_direction * guide_offset.dot(shaft_direction)).normalized()
+	assert_gt(radial_direction.dot(-player.global_basis.z), 0.9, "Line guides should face the player's casting direction")
+	assert_lt(absf(radial_direction.dot(player.global_basis.x)), 0.15, "Line guides should not face sideways to the left")
+
+
 func test_character_halves_body_collision_and_eye_height_with_unit_physics_root() -> void:
 	var rig := player.visual_rig
 	assert_eq(player.scale, Vector3.ONE)

@@ -240,6 +240,6 @@ func _setup_fishing_rod() -> void:
 	var rod_model := rod_scene.instantiate() as Node3D
 	rod_model.name = "RodModel"
 	# Fishing clips author the rod along handslot.r's local +Y axis.
-	rod_model.rotation.x = atan2(0.23781153, 4.9471223)
+	rod_model.basis = Basis(Vector3.UP, -PI / 2.0) * Basis(Vector3.RIGHT, atan2(0.23781153, 4.9471223))
 	rod_model.scale = Vector3.ONE * (0.8 / Vector2(4.9471223, 0.23781153).length())
 	rod_pivot.add_child(rod_model)
