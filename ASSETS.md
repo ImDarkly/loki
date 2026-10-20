@@ -94,7 +94,31 @@ Download `KayKit_Character_Animations_1.1.zip` from the source page and extract 
 | `Rig_Medium_MovementBasic.glb` | `11422AFD50ABF7E8C92EA107E2E0BC94ABD38023D6D15F55AD580347EFBFA29E` |
 | `Rig_Medium_Tools.glb` | `E3B62DC122C5073373376A846E354137ADD2088DDCCE8731C389FC5C20734AAD` |
 
-## Audit note
+## Quaternius Pirate Kit shark
 
-The repository audit found no Pirate Kit or Kenney asset files or references in this checkout.
-No pack names, source URLs, or install steps are recorded for them because none could be verified.
+- **Pack:** Pirate Kit (Quaternius)
+- **Source:** <https://quaternius.com/packs/piratekit.html>
+- **Selected model:** `glTF/Characters_Shark.gltf`, acquired 2026-10-20.
+- **License:** QAL v1.0, saved in [the license record](docs/licenses/quaternius-license.html), governs this acquisition. The pack page still displays a stale CC0 label. Keep raw assets outside version control; QAL prohibits standalone raw-asset redistribution.
+- **Local install path:** `systems/danger/assets/quaternius/Characters_Shark.gltf`
+- **Used clip:** `Swim`, looped cosmetically. `Swim_Bite` and `Swim_Fast` are unused; gameplay timing remains in the danger manager.
+
+### Setup after cloning
+
+Open the source page's Google Drive download, then its `glTF` folder and download `Characters_Shark.gltf`. The verified [pack folder](https://drive.google.com/drive/folders/1KjMzhVsDcyvYMWeVjZcRfuu8auBLpNi2), [glTF folder](https://drive.google.com/drive/folders/11paA9BQwPiV5Xj2JJKgsBSR59S4m5JuC), and [selected file](https://drive.google.com/file/d/1vvH5IE8jvg3TIJnlcXr-ZSpuhtyxUP1h/view) identify the exact source. This glTF embeds its texture and geometry; no conversion or companion files are needed.
+
+From the repository root, copy the downloaded file and check its hash:
+
+```powershell
+New-Item -ItemType Directory -Force systems/danger/assets/quaternius
+Copy-Item -LiteralPath 'C:\path\to\Characters_Shark.gltf' -Destination systems/danger/assets/quaternius/Characters_Shark.gltf
+Get-FileHash -Algorithm SHA256 systems/danger/assets/quaternius/Characters_Shark.gltf
+```
+
+| File | SHA-256 |
+| --- | --- |
+| `Characters_Shark.gltf` | `1F62E757F280BE1337F0EA2D0AC65D54CC448ECC20D5ED052E8012D62DE4B9EB` |
+
+The asset directory and generated import sidecars are ignored by Git. Open the project in Godot and allow import before running or testing. Missing or unimported sharks log installation instructions; there is no procedural visual fallback.
+
+Only the model child is calibrated: uniform scale 0.5, Y offset -0.7, and Y rotation 180 degrees to turn the source's +Z nose toward the visual pivot's -Z. The gameplay root keeps its existing transform and attack radius. The visual pivot follows world displacement on every peer, retains its last heading while stationary, and resets its position sample across hidden respawns.
