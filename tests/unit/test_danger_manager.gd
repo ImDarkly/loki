@@ -147,10 +147,78 @@ func test_attack_radius_ring_created_when_enabled() -> void:
 	manager.show_attack_radius = true
 	manager.current_state = 0
 	manager._on_spawn_timer_timeout()
-	assert_eq(manager.shark_node.get_child_count(), 1, "Shark mesh should carry the attack-radius ring")
-	var ring := manager.shark_node.get_child(0) as MeshInstance3D
+	assert_eq(manager.shark_node.get_child_count(), 2, "Shark should carry its visual and attack-radius ring")
+	var ring := manager.shark_node.get_node("AttackRadius") as MeshInstance3D
 	assert_true(is_instance_valid(ring), "Ring child should be a MeshInstance3D")
 	assert_true(ring.visible, "Ring should be visible when show_attack_radius is on")
+
+
+func test_shark_model_is_calibrated_animated_and_reused() -> void:
+	manager._spawn_shark()
+	var shark: MeshInstance3D = manager.shark_node
+	var visual := shark.get_node_or_null("SharkVisual") as Node3D
+	assert_not_null(visual, "Spawn should attach the sourced shark visual")
+	if visual == null:
+		return
+	var model := visual.get_node_or_null("SharkModel") as Node3D
+	assert_not_null(model, "Install the documented shark asset before running tests")
+	if model == null:
+		return
+	assert_null(shark.mesh, "The procedural fin should be removed")
+	assert_eq(shark.scale, Vector3.ONE)
+	assert_eq(model.scale, Vector3.ONE * 0.5)
+	assert_eq(model.position, Vector3(0, -0.7, 0))
+	assert_almost_eq(abs(model.rotation.y), PI, 0.0001)
+	assert_eq(shark.get_child_count(), 1, "The debug ring should be absent by default")
+	var players := model.find_children("*", "AnimationPlayer", true, false)
+	assert_eq(players.size(), 1)
+	if players.size() == 1:
+		assert_eq(players[0].current_animation, "Swim")
+		assert_eq(players[0].get_animation("Swim").loop_mode, Animation.LOOP_LINEAR)
+	manager._apply_synced_state(4, Vector3(20, 0, 0), Vector3(20, 0, 0), false)
+	manager._spawn_shark()
+	assert_same(manager.shark_node, shark, "Returning sharks should reuse the root")
+	assert_same(shark.get_node("SharkVisual/SharkModel"), model)
+	assert_eq(visual.get_child_count(), 1, "Repeated spawn must not duplicate the model")
+	await get_tree().process_frame
+
+
+func test_shark_visual_faces_world_movement_and_retains_stationary_heading() -> void:
+	manager.set_physics_process(false)
+	manager._apply_synced_state(1, Vector3.ZERO, Vector3.ZERO, true)
+	var visual := manager.shark_node.get_node_or_null("SharkVisual") as Node3D
+	assert_not_null(visual)
+	if visual == null:
+		return
+	visual._process(0.0)
+	manager.shark_node.rotation.y = 1.2
+	manager.shark_node.position = Vector3.RIGHT
+	visual._process(0.0)
+	assert_gt((-visual.global_basis.z).dot(Vector3.RIGHT), 0.999, "Parent rotation must not rotate the visual twice")
+	manager.shark_node.rotation.y = -0.7
+	visual._process(0.0)
+	assert_gt((-visual.global_basis.z).dot(Vector3.RIGHT), 0.999, "Stationary snapshots retain world heading")
+	await get_tree().process_frame
+
+
+func test_shark_visual_resets_sample_after_hidden_teleport() -> void:
+	manager.set_physics_process(false)
+	manager._apply_synced_state(1, Vector3.ZERO, Vector3.ZERO, true)
+	var visual := manager.shark_node.get_node_or_null("SharkVisual") as Node3D
+	assert_not_null(visual)
+	if visual == null:
+		return
+	visual._process(0.0)
+	manager._apply_synced_state(1, Vector3.RIGHT, Vector3.ZERO, true)
+	visual._process(0.0)
+	manager._apply_synced_state(4, Vector3.RIGHT, Vector3.ZERO, false)
+	manager._apply_synced_state(1, Vector3(100, 0, 100), Vector3.ZERO, true)
+	visual._process(0.0)
+	assert_gt((-visual.global_basis.z).dot(Vector3.FORWARD), 0.999, "First visible snapshot must not face the teleport delta")
+	manager._apply_synced_state(1, Vector3(100, 0, 101), Vector3.ZERO, true)
+	visual._process(0.0)
+	assert_gt((-visual.global_basis.z).dot(Vector3.BACK), 0.999)
+	await get_tree().process_frame
 
 
 func test_retreating_exits_boundary_transitions_to_waiting() -> void:

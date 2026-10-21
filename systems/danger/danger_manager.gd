@@ -173,34 +173,14 @@ func _random_perimeter_point() -> Vector3:
 
 func _create_shark_mesh() -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-
-	var h: float = 0.35
-	var hw: float = 0.3
-	var d: float = 0.03
-
-	st.set_normal(Vector3(0, 0, -1))
-	st.add_vertex(Vector3(0, h, -d / 2.0))
-	st.add_vertex(Vector3(-hw, 0.05, -d / 2.0))
-	st.add_vertex(Vector3(hw, 0.05, -d / 2.0))
-
-	st.set_normal(Vector3(0, 0, 1))
-	st.add_vertex(Vector3(0, h, d / 2.0))
-	st.add_vertex(Vector3(hw, 0.05, d / 2.0))
-	st.add_vertex(Vector3(-hw, 0.05, d / 2.0))
-
-	var mesh := st.commit()
-
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.35, 0.35, 0.35)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mi.material_override = mat
-	mi.mesh = mesh
+	var visual := Node3D.new()
+	visual.name = "SharkVisual"
+	visual.set_script(preload("res://systems/danger/shark_visual.gd"))
+	mi.add_child(visual)
 
 	if show_attack_radius:
 		var ring := MeshInstance3D.new()
+		ring.name = "AttackRadius"
 		var torus := TorusMesh.new()
 		torus.inner_radius = attack_range - 0.05
 		torus.outer_radius = attack_range + 0.05
