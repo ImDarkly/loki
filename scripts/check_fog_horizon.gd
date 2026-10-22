@@ -27,7 +27,7 @@ func _check() -> void:
 		var screenshot := root.get_texture().get_image()
 		screenshot.save_png("res://docs/334-horizon-%s.png" % phase)
 		var largest_jump := 0.0
-		for y in range(screenshot.get_height() / 2, int(screenshot.get_height() * 0.60)):
+		for y in range(screenshot.get_height() / 2 - 1, int(screenshot.get_height() * 0.60)):
 			var above := Vector3.ZERO
 			var below := Vector3.ZERO
 			var count := 0

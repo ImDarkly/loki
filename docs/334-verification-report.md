@@ -2,6 +2,14 @@
 
 Date: 2026-10-22. Base: `c6b8558` on `master` after the authorized fast-forward.
 
+## CodeRabbit horizon boundary follow-up
+
+The rendered check now starts one row above the image midpoint, so its 540p scan includes rows 269–270 as well as the existing range below the horizon. The upper bound and `0.08` threshold are unchanged. No production code changed.
+
+Compatibility rerun at 960 × 540: day `0.007563`, night `0.072247`, both below `0.08`. The day/night screenshots were refreshed. Standard import/load and all 34 scoped tests passed. Issue #334 now records the owner's Quaternius source, rocks/arch/fog scope, vegetation exclusion, and preservation of #348's layout geometry.
+
+Independent standard review approved the one-line fix; final boot passed. The full default suite rerun finished with **663 tests: 638 passed, 24 failed, 1 pending**, exit 1. All 23 documented baseline failures remain; the raw additional name is `test_player.gd::test_imported_fishing_rod_follows_hand_through_clips_and_player_motion`. Every assertion in that test passed, followed by the unexpected engine error `Parameter "p_lobby_details" is null.` This is the same asynchronous EOS null-lobby error documented in [#348's investigation](348-verification-report.md#difference-and-investigation), whose attribution moves to whichever test is running when the login continuation resumes. This run logs EOS login resuming during that rod test. The owner's allowance for 24 failures including the identified known asynchronous failure applies; the raw name comparison remains explicitly non-exact, not green. No test exclusions or reruns were used. The owned GUT process was terminated only after the completed summary and exit-1 message remained for five seconds.
+
 ## Latest horizon correction
 
 The owner identified the distant water's dark purple strip as a hard band rather than fog. The cause was a fixed violet fog color converging to a different color from the sky shader's pale horizon. The water geometry and shader did not need changing.

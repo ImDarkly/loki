@@ -1,7 +1,11 @@
 {
   "baseline_failures": 23,
-  "current_failures": 23,
-  "added": [],
+  "current_failures": 24,
+  "added": [
+    "test_player.gd::test_imported_fishing_rod_follows_hand_through_clips_and_player_motion"
+  ],
   "missing": [],
-  "exact_match": true
+  "exact_match": false,
+  "known_async_error": "Parameter \"p_lobby_details\" is null.",
+  "known_async_reference": "docs/348-verification-report.md#difference-and-investigation"
 }

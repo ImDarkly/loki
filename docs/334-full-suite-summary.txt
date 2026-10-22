@@ -101,7 +101,7 @@ res://tests/unit/test_pause_menu.gd
     [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
           at line -1
 - test_single_player_fallback_scan_path
-    [Failed]:  [<null>] expected to equal [VoiceChatManager:<Node#752407817025>(voice_chat_manager.gd)]:  Should find VoiceChatManager via fallback loop over players children
+    [Failed]:  [<null>] expected to equal [VoiceChatManager:<Node#752760138526>(voice_chat_manager.gd)]:  Should find VoiceChatManager via fallback loop over players children
           at line 175
     [Failed]:  Unexpected Errors:
     [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
@@ -110,6 +110,10 @@ res://tests/unit/test_pause_menu.gd
 res://tests/unit/test_player.gd
 - test_vertical_mouse_motion_looks_in_the_same_world_direction_in_each_player_state
     [Pending]:  Requires a rendered display with mouse capture
+- test_imported_fishing_rod_follows_hand_through_clips_and_player_motion
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Parameter "p_lobby_details" is null.
+          at line 194
 
 res://tests/unit/test_restart_persistence.gd
 - test_restart_closes_pause_menu_and_emits_pause_toggled_false
@@ -139,14 +143,14 @@ Warnings              8
 
 Scripts              41
 Tests               663
-Passing Tests       639
-Failing Tests        23
+Passing Tests       638
+Failing Tests        24
 Risky/Pending         1
-Asserts           9984/10009
-Time              96.591s
+Asserts           9984/10010
+Time              108.495s
 
 
----- 23 failing tests ----
+---- 24 failing tests ----
 GUT 9.6.1:  https://github.com/bitwes/Gut/releases/tag/v9.6.1 is now available!
 
 [INFO]:  Exiting with code 1
