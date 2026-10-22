@@ -1,9 +1,16 @@
 class_name MapConfig
 
-const MAP_CENTER: Vector3 = Vector3(0, 0, -7)
-const ISLAND_RADIUS: float = 10.0
-const FISHABLE_BAND_RADIUS: float = 25.0
-const OCEAN_RADIUS: float = 120.0
+static var layout: MapLayout = preload("res://scripts/island_layout.tres")
+
+static var MAP_CENTER: Vector3:
+	get:
+		return layout.point3(layout.island_center)
+static var FISHABLE_BAND_RADIUS: float:
+	get:
+		return layout.fishable_radius
+static var OCEAN_RADIUS: float:
+	get:
+		return layout.ocean_radius
 
 
 static func is_within_radius(point: Vector3, center: Vector3, radius: float) -> bool:

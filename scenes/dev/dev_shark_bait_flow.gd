@@ -10,6 +10,14 @@ var _last_place_result: String = ""
 
 
 func _ready() -> void:
+	for old_geometry in ["Island", "Water", "IslandRing"]:
+		var old_node := get_node_or_null(old_geometry)
+		if old_node:
+			remove_child(old_node)
+			old_node.queue_free()
+	var world = load("res://world/world_setup.gd").new()
+	world.name = "IslandLayout"
+	add_child(world)
 	var local_main := get_node_or_null("main")
 	if local_main:
 		_coin_manager = local_main.get_node_or_null("CoinManager") as CoinManager
@@ -157,7 +165,7 @@ func _process(_delta: float) -> void:
 	var dist_to_center := 0.0
 	if is_placed:
 		dist_to_center = Vector2(placed_pos.x - MapConfig.MAP_CENTER.x, placed_pos.z - MapConfig.MAP_CENTER.z).length()
-	var would_be_inside := MapConfig.is_within_radius(player_pos + cam_forward * 3.0, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS)
+	var would_be_inside := MapConfig.layout.is_walkable(player_pos + cam_forward * 3.0)
 
 	var holding_bait: bool = false
 	if _player and "holding_shark_bait" in _player:
@@ -278,7 +286,7 @@ func _place_at_camera() -> void:
 func _try_place_inside() -> void:
 	if _bait_manager == null:
 		return
-	var inside := MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS - 0.5, 0, 0)
+	var inside := MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x - 0.5, 0, 0)
 	var was_placed: bool = _bait_manager.is_placed
 	_bait_manager.request_place_shark_bait(inside)
 	await get_tree().process_frame
@@ -290,18 +298,14 @@ func _try_place_inside() -> void:
 
 func _get_camera_water_position() -> Vector3:
 	if _player == null:
-		return MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 3.0, 0, 0)
+		return MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 3.0, 0, 0)
 	var cam := _player.camera
 	var origin := _player.global_position if cam == null else cam.global_position
 	var dir := Vector3.FORWARD if cam == null else -cam.global_transform.basis.z
 	var target := origin + dir * 3.0
 	target.y = 0
-	var flat := Vector2(target.x - MapConfig.MAP_CENTER.x, target.z - MapConfig.MAP_CENTER.z)
-	if flat.length() <= MapConfig.ISLAND_RADIUS + 1.0:
-		var outward := flat.normalized()
-		if outward.length_squared() < 0.001:
-			outward = Vector2(1, 0)
-		target = MapConfig.MAP_CENTER + Vector3(outward.x, 0, outward.y) * (MapConfig.ISLAND_RADIUS + 1.0)
+	if MapConfig.layout.is_land(target):
+		target = MapConfig.layout.nearest_water(target)
 	var player_pos := _player.global_position
 	var diff := Vector2(target.x - player_pos.x, target.z - player_pos.z)
 	if diff.length() > 4.0:

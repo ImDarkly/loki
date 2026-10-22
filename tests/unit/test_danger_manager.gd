@@ -91,15 +91,11 @@ func test_approaching_never_enters_island() -> void:
 	manager.current_state = 1
 	manager.player_ref.global_position = MapConfig.MAP_CENTER
 	manager.attack_range = 2.0
-	manager.shark_node.position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 10.0, 0, 0)
+	manager.shark_node.position = MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 10.0, 0, 0)
 
 	manager._physics_process(10.0)
 
-	var flat_dist: float = Vector2(
-		manager.shark_node.position.x - MapConfig.MAP_CENTER.x,
-		manager.shark_node.position.z - MapConfig.MAP_CENTER.z
-	).length()
-	assert_gt(flat_dist, MapConfig.ISLAND_RADIUS - 0.001, "Shark should never move onto the island interior")
+	assert_false(MapConfig.layout.is_land(manager.shark_node.position), "Shark should never move onto the island interior")
 	assert_eq(manager.current_state, 1, "Should stay APPROACHING while the player is beyond reach")
 
 
@@ -108,8 +104,8 @@ func test_shoreline_player_within_attack_radius_is_bitten() -> void:
 	manager._on_spawn_timer_timeout()
 	manager.current_state = 1
 	manager.attack_range = 2.0
-	manager.shark_node.position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS, 0, 0)
-	manager.player_ref.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS - 1.0, 0, 0)
+	manager.shark_node.position = MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x, 0, 0)
+	manager.player_ref.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x - 1.0, 0, 0)
 
 	var health := mock_player.get_node("HealthComponent") as HealthComponent
 	health.current_health = 5
@@ -127,8 +123,8 @@ func test_shoreline_player_outside_attack_radius_not_bitten() -> void:
 	manager._on_spawn_timer_timeout()
 	manager.current_state = 1
 	manager.attack_range = 2.0
-	manager.shark_node.position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS, 0, 0)
-	manager.player_ref.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS - 3.0, 0, 0)
+	manager.shark_node.position = MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x, 0, 0)
+	manager.player_ref.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x - 3.0, 0, 0)
 
 	watch_signals(manager)
 	manager._physics_process(1.0)
@@ -140,7 +136,7 @@ func test_shoreline_player_outside_attack_radius_not_bitten() -> void:
 		manager.shark_node.position.x - MapConfig.MAP_CENTER.x,
 		manager.shark_node.position.z - MapConfig.MAP_CENTER.z
 	).length()
-	assert_gt(flat_dist, MapConfig.ISLAND_RADIUS - 0.001, "Shark should wait at the shore edge")
+	assert_gt(flat_dist, MapConfig.layout.island_half_extents.x - 0.001, "Shark should wait at the shore edge")
 
 
 func test_attack_radius_ring_created_when_enabled() -> void:

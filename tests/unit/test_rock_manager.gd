@@ -21,6 +21,16 @@ func test_point_availability_after_pickup() -> void:
 	assert_false(manager.is_point_available(0))
 
 
+func test_generated_rocks_stay_on_land_and_clear_routes() -> void:
+	manager._generate_rocks()
+	assert_eq(manager.rocks.size(), 15)
+	for rock in manager.rocks:
+		assert_true(MapConfig.layout.rock_position_allowed(rock["position"], manager.ROCK_HALF_EXTENT), str(rock["position"]))
+	for i in range(manager.rocks.size()):
+		for j in range(i):
+			assert_gte(manager.rocks[i]["position"].distance_to(manager.rocks[j]["position"]), manager.min_rock_spacing)
+
+
 func test_pickup_of_unavailable_is_noop() -> void:
 	manager.request_pickup(0)
 	assert_false(manager.is_point_available(0))

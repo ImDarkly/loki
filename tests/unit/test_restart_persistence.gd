@@ -46,7 +46,7 @@ func test_fireplace_owned_survives_restart() -> void:
 
 
 func _water_position() -> Vector3:
-	return MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 5.0, 0, 0)
+	return MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 5.0, 0, 0)
 
 
 func test_shark_bait_persistence_across_restart() -> void:

@@ -35,11 +35,11 @@ func after_each() -> void:
 
 
 func _water_position() -> Vector3:
-	return MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 5.0, 0, 0)
+	return MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 5.0, 0, 0)
 
 
 func _inside_position() -> Vector3:
-	return MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS - 0.5, 0, 0)
+	return MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x - 0.5, 0, 0)
 
 
 func test_place_rejected_without_ownership() -> void:
@@ -47,6 +47,17 @@ func test_place_rejected_without_ownership() -> void:
 	_create_mock_player()
 	manager.request_place_shark_bait(_water_position())
 	assert_false(manager.is_placed, "Should not place without ownership")
+
+
+func test_deck_rejects_bait_and_bay_water_accepts_it() -> void:
+	coin_manager.shark_bait_owned = true
+	var player := _create_mock_player()
+	player.global_position = Vector3(-16, 0, 0)
+	manager.request_place_shark_bait(Vector3(-16, 0, 0))
+	assert_false(manager.is_placed, "Ship deck is dry ground for bait placement")
+	player.global_position = Vector3(2, 0, 24)
+	manager.request_place_shark_bait(Vector3(2, 0, 26))
+	assert_true(manager.is_placed, "Bay water is no longer rejected by a circular island boundary")
 
 
 func test_place_rejected_without_holding() -> void:
@@ -86,7 +97,7 @@ func test_place_rejected_inside_island() -> void:
 	manager.request_place_shark_bait(MapConfig.MAP_CENTER)
 	assert_false(manager.is_placed, "Center of island should be rejected")
 
-	manager.request_place_shark_bait(MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS, 0, 0))
+	manager.request_place_shark_bait(MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x, 0, 0))
 	assert_false(manager.is_placed, "Exactly at ISLAND_RADIUS should be rejected (boundary inclusive)")
 
 
@@ -114,7 +125,7 @@ func test_place_rejected_when_already_placed() -> void:
 	var first := _water_position()
 	var player := _create_mock_player()
 	player.global_position = first - Vector3(2.0, 0, 0)
-	var second := MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 8.0, 0, 0)
+	var second := MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 8.0, 0, 0)
 	manager.request_place_shark_bait(first)
 	assert_true(manager.is_placed)
 	var first_stored: Vector3 = manager.placed_position
@@ -145,13 +156,13 @@ func test_request_place_emits_signal_and_syncs() -> void:
 
 func test_height_does_not_affect_island_check() -> void:
 	coin_manager.shark_bait_owned = true
-	var raised_inside := MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS - 0.5, 10.0, 0)
+	var raised_inside := MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x - 0.5, 10.0, 0)
 	var player := _create_mock_player()
 	player.global_position = raised_inside - Vector3(2.0, 0, 0)
 	manager.request_place_shark_bait(raised_inside)
 	assert_false(manager.is_placed, "Y should be ignored — XZ inside island still rejected")
 
-	var raised_water := MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 5.0, 10.0, 0)
+	var raised_water := MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 5.0, 10.0, 0)
 	player.global_position = raised_water - Vector3(2.0, 0, 0)
 	manager.request_place_shark_bait(raised_water)
 	assert_true(manager.is_placed, "Y should be ignored — XZ outside island should be accepted")

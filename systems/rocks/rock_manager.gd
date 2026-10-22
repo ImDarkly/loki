@@ -89,27 +89,34 @@ func reset_for_restart() -> void:
 func _generate_rocks() -> void:
 	rocks.clear()
 	for i in range(rock_count):
-		rocks.append({"position": _pick_rock_position(), "available": true})
-	_cooldowns.resize(rock_count)
-	for i in range(rock_count):
+		var candidate := _pick_rock_position()
+		if candidate.is_finite():
+			rocks.append({"position": candidate, "available": true})
+	_cooldowns.resize(rocks.size())
+	for i in range(rocks.size()):
 		_cooldowns[i] = 0.0
 	_ensure_rock_nodes()
 	_update_rock_visuals()
 
 
 func _pick_rock_position() -> Vector3:
-	for _attempt in range(_PLACEMENT_ATTEMPTS):
+	for _attempt in range(_PLACEMENT_ATTEMPTS * 8):
 		var candidate := _pick_random_rock_position()
 		if _is_valid_rock_position(candidate):
 			return candidate
-	return _pick_random_rock_position()
+	var extents := MapConfig.layout.island_half_extents
+	for x in range(-ceili(extents.x), ceili(extents.x) + 1):
+		for z in range(-ceili(extents.y), ceili(extents.y) + 1):
+			var candidate := MapConfig.layout.point3(MapConfig.layout.island_center + Vector2(x, z))
+			if _is_valid_rock_position(candidate):
+				return candidate
+	return Vector3.INF
 
 
 func _pick_random_rock_position() -> Vector3:
 	var angle := randf() * TAU
-	var max_radius := MapConfig.ISLAND_RADIUS - ROCK_HALF_EXTENT
-	var offset := Vector2(cos(angle), sin(angle)) * (max_radius * sqrt(randf()))
-	return Vector3(MapConfig.MAP_CENTER.x + offset.x, 0, MapConfig.MAP_CENTER.z + offset.y)
+	var offset := Vector2(cos(angle), sin(angle)) * MapConfig.layout.island_half_extents * sqrt(randf())
+	return MapConfig.layout.point3(MapConfig.layout.island_center + offset)
 
 
 func _is_valid_rock_position(candidate: Vector3) -> bool:
@@ -117,7 +124,7 @@ func _is_valid_rock_position(candidate: Vector3) -> bool:
 
 
 func _is_on_land(candidate: Vector3) -> bool:
-	return MapConfig.is_within_radius(candidate, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS - ROCK_HALF_EXTENT)
+	return MapConfig.layout.rock_position_allowed(candidate, ROCK_HALF_EXTENT)
 
 
 func _is_clear_of_other_rocks(candidate: Vector3) -> bool:

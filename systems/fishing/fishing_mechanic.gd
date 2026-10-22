@@ -588,14 +588,8 @@ func _handle_remote_transition(to_state: int) -> void:
 
 
 func _check_rescue_complete() -> bool:
-	# SHORE_CONTACT rescue: the hook pull teleport is not blocked, the following
-	# floating-physics tick ejects the victim out of the island wall, so a towed
-	# victim equilibrates just outside ISLAND_RADIUS and never crosses it.
-	# SHORE_CONTACT_TOLERANCE covers capsule radius 0.3 + pull step + sync jitter.
-	# complete_water_rescue snaps the victim radially onto the deck
-	# (ISLAND_RADIUS - inset, deck rest height, velocity zeroed); without the snap
-	# the victim would stay at water level and instantly re-enter FLOATING.
-	if not MapConfig.is_within_radius(_tether_target.global_position, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS + SHORE_CONTACT_TOLERANCE):
+	# Include decks and bay edges; capsule contact can stop short of dry ground.
+	if not MapConfig.layout.near_walkable(_tether_target.global_position, SHORE_CONTACT_TOLERANCE):
 		return false
 	_tether_target.complete_water_rescue()
 	_on_hook_rejected()
