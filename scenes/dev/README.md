@@ -1,5 +1,20 @@
 # Dev Scenes — Quick Guides
 
+## Island Greybox (`dev_island_flow.tscn`)
+
+Run this scene directly with **F6**. It reuses the production world generator and shared `scripts/island_layout.tres`, with one actual Player and the existing managers/landmarks needed for traversal and interaction checks. It does not boot the lobby or a multiplayer peer. Preview-only setup stops round/shark timers and unlocks the fireplace; production defaults are unchanged.
+
+- **WASD + mouse / Space** — walk, look, jump. Click captures the mouse; **Esc** releases it, then closes the preview on a second press.
+- **1–8** — jump to dock, ship pier, ship/storage, shop entrance, empty pad 2, empty pad 3, fireplace, creature pier.
+- **O** — switch between the overhead map and player camera. The player stays still in overhead view.
+- **M** — show/hide measurements. Cyan lines show route clearances and connector outlines; red marks the future creature-water footprint and the final metre of pier above it.
+- **F** — toggle the existing fog for inspection. **K** spawns the existing shark near the player through its debug action; **R** restores the player on the ship pier and clears the shark.
+- **T** — toggle the existing fishing/shop phase for checking casts or shop prompts. Existing fishing relocation remains active.
+
+The HUD and world labels read the layout Resource: bay opening **6 m**, clear paths **2.5 m**, shore connector **2.5 × 2 m**, gangway **0.5 × 2.5 m**, creature pier **2 m clear**. Walk ship → gangway → pier → connector → island, then each destination; check collisions and comfort at the bay and creature rails. These are feel checks, not substitutes for geometry/state GUT tests.
+
+Ladders are visual placeholders until #349. Creature-water instant death and highlights are deferred: the red footprint is a debug annotation. A water test still uses the existing floating behavior; **R** is the solo preview escape. No new fog, lighting, shader, or shark behavior is added.
+
 ## Shark Bait Placement — Water Test (`dev_shark_bait_flow.tscn`)
 
 **What it does:** Isolated placement without lobby → host → round. Tests `SharkBaitManager` server-authoritative placement: owned-gate (`shark_bait_owned`), `is_placed` single-bait guard, `MapConfig.ISLAND_RADIUS` water check (red torus at radius 10), `request_place_shark_bait → _sync_placed` broadcast + `shark_bait_placed` signal, and red `SharkBait` box at `placed_position`.

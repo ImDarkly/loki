@@ -2,9 +2,9 @@ extends Node3D
 
 const NO_ZONE_INDEX: int = -1
 
-@export var min_zone_count: int = 6
-@export var max_zone_count: int = 9
-@export var zone_radius: float = 1.0
+var zone_radius: float:
+	get:
+		return MapConfig.layout.fishing_radius
 @export var water_boundary_margin: float = 1.5
 @export var min_zone_spacing: float = 2.0
 @export var yell_scare_radius: float = 8.0
@@ -70,23 +70,13 @@ func set_zones(new_zones: Array) -> void:
 
 func _generate_zones() -> void:
 	zones.clear()
-	var count := randi_range(min_zone_count, max_zone_count)
-	for _i in range(count):
-		zones.append({"center": _pick_zone_center(), "radius": zone_radius})
+	for center in MapConfig.layout.fishing_centers:
+		zones.append({"center": MapConfig.layout.point3(center), "radius": MapConfig.layout.fishing_radius})
 	zone_occupant_counts.resize(zones.size())
 	for i in range(zone_occupant_counts.size()):
 		zone_occupant_counts[i] = 0
 	_ensure_zone_nodes()
 	_update_zone_visuals()
-
-
-func _pick_zone_center() -> Vector3:
-	for _attempt in range(32):
-		var candidate := _pick_random_zone_center()
-		if _is_valid_zone_position(candidate):
-			return candidate
-
-	return MapConfig.MAP_CENTER
 
 
 func _is_valid_zone_position(candidate: Vector3) -> bool:
@@ -314,19 +304,11 @@ func _broadcast_fish_fled_rpc(target_client_id: int) -> void:
 			mechanic.on_fish_fled(target_client_id)
 
 
-func _placement_bounds() -> Dictionary:
-	return {
-		"outer": MapConfig.FISHABLE_BAND_RADIUS - zone_radius - water_boundary_margin,
-		"inner": MapConfig.ISLAND_RADIUS + zone_radius + water_boundary_margin,
-	}
-
-
 func _is_within_water_boundary(candidate: Vector3) -> bool:
-	var bounds := _placement_bounds()
-	if not MapConfig.is_within_radius(candidate, MapConfig.MAP_CENTER, bounds["outer"]):
+	var outer := MapConfig.FISHABLE_BAND_RADIUS - zone_radius - water_boundary_margin
+	if not MapConfig.is_within_radius(candidate, MapConfig.layout.point3(MapConfig.layout.island_center), outer):
 		return false
-	# Zones must sit in the water ring outside the island, not on dry land.
-	return not MapConfig.is_within_radius(candidate, MapConfig.MAP_CENTER, bounds["inner"])
+	return not MapConfig.layout.near_walkable(candidate, zone_radius + water_boundary_margin)
 
 
 func _is_clear_of_other_zones(candidate: Vector3, excluded_index: int) -> bool:
@@ -340,13 +322,11 @@ func _is_clear_of_other_zones(candidate: Vector3, excluded_index: int) -> bool:
 
 
 func _pick_random_zone_center() -> Vector3:
-	var bounds := _placement_bounds()
-	var outer: float = bounds["outer"]
-	var inner: float = bounds["inner"]
-	var r := sqrt(randf() * (outer * outer - inner * inner) + inner * inner)
+	var outer := MapConfig.FISHABLE_BAND_RADIUS - zone_radius - water_boundary_margin
+	var r := sqrt(randf()) * outer
 	var angle := randf() * TAU
 	var offset := Vector2(cos(angle), sin(angle)) * r
-	return Vector3(MapConfig.MAP_CENTER.x + offset.x, 0, MapConfig.MAP_CENTER.z + offset.y)
+	return MapConfig.layout.point3(MapConfig.layout.island_center + offset)
 
 
 func _ensure_zone_nodes() -> void:

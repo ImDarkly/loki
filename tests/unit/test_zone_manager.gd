@@ -29,6 +29,20 @@ func test_lookup_returns_matching_index_for_point_inside_zone() -> void:
 	assert_eq(manager.get_zone_index_for_point(Vector3(2, 0, 1)), 0)
 
 
+func test_initial_layout_has_eight_blueprint_centers_and_restart_restores_them() -> void:
+	manager._generate_zones()
+	var expected: Array[Vector3] = [Vector3(-3.5, 0, -6.1), Vector3(-1.2, 0, -6.9), Vector3(1.2, 0, -6.9), Vector3(3.5, 0, -6.1), Vector3(-10.9, 0, -5.1), Vector3(-7.7, 0, -9.2), Vector3(7.7, 0, -9.2), Vector3(10.9, 0, -5.1)]
+	assert_eq(manager.zones.size(), 8)
+	for i in range(expected.size()):
+		assert_eq(manager.zones[i]["center"], expected[i])
+		assert_almost_eq(manager.zones[i]["radius"], 1.0, 0.001)
+		assert_true(manager._is_within_water_boundary(expected[i]))
+	manager.set_zones([{"center": Vector3(0, 0, -20), "radius": 1.0}])
+	manager.reset_for_restart()
+	assert_eq(manager.zones.size(), 8)
+	assert_eq(manager.zones[0]["center"], expected[0])
+
+
 func test_lookup_returns_sentinel_outside_all_zones() -> void:
 	assert_eq(manager.get_zone_index_for_point(Vector3(100, 0, 100)), -1)
 
@@ -164,13 +178,15 @@ func test_placement_respects_minimum_zone_spacing() -> void:
 		{"center": Vector3(0, 0, 0), "radius": 4.0},
 		{"center": Vector3(20, 0, 0), "radius": 4.0}
 	])
-	assert_true(manager._is_valid_zone_position_excluding(Vector3(0, 0, 12), 0))
+	assert_true(manager._is_valid_zone_position_excluding(Vector3(0, 0, -12), 0))
 
 
 func test_placement_stays_within_water_boundary_margin() -> void:
 	manager.water_boundary_margin = 2.0
-	assert_true(manager._is_within_water_boundary(Vector3(0, 0, -7 + 25.0 - manager.zone_radius - manager.water_boundary_margin)))
-	assert_false(manager._is_within_water_boundary(Vector3(0, 0, -7 + 25.0 - manager.zone_radius - manager.water_boundary_margin + 0.1)))
+	var edge := MapConfig.MAP_CENTER - Vector3(0, 0, MapConfig.FISHABLE_BAND_RADIUS - manager.zone_radius - manager.water_boundary_margin)
+	assert_true(manager._is_within_water_boundary(edge))
+	assert_false(manager._is_within_water_boundary(edge - Vector3(0, 0, 0.1)))
+	assert_false(manager._is_within_water_boundary(Vector3(0, 0, 21)), "A relocated ring must not overlap the creature deck")
 
 
 func test_disconnect_clears_peer_occupancy() -> void:
@@ -221,7 +237,7 @@ func test_scare_relocates_occupied_zone() -> void:
 
 
 func _near_source_zone_pos() -> Vector3:
-	return MapConfig.MAP_CENTER + Vector3(0, 0, MapConfig.ISLAND_RADIUS + manager.zone_radius + manager.water_boundary_margin + 1.0)
+	return Vector3(0, 0, -6)
 
 
 func test_scare_moves_zone_farther_from_source() -> void:
@@ -266,22 +282,27 @@ func _far_spot_from(source: Vector3) -> Vector3:
 
 
 func test_scare_keeps_center_when_no_farther_candidate() -> void:
-	manager.set_zones([{"center": _far_spot_from(Vector3(0, 0, 0)), "radius": 1.0}])
+	var source := Vector3.ZERO
+	var far_spot := _far_spot_from(source)
+	manager.set_zones([{"center": far_spot, "radius": 1.0}])
+	assert_true(manager._is_within_water_boundary(far_spot), "The farthest fixture must be valid water")
 	var before: Vector3 = manager.zones[0]["center"]
 
-	manager.scare(Vector3(0, 0, 0), 30.0)
+	manager.scare(source, _flat_distance(source, far_spot) + 1.0)
 
 	assert_eq(manager.zones[0]["center"], before)
 
 
 func test_scare_interrupts_bite_in_zone_that_cannot_move() -> void:
-	var far_spot := _far_spot_from(Vector3(0, 0, 0))
+	var source := Vector3.ZERO
+	var far_spot := _far_spot_from(source)
 	manager.set_zones([{"center": far_spot, "radius": 1.0}])
+	assert_true(manager._is_within_water_boundary(far_spot), "The farthest fixture must be valid water")
 	manager.enter_zone(0, 101)
 	var mechanic := _add_mock_occupant(101, BITE_STATE, 101)
 	watch_signals(mechanic)
 
-	manager.scare(Vector3(0, 0, 0), 30.0)
+	manager.scare(source, _flat_distance(source, far_spot) + 1.0)
 
 	assert_eq(manager.zones[0]["center"], far_spot)
 	assert_signal_emitted(mechanic, "reel_failure")

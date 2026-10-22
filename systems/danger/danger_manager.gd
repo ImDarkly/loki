@@ -165,9 +165,9 @@ func _random_perimeter_point() -> Vector3:
 	var angle := randf() * TAU
 	var dir := Vector2(cos(angle), sin(angle))
 	return Vector3(
-		MapConfig.MAP_CENTER.x + dir.x * MapConfig.FISHABLE_BAND_RADIUS,
+		MapConfig.layout.island_center.x + dir.x * MapConfig.layout.shark_radius,
 		0,
-		MapConfig.MAP_CENTER.z + dir.y * MapConfig.FISHABLE_BAND_RADIUS
+		MapConfig.layout.island_center.y + dir.y * MapConfig.layout.shark_radius
 	)
 
 
@@ -229,7 +229,7 @@ func _process_approaching(delta: float) -> void:
 	var direction := (target - current).normalized()
 	var step: float = minf(initial_swim_speed * delta, dist)
 	var new_pos := shark_node.position + direction * step
-	if MapConfig.is_within_radius(new_pos, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS):
+	if MapConfig.layout.is_land(new_pos):
 		new_pos = _clamp_to_island_edge(new_pos)
 	shark_node.position = new_pos
 
@@ -239,11 +239,7 @@ func _process_approaching(delta: float) -> void:
 
 
 func _clamp_to_island_edge(pos: Vector3) -> Vector3:
-	var flat := Vector2(pos.x - MapConfig.MAP_CENTER.x, pos.z - MapConfig.MAP_CENTER.z)
-	if flat.length_squared() <= 0.0001:
-		return MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS, 0, 0)
-	flat = flat.normalized() * MapConfig.ISLAND_RADIUS
-	return Vector3(MapConfig.MAP_CENTER.x + flat.x, pos.y, MapConfig.MAP_CENTER.z + flat.y)
+	return MapConfig.layout.nearest_water(pos)
 
 
 func _process_retreating(delta: float) -> void:
@@ -261,7 +257,7 @@ func _process_retreating(delta: float) -> void:
 		shark_node.look_at(shark_node.position + direction, Vector3.UP)
 
 	var reached_spawn := new_pos.distance_to(target) <= step
-	if reached_spawn or not MapConfig.is_within_radius(new_pos, MapConfig.MAP_CENTER, MapConfig.FISHABLE_BAND_RADIUS):
+	if reached_spawn or not MapConfig.is_within_radius(new_pos, MapConfig.layout.point3(MapConfig.layout.island_center), MapConfig.layout.shark_radius):
 		shark_node.visible = false
 		current_state = State.WAITING
 		return_timer.start(randf_range(45.0, 90.0))

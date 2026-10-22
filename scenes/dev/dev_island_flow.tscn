@@ -1,0 +1,57 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scenes/dev/dev_island_flow.gd" id="1_dev"]
+[ext_resource type="PackedScene" path="res://entities/player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://systems/zones/zone_manager.tscn" id="3_zones"]
+[ext_resource type="PackedScene" path="res://systems/rocks/rock_manager.tscn" id="4_rocks"]
+[ext_resource type="PackedScene" path="res://systems/danger/danger_manager.tscn" id="5_danger"]
+[ext_resource type="PackedScene" path="res://systems/quota/quota_manager.tscn" id="6_quota"]
+[ext_resource type="PackedScene" path="res://systems/quota/coin_manager.tscn" id="7_coin"]
+[ext_resource type="PackedScene" path="res://systems/round/round_manager.tscn" id="8_round"]
+[ext_resource type="PackedScene" path="res://entities/shop_hut.tscn" id="9_shop"]
+[ext_resource type="PackedScene" path="res://entities/fireplace.tscn" id="10_fire"]
+[ext_resource type="PackedScene" path="res://entities/storage_box.tscn" id="11_storage"]
+
+[node name="main" type="Node3D"]
+script = ExtResource("1_dev")
+
+[node name="QuotaManager" parent="." instance=ExtResource("6_quota")]
+
+[node name="CoinManager" parent="." instance=ExtResource("7_coin")]
+
+[node name="RoundManager" parent="." instance=ExtResource("8_round")]
+
+[node name="ZoneManager" parent="." instance=ExtResource("3_zones")]
+
+[node name="RockManager" parent="." instance=ExtResource("4_rocks")]
+
+[node name="DangerManager" parent="." instance=ExtResource("5_danger")]
+
+[node name="Shops" type="Node3D" parent="."]
+
+[node name="ShopHut" parent="Shops" instance=ExtResource("9_shop")]
+position = Vector3(-6, 1, 10.4)
+
+[node name="Fireplace" parent="Shops" instance=ExtResource("10_fire")]
+position = Vector3(11, 0, 10.2)
+
+[node name="StorageBox" parent="." instance=ExtResource("11_storage")]
+position = Vector3(-17, 0, 0)
+
+[node name="Players" type="Node3D" parent="."]
+
+[node name="Player_1" parent="Players" instance=ExtResource("2_player")]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+layer = 140
+
+[node name="Panel" type="PanelContainer" parent="HUD"]
+offset_left = 12.0
+offset_top = 90.0
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="HUD/Panel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Island greybox preview"
+mouse_filter = 2

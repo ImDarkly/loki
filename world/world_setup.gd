@@ -13,6 +13,7 @@ var _sky_material: ShaderMaterial
 var _directional_light: DirectionalLight3D
 var _ground_mat: ORMMaterial3D
 var _water_mat: ORMMaterial3D
+var _ground_mesh: ArrayMesh
 var _round_manager: Node = null
 var _fps_label: Label = null
 var _last_fishing_active: bool = false
@@ -25,6 +26,7 @@ func _ready() -> void:
 	setup_ground()
 	setup_ground_collision()
 	setup_water()
+	_setup_layout()
 	_setup_danger_system()
 	_add_fps_counter()
 
@@ -63,7 +65,7 @@ func setup_lighting() -> void:
 	_directional_light.light_energy = 1.0
 	_directional_light.light_color = Color.WHITE
 	_directional_light.shadow_enabled = true
-	_directional_light.shadow_normal_bias = 0.1
+	_directional_light.shadow_normal_bias = 2.0
 	_directional_light.directional_shadow_max_distance = 60.0
 	_directional_light.position = Vector3(0, 10, 0)
 	_directional_light.rotation = Vector3(DAY_PITCH, SWEEP_YAW, 0)
@@ -71,20 +73,16 @@ func setup_lighting() -> void:
 
 
 func setup_ground() -> void:
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = MapConfig.ISLAND_RADIUS
-	mesh.bottom_radius = MapConfig.ISLAND_RADIUS
-	mesh.height = 1.0
-	mesh.radial_segments = 48
+	_ground_mesh = MapConfig.layout.ground_mesh()
 
 	_ground_mat = ORMMaterial3D.new()
 	_ground_mat.albedo_color = Color(0.90, 0.56, 0.31)
 	_ground_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
 	var ground := MeshInstance3D.new()
-	ground.mesh = mesh
+	ground.name = "IslandGround"
+	ground.mesh = _ground_mesh
 	ground.material_override = _ground_mat
-	ground.position = Vector3(0, -0.5, MapConfig.MAP_CENTER.z)
 	add_child(ground)
 
 
@@ -92,14 +90,10 @@ func setup_ground_collision() -> void:
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
 	body.collision_mask = 2
-	body.position = Vector3(0, -0.5, MapConfig.MAP_CENTER.z)
-
-	var shape := CylinderShape3D.new()
-	shape.radius = MapConfig.ISLAND_RADIUS
-	shape.height = 1.0
+	body.name = "IslandCollision"
 
 	var collision := CollisionShape3D.new()
-	collision.shape = shape
+	collision.shape = _ground_mesh.create_trimesh_shape()
 	body.add_child(collision)
 	add_child(body)
 
@@ -116,8 +110,88 @@ func setup_water() -> void:
 	var water := MeshInstance3D.new()
 	water.mesh = mesh
 	water.material_override = _water_mat
-	water.position = Vector3(0, -0.5, MapConfig.MAP_CENTER.z)
+	water.position = Vector3(0, MapConfig.layout.water_height, MapConfig.MAP_CENTER.z)
 	add_child(water)
+
+
+func _layout_box(node_name: String, center: Vector3, size: Vector3, color: Color, solid: bool = true) -> Node3D:
+	var root: Node3D = StaticBody3D.new() if solid else Node3D.new()
+	root.name = node_name
+	root.position = center
+	var visual := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	visual.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	visual.material_override = material
+	root.add_child(visual)
+	if solid:
+		var collision := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = size
+		collision.shape = shape
+		root.add_child(collision)
+	add_child(root)
+	return root
+
+
+func _layout_disc(node_name: String, center: Vector3, radius: float, height: float, color: Color) -> void:
+	var marker := MeshInstance3D.new()
+	marker.name = node_name
+	marker.position = center
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = height
+	mesh.radial_segments = 64
+	marker.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	marker.material_override = material
+	add_child(marker)
+
+
+func _setup_layout() -> void:
+	var layout := MapConfig.layout
+	for deck_name: String in layout.decks:
+		var rect: Rect2 = layout.decks[deck_name]
+		_layout_box(deck_name, layout.point3(rect.get_center(), layout.deck_height - 0.15), Vector3(rect.size.x, 0.3, rect.size.y), Color(0.4, 0.3, 0.2))
+	var pier: Rect2 = layout.decks["CreaturePier"]
+	var rail_y := layout.deck_height + layout.rail_height * 0.5
+	for side in [-1.0, 1.0]:
+		var rail_x: float = pier.get_center().x + side * (pier.size.x + layout.rail_thickness) * 0.5
+		_layout_box("CreatureRail", Vector3(rail_x, rail_y, pier.get_center().y), Vector3(layout.rail_thickness, layout.rail_height, pier.size.y), Color(0.3, 0.25, 0.2))
+	_layout_box("CreatureEndRail", Vector3(pier.get_center().x, rail_y, pier.end.y + layout.rail_thickness * 0.5), Vector3(pier.size.x + layout.rail_thickness * 2, layout.rail_height, layout.rail_thickness), Color(0.3, 0.25, 0.2))
+	for lantern in layout.lantern_boxes():
+		_layout_box(lantern["name"], lantern["position"], lantern["size"], Color(0.3, 0.6, 0.35), false)
+	for i in range(layout.pads.size()):
+		var marker := Marker3D.new()
+		marker.name = "BuildingPad%d" % (i + 1)
+		marker.position = layout.point3(layout.pads[i], layout.deck_height)
+		marker.set_meta("size", layout.pad_size)
+		add_child(marker)
+		_layout_box("PadFootprint", marker.position, Vector3(layout.pad_size.x, 0.02, layout.pad_size.y), Color(0.5, 0.45, 0.4), false)
+	for ladder in layout.ladders:
+		for side in [-1.0, 1.0]:
+			_layout_box("LadderSide", layout.point3(ladder + Vector2(side * layout.ladder_size.x * 0.5, 0), -layout.ladder_size.y * 0.5), Vector3(0.08, layout.ladder_size.y, 0.1), Color(0.55, 0.4, 0.2), false)
+		for i in range(5):
+			_layout_box("LadderRung", layout.point3(ladder, -float(i) * layout.ladder_size.y / 5.0), Vector3(layout.ladder_size.x, 0.06, 0.1), Color(0.55, 0.4, 0.2), false)
+	for detail in layout.ship_boxes():
+		_layout_box(detail["name"], detail["position"], detail["size"], Color(0.3, 0.2, 0.15), false)
+	for marker in layout.marker_discs():
+		var color := Color(0.58, 0.50, 0.38) if marker["name"] == "PlazaMarker" else Color(0.42, 0.15, 0.2)
+		_layout_disc(marker["name"], marker["position"], marker["radius"], marker["height"], color)
+	var shop := get_node_or_null("Shops/ShopHut") as Node3D
+	if shop:
+		shop.position = layout.point3(layout.pads[0], layout.deck_height + 1.0)
+	var fire := get_node_or_null("Shops/Fireplace") as Node3D
+	if fire:
+		fire.position = layout.point3(layout.fireplace, layout.deck_height)
+	var storage := get_node_or_null("StorageBox") as Node3D
+	if storage:
+		storage.position = layout.storage_position()
 
 
 func _setup_danger_system() -> void:

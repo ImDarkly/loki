@@ -442,7 +442,7 @@ func test_reset_for_restart_clears_holding_rock() -> void:
 func test_wasd_works_during_fight() -> void:
 	player.global_position = Vector3.ZERO
 	player.fishing_mechanic._is_fighting = true
-	player.fishing_mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	player.fishing_mechanic.cast_target_position = Vector3(8, 0, -6)
 	player.fishing_mechanic._fight_initial_distance = 0.0
 	player.fishing_mechanic._fight_target = 99.0
 
@@ -1305,10 +1305,10 @@ func test_fight_end_syncs_terminal_state_to_remote() -> void:
 	server_fishing.hook_type = server_fishing.HookType.FISH
 	server_fishing._reset_scroll_timers()
 	server_fishing._escape_timer = 0.0
-	server_fishing.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	server_fishing.cast_target_position = Vector3(8, 0, -6)
 	assert_false(
-		MapConfig.is_within_radius(server_fishing.get_fish_position(), MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS + server_fishing.SHORE_CONTACT_TOLERANCE),
-		"catch test fish should start outside the shoreline radius"
+		MapConfig.layout.near_walkable(server_fishing.get_fish_position(), server_fishing.SHORE_CONTACT_TOLERANCE),
+		"catch test fish should start outside the shoreline"
 	)
 	server_fishing._fight_progress = 0.0
 	server_fishing._fight_target = 0.01
@@ -1726,15 +1726,14 @@ func test_complete_water_rescue_noop_when_not_floating() -> void:
 func test_complete_water_rescue_snaps_victim_onto_deck() -> void:
 	get_tree().get_multiplayer().multiplayer_peer = null
 	player.player_state = Player.PlayerState.FLOATING
-	player.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 0.5, 0, 0)
+	player.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 0.5, 0, 0)
 	player.global_position.y = Player.WATER_SURFACE_Y - 0.01
 	player.velocity = Vector3(3.0, 0.0, 3.0)
 
 	player.complete_water_rescue()
 
 	assert_eq(player.player_state, Player.PlayerState.ALIVE, "Rescue should restore ALIVE")
-	var flat := Vector2(player.global_position.x - MapConfig.MAP_CENTER.x, player.global_position.z - MapConfig.MAP_CENTER.z)
-	assert_true(flat.length() <= MapConfig.ISLAND_RADIUS - 0.4, "Rescued victim should land inside ISLAND_RADIUS - 0.4")
+	assert_true(MapConfig.layout.is_walkable(player.global_position, 0.39), "Rescued victim should land safely inside the actual shoreline")
 	assert_true(player.global_position.y >= 0.0, "Rescued victim should be at or above deck level")
 	assert_eq(player.velocity, Vector3.ZERO, "Rescue snap should zero victim velocity")
 
@@ -1742,7 +1741,7 @@ func test_complete_water_rescue_snaps_victim_onto_deck() -> void:
 func test_rescued_victim_does_not_reenter_water() -> void:
 	get_tree().get_multiplayer().multiplayer_peer = null
 	player.player_state = Player.PlayerState.FLOATING
-	player.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 0.5, 0, 0)
+	player.global_position = MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 0.5, 0, 0)
 	player.global_position.y = Player.WATER_SURFACE_Y - 0.01
 	player.velocity = Vector3.ZERO
 

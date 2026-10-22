@@ -965,12 +965,7 @@ func _setup_authority_from_name() -> void:
 
 
 static func _spawn_positions() -> Array[Vector3]:
-	return [
-		Vector3(-2.25, 0, 2.5),
-		Vector3(-0.75, 0, 2.5),
-		Vector3(0.75, 0, 2.5),
-		Vector3(2.25, 0, 2.5),
-	]
+	return MapConfig.layout.spawn_positions()
 
 
 func _respawn_at_spawn() -> void:
@@ -1551,13 +1546,7 @@ func complete_water_rescue() -> void:
 
 
 func _snap_rescue_to_deck() -> void:
-	var limit := MapConfig.ISLAND_RADIUS - RESCUE_DECK_INSET
-	var flat := Vector2(global_position.x - MapConfig.MAP_CENTER.x, global_position.z - MapConfig.MAP_CENTER.z)
-	if flat.length() > limit:
-		if flat.length_squared() <= 0.0001:
-			flat = Vector2(limit, 0.0)
-		else:
-			flat = flat.normalized() * limit
-	global_position = Vector3(MapConfig.MAP_CENTER.x + flat.x, RESCUE_REST_HEIGHT, MapConfig.MAP_CENTER.z + flat.y)
+	global_position = MapConfig.layout.nearest_walkable(global_position, RESCUE_DECK_INSET)
+	global_position.y += RESCUE_REST_HEIGHT
 	velocity = Vector3.ZERO
 	_rescue_snap_msec = Time.get_ticks_msec()

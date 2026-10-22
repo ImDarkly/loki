@@ -123,7 +123,7 @@ func test_fight_auto_catches_when_time_elapsed() -> void:
 	mechanic.hook_type = mechanic.HookType.FISH
 	mechanic._is_fighting = true
 	mechanic.personal_catch_count = 0
-	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	mechanic.cast_target_position = Vector3(8, 0, -6)
 	mechanic._fight_target = 2.0
 	mechanic._fight_progress = 1.9
 	var rod_tip: Node3D = autofree(Node3D.new())
@@ -206,7 +206,7 @@ func test_scroll_resets_escape_timer() -> void:
 	mechanic._fight_target = 99.0
 	mechanic._fight_progress = 0.0
 	mechanic.escape_time_threshold = 1.0
-	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	mechanic.cast_target_position = Vector3(8, 0, -6)
 	mechanic._pull_spike_timer = 0.0
 
 	watch_signals(mechanic)
@@ -236,7 +236,7 @@ func test_telegraph_intensity_ramps_before_trigger() -> void:
 	mechanic.escape_time_threshold = 2.0
 	mechanic._escape_timer = 0.0
 	mechanic._pull_spike_timer = 0.0
-	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	mechanic.cast_target_position = Vector3(8, 0, -6)
 
 	mechanic.advance_fight(1.0)
 	assert_almost_eq(mechanic._telegraph_intensity, 0.5, 0.01, "Half threshold should give 0.5 intensity")
@@ -253,7 +253,7 @@ func test_fish_visual_position_at_progress_steps() -> void:
 	add_child(rod_tip)
 	rod_tip.global_position = Vector3(1, 1.6, -1)
 	mechanic.set_rod_tip(rod_tip)
-	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	mechanic.cast_target_position = Vector3(8, 0, -6)
 	mechanic._fight_target = 10.0
 	mechanic._fight_progress = 0.0
 	mechanic._create_line_node()
@@ -301,7 +301,7 @@ func test_fight_progress_accrues_with_delta() -> void:
 	mechanic._fight_target = 10.0
 	mechanic._fight_progress = 0.0
 	mechanic.escape_time_threshold = 99.0
-	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	mechanic.cast_target_position = Vector3(8, 0, -6)
 	var fish_mgr: Node3D = mechanic.get_node("FishManager")
 	fish_mgr.spawn(mechanic.cast_target_position)
 	fish_mgr.set_fight_mode(true)
@@ -724,8 +724,9 @@ func test_rescue_clears_hook_fighting_state() -> void:
 
 
 func test_hooked_victim_shore_contact_stuck_rescues() -> void:
-	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 0.5, 0, 0))
+	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 0.5, 0, 0))
 	var caster: Player = pair[0]
+	caster.global_position = MapConfig.MAP_CENTER
 	var target: Player = pair[1]
 	var caster_mech = caster.fishing_mechanic
 	_start_player_hook(caster_mech, target)
@@ -735,15 +736,15 @@ func test_hooked_victim_shore_contact_stuck_rescues() -> void:
 	assert_eq(target.player_state, Player.PlayerState.ALIVE, "SHORE_CONTACT victim should become ALIVE")
 	assert_eq(caster_mech.current_state, caster_mech.State.IDLE, "SHORE_CONTACT rescue should clear the hook to IDLE")
 	assert_eq(caster_mech.hook_type, caster_mech.HookType.NONE, "SHORE_CONTACT rescue should clear hook_type")
-	var flat := Vector2(target.global_position.x - MapConfig.MAP_CENTER.x, target.global_position.z - MapConfig.MAP_CENTER.z)
-	assert_true(flat.length() <= MapConfig.ISLAND_RADIUS - 0.4, "SHORE_CONTACT rescue should snap the victim onto the deck")
+	assert_true(MapConfig.layout.is_walkable(target.global_position, 0.39), "SHORE_CONTACT rescue should snap the victim onto the actual deck")
 	assert_true(target.global_position.y >= 0.0, "SHORE_CONTACT rescue should lift the victim to deck level")
 	assert_eq(target.velocity, Vector3.ZERO, "SHORE_CONTACT rescue should zero victim velocity")
 
 
 func test_shore_contact_inside_tolerance_rescues() -> void:
-	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 0.5, 0, 0))
+	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 0.5, 0, 0))
 	var caster: Player = pair[0]
+	caster.global_position = MapConfig.MAP_CENTER
 	var target: Player = pair[1]
 	var caster_mech = caster.fishing_mechanic
 	_start_player_hook(caster_mech, target)
@@ -755,8 +756,9 @@ func test_shore_contact_inside_tolerance_rescues() -> void:
 
 
 func test_shore_contact_outside_tolerance_keeps_fighting() -> void:
-	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS + 2.0, 0, 0))
+	var pair = await _spawn_hook_pair(MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x + 2.0, 0, 0))
 	var caster: Player = pair[0]
+	caster.global_position = MapConfig.MAP_CENTER
 	var target: Player = pair[1]
 	var caster_mech = caster.fishing_mechanic
 	_start_player_hook(caster_mech, target)
@@ -1509,7 +1511,7 @@ func test_fish_swims_at_swim_depth() -> void:
 	add_child(rod_tip)
 	rod_tip.global_position = Vector3(1, 1.6, -1)
 	mechanic.set_rod_tip(rod_tip)
-	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(15, 0, 0)
+	mechanic.cast_target_position = Vector3(8, 0, -6)
 	mechanic._fight_target = 10.0
 	var swim_depth = mechanic.get_node("FishManager").FISH_SWIM_DEPTH
 
@@ -1527,7 +1529,7 @@ func test_fish_near_shore_does_not_catch_before_time_target() -> void:
 	mechanic.hook_type = mechanic.HookType.FISH
 	mechanic._is_fighting = true
 	mechanic.personal_catch_count = 0
-	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(MapConfig.ISLAND_RADIUS - 1.0, 0, 0)
+	mechanic.cast_target_position = MapConfig.MAP_CENTER + Vector3(MapConfig.layout.island_half_extents.x - 1.0, 0, 0)
 	mechanic._fight_target = 5.0
 	mechanic._fight_progress = 0.0
 	mechanic.escape_time_threshold = 99.0
@@ -1535,7 +1537,7 @@ func test_fish_near_shore_does_not_catch_before_time_target() -> void:
 
 	var fish_pos = mechanic.get_fish_position()
 	assert_almost_eq(fish_pos.y, mechanic.get_node("FishManager").FISH_SWIM_DEPTH, 0.001, "Fish should be at swim depth")
-	assert_true(MapConfig.is_within_radius(fish_pos, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS), "Fish should be within the island radius in XZ")
+	assert_true(MapConfig.is_within_radius(fish_pos, MapConfig.MAP_CENTER, MapConfig.layout.island_half_extents.x), "Fish should be within the island radius in XZ")
 
 	watch_signals(mechanic)
 	mechanic.advance_fight(2.0)

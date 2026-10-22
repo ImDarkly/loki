@@ -50,7 +50,7 @@ func request_place_shark_bait(position: Vector3) -> void:
 		return
 	if not position.is_finite():
 		return
-	if MapConfig.is_within_radius(position, MapConfig.MAP_CENTER, MapConfig.ISLAND_RADIUS):
+	if MapConfig.layout.is_walkable(position):
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
 	if multiplayer.has_multiplayer_peer() and sender_id == 0:
