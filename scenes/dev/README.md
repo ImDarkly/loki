@@ -8,12 +8,14 @@ Run this scene directly with **F6**. It reuses the production world generator an
 - **1–8** — jump to dock, ship pier, ship/storage, shop entrance, empty pad 2, empty pad 3, fireplace, creature pier.
 - **O** — switch between the overhead map and player camera. The player stays still in overhead view.
 - **M** — show/hide measurements. Cyan lines show route clearances and connector outlines; red marks the future creature-water footprint and the final metre of pier above it.
-- **F** — toggle the existing fog for inspection. **K** spawns the existing shark near the player through its debug action; **R** restores the player on the ship pier and clears the shark.
+- **F** — toggle the violet fog for inspection. **K** spawns the existing shark near the player through its debug action; **R** restores the player on the ship pier and clears the shark.
 - **T** — toggle the existing fishing/shop phase for checking casts or shop prompts. Existing fishing relocation remains active.
 
 The HUD and world labels read the layout Resource: bay opening **6 m**, clear paths **2.5 m**, shore connector **2.5 × 2 m**, gangway **0.5 × 2.5 m**, creature pier **2 m clear**. Walk ship → gangway → pier → connector → island, then each destination; check collisions and comfort at the bay and creature rails. These are feel checks, not substitutes for geometry/state GUT tests.
 
-Ladders are visual placeholders until #349. Creature-water instant death and highlights are deferred: the red footprint is a debug annotation. A water test still uses the existing floating behavior; **R** is the solo preview escape. No new fog, lighting, shader, or shark behavior is added.
+Install the five Quaternius rocks described in `ASSETS.md` before running. #334 adds matte rocky shores, a rock arch over the north bay opening, and heavier violet regular fog through the same production world generator. Shore rocks retain distinct natural shapes with mixed scales and rotations in irregular clusters; the dock side stays broadly open. Inspect the arch and cluster spacing with **O**, then use **1–8** and **M** to judge whether rocks visually crowd any route or landmark. At the dock, toggle **F** and **T** and check that the near and far fishing rings remain readable in the Compatibility renderer. This preview adds no lighting, shader, or shark behavior.
+
+Ladders are visual placeholders until #349. Creature-water instant death and highlights are deferred: the red footprint is a debug annotation. A water test still uses the existing floating behavior; **R** is the solo preview escape.
 
 ## Shark Bait Placement — Water Test (`dev_shark_bait_flow.tscn`)
 
