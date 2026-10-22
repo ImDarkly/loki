@@ -1,0 +1,152 @@
+= Run Summary
+==============================================
+
+res://tests/unit/test_architecture_guardrails.gd
+- test_no_bare_get_node_on_root_paths
+    [Failed]:  ARRAY(["res://ui/shop_ui.gd: get_node(\"/root/game_manager\").shop_toggled.emit(false)"]) != ARRAY([]).
+    ["res://ui/shop_ui.gd: get_node(\"/root/...t(false)"] != []  1 of 1 indexes do not match.  Cross-scene lookups must use get_node_or_null, not bare get_node (throws and halts the scene if the path is missing). Offenders:
+    res://ui/shop_ui.gd: get_node("/root/game_manager").shop_toggled.emit(false)
+          at line 53
+- test_no_unread_export_vars_in_systems
+    [Failed]:  ARRAY(["res://systems/danger/danger_manager.gd: @export var respawn_interval_min is declar...er read"]) != ARRAY([]).
+    ["res://systems/danger/danger_manager.gd...ver read"] != []  12 of 12 indexes do not match.  Every @export var must be read somewhere in the same file, in the same commit -- a declared-but-unread export silently does nothing. Offenders:
+    res://systems/danger/danger_manager.gd: @export var respawn_interval_min is declared but never read
+    res://systems/danger/danger_manager.gd: @export var respawn_interval_max is declared but never read
+    res://systems/fishing/fishing_mechanic.gd: @export var fighting_pull_strength is declared but never read
+    res://systems/interaction/interactable_component.gd: @export var prompt_text is declared but never read
+    res://systems/interaction/interactable_component.gd: @export var prompt_color is declared but never read
+    res://systems/interaction/interactable_component.gd: @export var is_enabled is declared but never read
+    res://systems/interaction/interactable_component.gd: @export var show_prompt_without_carrying is declared but never read
+    res://systems/quota/shop_item_data.gd: @export var item_name is declared but never read
+    res://systems/quota/shop_item_data.gd: @export var cost is declared but never read
+    res://systems/quota/shop_item_data.gd: @export var description is declared but never read
+    res://systems/quota/shop_item_data.gd: @export var owned_flag_property is declared but never read
+    res://systems/rocks/rock_manager.gd: @export var pickup_range is declared but never read
+          at line 76
+
+res://tests/unit/test_fireplace.gd
+- test_purchase_shows_notification
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+
+res://tests/unit/test_fishing_mechanic.gd
+- test_fish_fled_during_bite_transitions_to_idle
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_bite_miss_window_1_second_causes_escape
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_water_fallback_sets_zone_and_bite_timer
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_in_zone_cast_uses_full_bite_delay_range
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_ambient_fish_shadows_local_only
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_idle_bite_timeout_preserves_bobber_clears_shadows
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_ambient_shadows_spawn_at_zone_center_not_bobber
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_ambient_shadows_ignore_bobber_drift
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+
+res://tests/unit/test_pause_menu.gd
+- test_open_menu
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_close_menu
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_ui_cancel_toggles
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_tree_paused_stays_false
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_pause_toggled_signal
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_mute_button_toggles_voice_chat_and_updates_text
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+    [2] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+    [3] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+    [4] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+    [5] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+    [6] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_open_menu_refreshes_mute_label
+    [Failed]:  ["Mute Voice Chat"] expected to equal ["Unmute Voice Chat"]:  open_menu should refresh button text using fallback scan
+          at line 155
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+- test_single_player_fallback_scan_path
+    [Failed]:  [<null>] expected to equal [VoiceChatManager:<Node#752407817025>(voice_chat_manager.gd)]:  Should find VoiceChatManager via fallback loop over players children
+          at line 175
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+
+res://tests/unit/test_player.gd
+- test_vertical_mouse_motion_looks_in_the_same_world_direction_in_each_player_state
+    [Pending]:  Requires a rendered display with mouse capture
+
+res://tests/unit/test_restart_persistence.gd
+- test_restart_closes_pause_menu_and_emits_pause_toggled_false
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line 122
+
+res://tests/unit/test_seagull_manager.gd
+- test_player_throw_repels_seagull_in_range
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Method/function failed. Returning: nullptr
+          at line 289
+- test_player_throw_out_of_range_no_repel
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Method/function failed. Returning: nullptr
+          at line 313
+
+res://tests/unit/test_shop_ui.gd
+- test_successful_fireplace_buy_updates_coin_label
+    [Failed]:  Unexpected Errors:
+    [1] <engine-0>Condition "multiplayer_peer.is_null()" is true. Returning: 0
+          at line -1
+
+Totals
+------
+Warnings              8
+
+Scripts              41
+Tests               663
+Passing Tests       639
+Failing Tests        23
+Risky/Pending         1
+Asserts           9984/10009
+Time              96.591s
+
+
+---- 23 failing tests ----
+GUT 9.6.1:  https://github.com/bitwes/Gut/releases/tag/v9.6.1 is now available!
+
+[INFO]:  Exiting with code 1

@@ -122,3 +122,46 @@ Get-FileHash -Algorithm SHA256 systems/danger/assets/quaternius/Characters_Shark
 The asset directory and generated import sidecars are ignored by Git. Open the project in Godot and allow import before running or testing. Missing or unimported sharks log installation instructions; there is no procedural visual fallback.
 
 Only the model child is calibrated: uniform scale 0.5, Y offset -0.7, and Y rotation 180 degrees to turn the source's +Z nose toward the visual pivot's -Z. The gameplay root keeps its existing transform and attack radius. The visual pivot follows world displacement on every peer, retains its last heading while stationary, and resets its position sample across hidden respawns.
+
+## Quaternius Pirate Kit island rocks
+
+- **Pack:** Pirate Kit by Quaternius, acquired 2026-10-22.
+- **Source:** [pack page](https://quaternius.com/packs/piratekit.html), [verified glTF folder](https://drive.google.com/drive/folders/11paA9BQwPiV5Xj2JJKgsBSR59S4m5JuC).
+- **License:** QAL v1.0, saved in [the license record](docs/licenses/quaternius-license.html), governs this acquisition. The pack page's CC0 label is stale. Keep raw files out of Git; QAL prohibits standalone raw-asset redistribution.
+- **Selected files:** `glTF/Environment_Rock_1.gltf` through `Environment_Rock_5.gltf`. Each embeds its geometry and texture; no companion files are required.
+- **Local install directory:** `world/assets/quaternius_pirate/`, ignored along with generated import sidecars.
+
+### Setup after cloning
+
+Download the five selected files from the glTF folder into a directory outside the repository. These direct file pages identify the verified sources:
+
+- [Environment_Rock_1.gltf](https://drive.google.com/file/d/1Agk58yl3i7Q_reKzdSbb14YGVZxKya5g/view)
+- [Environment_Rock_2.gltf](https://drive.google.com/file/d/129Oy6SIdcUgsUvSxKz-Teue6rXO_nH92/view)
+- [Environment_Rock_3.gltf](https://drive.google.com/file/d/1ZgpQDme1g5STjfj0bbzq5X4Rbnn-_ZMi/view)
+- [Environment_Rock_4.gltf](https://drive.google.com/file/d/1Ce6fVwQZGxleWRFnrNBOmh119FozKIwl/view)
+- [Environment_Rock_5.gltf](https://drive.google.com/file/d/1cWJHr-w1QtFhxm0CpRQAUeFhbrL-o6yE/view)
+
+From the repository root, set `$pack` to the downloaded files' directory and copy only these models:
+
+```powershell
+$pack = 'C:\path\to\downloaded\glTF'
+New-Item -ItemType Directory -Force world/assets/quaternius_pirate
+foreach ($variant in 1..5) {
+    Copy-Item -LiteralPath (Join-Path $pack ('Environment_Rock_' + $variant + '.gltf')) -Destination world/assets/quaternius_pirate
+}
+Get-FileHash -Algorithm SHA256 world/assets/quaternius_pirate/*.gltf
+```
+
+| File | SHA-256 |
+| --- | --- |
+| `Environment_Rock_1.gltf` | `57E7BB033B0DB4842D1CADDA86AF1F3604D5504B9547FC0397001E352C89461B` |
+| `Environment_Rock_2.gltf` | `06C5012110D3A513EBB05C2F9080A3232C457E19CFD4246B63311A1EE2C1518B` |
+| `Environment_Rock_3.gltf` | `EE4717601B37DE40126A8D1A35E2F811F1CBE4D38BAB27C1BC51FE467D5198F2` |
+| `Environment_Rock_4.gltf` | `1EEA738B93713690F3EE0805030C14AD64DB0977F256CD9AE638DB061D82ECD1` |
+| `Environment_Rock_5.gltf` | `46A2B61C283527B57BF9A56884F5B34CB506E6D4F0C5420027E48C3A5A92DA9C` |
+
+Open Godot and let the glTF models import before running. Missing or unimported rocks log installation instructions; there is no generated placeholder fallback. Only the selected meshes are copied into collisionless visual instances with four shared matte earth/slate materials. Shore rocks preserve their natural proportions, with varied uniform scale and yaw in uneven clusters of boulders and smaller stones. Cluster anchors jitter within angular sectors to distribute dressing across both coasts, while incidental stones leave a clear buffer around the arch. A local seeded random generator keeps this cosmetic layout repeatable without consuming gameplay randomness. Full rotated mesh bounds protect routes, landmarks, and the broad dock side. The bay arch is composed from Quaternius rocks with two supports outside the existing opening and one flattened rock slab spanning them. Layout resources, gameplay objects, collision, spawn points, and fog are unchanged by the rock rework.
+
+Use `scenes/dev/dev_island_flow.tscn` to inspect dressing and toggle fog; its controls and visual checks are in `scenes/dev/README.md`. Fog uses the regular Environment fog supported by Compatibility, without volumetric fog or new shaders.
+
+Fog now shares the sky's day, sunset, and night horizon palette and follows the existing light cycle, so distant water converges to the sky instead of a fixed purple band. Density remains `0.035`. Run the rendered regression with `C:\Godot\Godot_v4.6.2-stable_win64.exe --path . --rendering-method gl_compatibility --resolution 960x540 --script res://scripts/check_fog_horizon.gd`; it checks day/night horizon continuity and saves screenshots under `docs/`.

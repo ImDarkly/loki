@@ -16,6 +16,7 @@ build/
 /systems/fishing/assets/Clownfish.glb.import
 /entities/player/assets/quaternius/
 /systems/danger/assets/quaternius/
+/world/assets/quaternius_pirate/
 
 # KayKit Adventurers (install locally; see ASSETS.md)
 /entities/player/assets/kaykit_adventurers/
