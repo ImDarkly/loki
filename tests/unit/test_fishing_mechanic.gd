@@ -2,12 +2,15 @@ extends GutTest
 
 var mechanic: Node3D
 var zone_manager: Node3D
+var _saved_peer: MultiplayerPeer
 
 # Victim id 1 keeps the server pull on the local branch instead of rpc_id to a peer that never connects.
 const VICTIM_ID := 1
 
 
 func before_each() -> void:
+	_saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	var scene = load("res://systems/fishing/fishing_mechanic.tscn")
 	mechanic = autofree(scene.instantiate())
 	add_child(mechanic)
@@ -20,6 +23,10 @@ func before_each() -> void:
 		{"center": Vector3(0, 0, 0), "radius": 10.0}
 	])
 	mechanic._zone_manager_ref = zone_manager
+
+
+func after_each() -> void:
+	multiplayer.multiplayer_peer = _saved_peer
 
 
 func _line_endpoint_position() -> Vector3:

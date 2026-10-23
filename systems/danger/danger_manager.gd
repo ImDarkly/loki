@@ -260,7 +260,7 @@ func _process_retreating(delta: float) -> void:
 	if reached_spawn or not MapConfig.is_within_radius(new_pos, MapConfig.layout.point3(MapConfig.layout.island_center), MapConfig.layout.shark_radius):
 		shark_node.visible = false
 		current_state = State.WAITING
-		return_timer.start(randf_range(45.0, 90.0))
+		return_timer.start(randf_range(respawn_interval_min, respawn_interval_max))
 	_sync_state_to_clients()
 
 
@@ -348,7 +348,7 @@ func _trigger_attack() -> void:
 		current_state = State.WAITING
 		_is_targeting_bait = false
 		_bait_target_position = Vector3.ZERO
-		return_timer.start(randf_range(45.0, 90.0))
+		return_timer.start(randf_range(respawn_interval_min, respawn_interval_max))
 		_sync_state_to_clients()
 		return
 	current_state = State.ATTACKING
@@ -366,7 +366,7 @@ func _trigger_attack() -> void:
 	if is_instance_valid(shark_node):
 		shark_node.visible = false
 	current_state = State.WAITING
-	return_timer.start(randf_range(45.0, 90.0))
+	return_timer.start(randf_range(respawn_interval_min, respawn_interval_max))
 	_sync_state_to_clients()
 
 

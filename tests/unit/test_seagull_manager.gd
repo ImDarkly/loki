@@ -232,34 +232,8 @@ func test_reset_for_restart_hides_and_re_randomizes_timer() -> void:
 
 
 func _build_player_for_seagull(parent: Node3D) -> Player:
-	var player_node := CharacterBody3D.new()
-	player_node.name = "Player_1"
-	var visual_rig_scene: PackedScene = load("res://entities/player/player_visual_rig.tscn")
-	var visual_rig := visual_rig_scene.instantiate()
-	visual_rig.name = "PlayerVisualRig"
-	player_node.add_child(visual_rig)
-	var fishing_scene = load("res://systems/fishing/fishing_mechanic.tscn")
-	var fishing_mechanic = fishing_scene.instantiate()
-	fishing_mechanic.name = "FishingMechanic"
-	player_node.add_child(fishing_mechanic)
-	var voice_chat_manager := Node.new()
-	voice_chat_manager.name = "VoiceChatManager"
-	voice_chat_manager.set_script(load("res://systems/voice_chat/voice_chat_manager.gd"))
-	player_node.add_child(voice_chat_manager)
-	var health_component := HealthComponent.new()
-	health_component.name = "HealthComponent"
-	player_node.add_child(health_component)
-	var sitting_heal := SittingHealComponent.new()
-	sitting_heal.name = "SittingHeal"
-	player_node.add_child(sitting_heal)
-	var spectate_camera := Node3D.new()
-	spectate_camera.name = "SpectateCamera"
-	player_node.add_child(spectate_camera)
-	var spectate_cam_camera := Camera3D.new()
-	spectate_cam_camera.name = "Camera3D"
-	spectate_camera.add_child(spectate_cam_camera)
-	player_node.set_script(load("res://entities/player/player.gd"))
-	var p := player_node as Player
+	var p := (load("res://entities/player/player.tscn") as PackedScene).instantiate() as Player
+	p.name = "Player_1"
 	parent.add_child(p)
 	await get_tree().process_frame
 	return p

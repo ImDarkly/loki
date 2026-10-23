@@ -21,6 +21,8 @@ function Fail-Env([string]$Message) {
 function Invoke-Check([string]$Id, [string[]]$GodotArgs, [int]$TimeoutSec) {
 	$log = Join-Path $env:TEMP ("chum_verify_" + ($Id -replace "[^a-zA-Z0-9]", "_") + ".log")
 	$p = Start-Process -FilePath $Godot -ArgumentList $GodotArgs -WorkingDirectory $Root -NoNewWindow -PassThru -RedirectStandardOutput $log -RedirectStandardError "$log.err"
+	# Retain the handle so redirected Windows PowerShell processes preserve ExitCode after waiting.
+	$process_handle = $p.Handle
 	$finished = $p.WaitForExit($TimeoutSec * 1000)
 	if (-not $finished) {
 		$p.Kill()

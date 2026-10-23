@@ -6,6 +6,17 @@ extends GutTest
 
 const SKIP_DIRS: Array[String] = ["addons", ".godot", "tests", ".git"]
 const ROOT := "res://"
+const EXTERNAL_EXPORT_READERS := {
+	"res://systems/fishing/fishing_mechanic.gd:fighting_pull_strength": ["res://entities/player/player.gd", "fishing_mechanic.fighting_pull_strength"],
+	"res://systems/interaction/interactable_component.gd:prompt_text": ["res://entities/player/player.gd", "interactable.prompt_text"],
+	"res://systems/interaction/interactable_component.gd:prompt_color": ["res://entities/player/player.gd", "interactable.prompt_color"],
+	"res://systems/interaction/interactable_component.gd:is_enabled": ["res://entities/player/player.gd", "interactable.is_enabled"],
+	"res://systems/interaction/interactable_component.gd:show_prompt_without_carrying": ["res://entities/player/player.gd", "interactable.show_prompt_without_carrying"],
+	"res://systems/quota/shop_item_data.gd:item_name": ["res://ui/shop_ui.gd", "item.item_name"],
+	"res://systems/quota/shop_item_data.gd:cost": ["res://ui/shop_ui.gd", "item.cost"],
+	"res://systems/quota/shop_item_data.gd:description": ["res://ui/shop_ui.gd", "item.description"],
+	"res://systems/quota/shop_item_data.gd:owned_flag_property": ["res://ui/shop_ui.gd", "item.owned_flag_property"],
+}
 
 
 func _collect_gd_files(dir_path: String, out: Array[String]) -> void:
@@ -58,6 +69,7 @@ func test_no_unread_export_vars_in_systems() -> void:
 	_collect_gd_files("res://systems", files)
 
 	var offenders: Array[String] = []
+	var declared_exports: Dictionary = {}
 	var export_regex := RegEx.new()
 	export_regex.compile("@export(?:_\\w+\\([^)]*\\))?\\s+var\\s+(\\w+)")
 
@@ -66,6 +78,10 @@ func test_no_unread_export_vars_in_systems() -> void:
 		var results := export_regex.search_all(text)
 		for result in results:
 			var var_name: String = result.get_string(1)
+			var export_key := "%s:%s" % [path, var_name]
+			declared_exports[export_key] = true
+			if EXTERNAL_EXPORT_READERS.has(export_key):
+				continue
 			# Count occurrences of the identifier as a whole word.
 			var word_regex := RegEx.new()
 			word_regex.compile("\\b" + var_name + "\\b")
@@ -73,4 +89,18 @@ func test_no_unread_export_vars_in_systems() -> void:
 			if occurrences.size() <= 1:
 				offenders.append("%s: @export var %s is declared but never read" % [path, var_name])
 
-	assert_eq(offenders, [], "Every @export var must be read somewhere in the same file, in the same commit -- a declared-but-unread export silently does nothing. Offenders:\n" + "\n".join(offenders))
+	for export_key in EXTERNAL_EXPORT_READERS:
+		if not declared_exports.has(export_key):
+			offenders.append("%s: external-reader exception has no export declaration" % export_key)
+		var reader: Array = EXTERNAL_EXPORT_READERS[export_key]
+		var access_regex := RegEx.new()
+		access_regex.compile("\\b" + String(reader[1]).replace(".", "\\.") + "\\b")
+		var has_reader := false
+		for line in _read_file(reader[0]).split("\n"):
+			if access_regex.search(line.get_slice("#", 0)) != null:
+				has_reader = true
+				break
+		if not has_reader:
+			offenders.append("%s: expected external read %s in %s is missing" % [export_key, reader[1], reader[0]])
+
+	assert_eq(offenders, [], "Every @export var must be read in its declaring file or have an explicit, verified external reader. Offenders:\n" + "\n".join(offenders))

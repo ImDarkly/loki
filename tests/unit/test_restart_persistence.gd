@@ -105,6 +105,8 @@ func test_fishing_mechanic_reset_on_restart() -> void:
 
 
 func test_restart_closes_pause_menu_and_emits_pause_toggled_false() -> void:
+	var saved_peer := multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	var pause_scene = load("res://ui/pause_menu.tscn")
 	var pause_menu = pause_scene.instantiate()
 	pause_menu.name = "PauseMenu"
@@ -120,6 +122,7 @@ func test_restart_closes_pause_menu_and_emits_pause_toggled_false() -> void:
 	assert_false(pause_menu.visible, "Pause menu should be closed on restart")
 	assert_signal_emitted_with_parameters(gm, "pause_toggled", [false])
 	pause_menu.queue_free()
+	multiplayer.multiplayer_peer = saved_peer
 
 
 

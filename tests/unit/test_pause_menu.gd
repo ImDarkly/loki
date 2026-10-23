@@ -2,9 +2,13 @@ extends GutTest
 
 var pause_menu: CanvasLayer
 var _main: Node3D
+var _saved_peer: MultiplayerPeer
 
 
 func before_each() -> void:
+	_saved_peer = multiplayer.multiplayer_peer
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+
 	var existing := get_node_or_null("/root/main")
 	if existing:
 		existing.free()
@@ -23,6 +27,7 @@ func after_each() -> void:
 	if _main and is_instance_valid(_main):
 		_main.free()
 	_main = null
+	multiplayer.multiplayer_peer = _saved_peer
 
 
 func test_hidden_by_default() -> void:

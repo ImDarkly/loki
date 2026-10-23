@@ -1,11 +1,44 @@
 extends GutTest
 
 var lobby: CanvasLayer
+var _network_script: Script
+var _network_state: Dictionary
+var _network_connections: Array[Dictionary] = []
 
 
 func before_each() -> void:
 	lobby = add_child_autofree(load("res://scenes/lobby.tscn").instantiate())
 	await get_tree().process_frame
+
+
+func after_each() -> void:
+	if _network_script == null:
+		return
+	NetworkManager.set_script(_network_script)
+	for property in _network_state:
+		NetworkManager.set(property, _network_state[property])
+	for connection in _network_connections:
+		var source_signal: Signal = connection.signal
+		if not source_signal.is_connected(connection.callable):
+			source_signal.connect(connection.callable, connection.flags)
+	_network_script = null
+	_network_state.clear()
+	_network_connections.clear()
+
+
+func _stub_candidate_join() -> void:
+	_network_script = NetworkManager.get_script()
+	_network_state = {
+		"peer": NetworkManager.peer,
+		"lobby": NetworkManager.lobby,
+		"_eos_ready": NetworkManager._eos_ready,
+	}
+	for signal_info in NetworkManager.get_signal_list():
+		_network_connections.append_array(NetworkManager.get_signal_connection_list(signal_info.name))
+	var dbl := GDScript.new()
+	dbl.source_code = "extends \"res://autoloads/network_manager.gd\"\nvar candidate_calls: Array = []\nfunc join_candidate(code: String, candidate: HLobby) -> void:\n\tcandidate_calls.append([code, candidate])\n"
+	dbl.reload()
+	NetworkManager.set_script(dbl)
 
 
 func test_validate_code_accepts_six_digits() -> void:
@@ -61,12 +94,16 @@ func test_stale_join_flag_resets_before_host_failure() -> void:
 
 
 func test_candidate_pick_clears_pending_pool() -> void:
+	_stub_candidate_join()
 	lobby.code_input.text = "123456"
 	var pool: Array[HLobby] = []
 	pool.append(HLobby.new())
 	lobby._pending_candidates = pool
 	lobby._on_candidate_picked(0, Vector2.ZERO, 1)
 	assert_true(lobby._pending_candidates.is_empty(), "Pool cleared after a pick so repeat clicks are ignored")
+	assert_eq(NetworkManager.get("candidate_calls"), [["123456", pool[0]]], "Selected code and candidate should reach the network boundary once")
+	lobby._on_candidate_picked(0, Vector2.ZERO, 1)
+	assert_eq(NetworkManager.get("candidate_calls").size(), 1, "Repeat clicks must not start another join")
 
 
 func test_copy_code_button_shows_feedback_without_error() -> void:

@@ -3,9 +3,11 @@ extends GutTest
 var fireplace: StaticBody3D
 var coin_manager: CoinManager
 var _main: Node3D
+var _saved_peer: MultiplayerPeer
 
 
 func before_each() -> void:
+	_saved_peer = multiplayer.multiplayer_peer
 	_main = Node3D.new()
 	_main.name = "main"
 	get_node("/root").add_child(_main)
@@ -30,6 +32,7 @@ func after_each() -> void:
 	if _main and is_instance_valid(_main):
 		_main.free()
 	_main = null
+	multiplayer.multiplayer_peer = _saved_peer
 
 
 func _build_player(node_name: String) -> Player:
@@ -88,6 +91,7 @@ func test_flames_visible_after_purchase() -> void:
 
 
 func test_purchase_shows_notification() -> void:
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	coin_manager.coins = 20
 	coin_manager.request_buy_fireplace()
 	var label := _main.get_node("NotificationLabel/Label") as Label
