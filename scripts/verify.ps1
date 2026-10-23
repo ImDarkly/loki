@@ -29,6 +29,19 @@ function Invoke-Check([string]$Id, [string[]]$GodotArgs, [int]$TimeoutSec) {
 	}
 	$text = @(Get-Content $log -ErrorAction SilentlyContinue) + @(Get-Content "$log.err" -ErrorAction SilentlyContinue)
 	$hasError = ($text | Select-String -Pattern $ErrorPattern -Quiet)
+	if ($Id.StartsWith("gut:") -and $Id -ne "gut:full") {
+		$output = ($text -join "`n") -replace '\x1B\[[0-?]*[ -/]*[@-~]', ''
+		$scriptName = [regex]::Escape($Id.Substring(4))
+		$ranScript = $output -match "(?m)^res://tests/unit/$scriptName\s*$"
+		$ranTests = $output -match '(?m)^Tests\s+[1-9][0-9]*\s*$'
+		$executedTests = $output -match '(?m)^(Passing|Failing) Tests\s+[1-9][0-9]*\s*$'
+		$skipped = $output -match '(?im)Ignoring script|Could not find script matching|Script was skipped|\[Skipped\]'
+		if (-not $ranScript -or -not $ranTests -or -not $executedTests -or $skipped) {
+			Write-Host "RED $Id (selected script must execute tests without skips)"
+			$text | Select-Object -Last 40 | ForEach-Object { Write-Host $_ }
+			exit 1
+		}
+	}
 	if ($p.ExitCode -ne 0 -or $hasError) {
 		Write-Host "RED $Id"
 		$text | Select-Object -Last 40 | ForEach-Object { Write-Host $_ }
