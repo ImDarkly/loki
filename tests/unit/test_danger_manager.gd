@@ -65,6 +65,8 @@ func test_repel_no_op_when_out_of_range() -> void:
 
 
 func test_attack_distance_triggers_signals() -> void:
+	manager.respawn_interval_min = 7.0
+	manager.respawn_interval_max = 11.0
 	manager.current_state = 0
 	manager._on_spawn_timer_timeout()
 	manager.shark_node.position = Vector3(0, 0, -7)
@@ -82,7 +84,7 @@ func test_attack_distance_triggers_signals() -> void:
 	assert_signal_not_emitted(manager, "quota_penalty")
 	assert_eq(health.current_health, 3, "Health should be reduced by shark_bite_damage (2)")
 	assert_eq(manager.current_state, 4, "Should be WAITING (4) after attack")
-	assert_between(manager.return_timer.time_left, 45.0, 90.0, "Return interval should be 45-90 seconds")
+	assert_between(manager.return_timer.time_left, 7.0, 11.0, "Player attack should use configured return interval")
 
 
 func test_approaching_never_enters_island() -> void:
@@ -218,6 +220,8 @@ func test_shark_visual_resets_sample_after_hidden_teleport() -> void:
 
 
 func test_retreating_exits_boundary_transitions_to_waiting() -> void:
+	manager.respawn_interval_min = 7.0
+	manager.respawn_interval_max = 11.0
 	manager.current_state = 0
 	manager._on_spawn_timer_timeout()
 	manager.current_state = 3
@@ -227,6 +231,7 @@ func test_retreating_exits_boundary_transitions_to_waiting() -> void:
 	manager._physics_process(10.0)
 
 	assert_eq(manager.current_state, 4, "Should be WAITING (4) after exiting boundary")
+	assert_between(manager.return_timer.time_left, 7.0, 11.0, "Retreat should use configured return interval")
 
 
 func test_retreat_along_diagonal_transitions_to_waiting_at_radius() -> void:
@@ -367,6 +372,8 @@ func test_bait_priority_range_export_exists() -> void:
 
 
 func test_shark_attack_on_bait_consumes_bait_without_despawn() -> void:
+	manager.respawn_interval_min = 7.0
+	manager.respawn_interval_max = 11.0
 	var bait_pos := Vector3(15, 0, -7)
 	var bm := _make_bait_manager(true, 3, bait_pos)
 	manager.bait_priority_range = 10.0
@@ -387,7 +394,7 @@ func test_shark_attack_on_bait_consumes_bait_without_despawn() -> void:
 	assert_true(is_instance_valid(bm._bait_instance), "Bait instance should not be despawned")
 	assert_eq(manager.current_state, 4, "Should transition to WAITING")
 	assert_false(manager.shark_node.visible, "Shark should be hidden after attacking bait")
-	assert_between(manager.return_timer.time_left, 45.0, 90.0, "Return interval should be 45-90 seconds")
+	assert_between(manager.return_timer.time_left, 7.0, 11.0, "Bait attack should use configured return interval")
 	assert_signal_emitted(bm, "bait_fill_updated")
 
 

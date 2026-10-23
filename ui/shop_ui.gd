@@ -54,7 +54,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func close_shop() -> void:
-	get_node("/root/game_manager").shop_toggled.emit(false)
+	var gm := get_node_or_null("/root/game_manager")
+	if gm:
+		gm.shop_toggled.emit(false)
 
 	var tween = create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.2).set_trans(Tween.TRANS_CUBIC)

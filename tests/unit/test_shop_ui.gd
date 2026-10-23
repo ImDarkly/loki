@@ -4,9 +4,11 @@ var shop_ui: PanelContainer
 var coin_manager: CoinManager
 var quota_manager: Node3D
 var _main: Node3D
+var _saved_peer: MultiplayerPeer
 
 
 func before_each() -> void:
+	_saved_peer = multiplayer.multiplayer_peer
 	_main = Node3D.new()
 	_main.name = "main"
 	get_node("/root").add_child(_main)
@@ -28,6 +30,7 @@ func after_each() -> void:
 	if _main and is_instance_valid(_main):
 		_main.free()
 	_main = null
+	multiplayer.multiplayer_peer = _saved_peer
 
 
 func _get_sell_all_button() -> Button:
@@ -178,6 +181,7 @@ func test_fireplace_label_shows_name_and_cost() -> void:
 
 
 func test_successful_fireplace_buy_updates_coin_label() -> void:
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	coin_manager.coins = 20
 	shop_ui._update_ui()
 	assert_true(_get_coin_label().text.contains("20"), "Coin label should show 20 before buy")

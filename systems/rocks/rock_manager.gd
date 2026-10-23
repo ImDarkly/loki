@@ -8,7 +8,6 @@ const ROCK_HALF_EXTENT: float = 0.25
 @export var rock_count: int = 15
 @export var min_rock_spacing: float = 2.0
 @export var respawn_delay: float = 15.0
-@export var pickup_range: float = 2.5
 
 var rocks: Array[Dictionary] = []
 var rock_nodes: Array[StaticBody3D] = []
