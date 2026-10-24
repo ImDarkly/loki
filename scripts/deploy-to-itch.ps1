@@ -27,18 +27,13 @@ function Resolve-Version {
 }
 
 
-function Assert-Butler {
-	$cmd = Get-Command butler -ErrorAction SilentlyContinue
-	if (-not $cmd) {
-		Write-Error "butler not found on PATH. Install from https://itch.io/docs/butler/installing.html then run 'butler login' once."
-	}
-}
-
-
 $version = Resolve-Version
 Write-Host "Deploying version '$version' to $ItchTarget"
 
-Assert-Butler
+$cmd = Get-Command butler -ErrorAction SilentlyContinue
+if (-not $cmd) {
+	Write-Error "butler not found on PATH. Install from https://itch.io/docs/butler/installing.html then run 'butler login' once."
+}
 if (-not (Test-Path $Godot)) {
 	Write-Error "Godot not found at $Godot"
 }
