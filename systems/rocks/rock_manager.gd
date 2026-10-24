@@ -12,11 +12,13 @@ const ROCK_HALF_EXTENT: float = 0.25
 var rocks: Array[Dictionary] = []
 var rock_nodes: Array[StaticBody3D] = []
 var _cooldowns: Array[float] = []
+var _rock_meshes: Array[Mesh] = []
 
 @onready var respawn_timer: Timer = $RespawnTimer
 
 
 func _ready() -> void:
+	_load_rock_meshes()
 	var dbg = get_node_or_null("/root/DebugOverlay")
 	if dbg:
 		dbg.register_system(name, self)
@@ -152,6 +154,19 @@ func _update_rock_visuals() -> void:
 		rock_nodes[i].get_node("Collision").disabled = not available
 
 
+func _load_rock_meshes() -> void:
+	for variant in range(1, 6):
+		var path := "res://world/assets/quaternius_pirate/Environment_Rock_%d.gltf" % variant
+		if not ResourceLoader.exists(path):
+			push_warning("Pickup rocks missing or unimported: install Quaternius Pirate Kit Environment_Rock_1 through _5.gltf per ASSETS.md, then import in Godot.")
+			_rock_meshes.clear()
+			return
+		var model := (load(path) as PackedScene).instantiate()
+		var visual := model.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+		_rock_meshes.append(visual.mesh)
+		model.free()
+
+
 func _create_rock_node() -> StaticBody3D:
 	var body := StaticBody3D.new()
 	body.collision_layer = 4
@@ -166,13 +181,11 @@ func _create_rock_node() -> StaticBody3D:
 
 	var mi := MeshInstance3D.new()
 	mi.name = "Mesh"
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.5, 0.3, 0.5)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.5, 0.5, 0.5)
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mi.mesh = mesh
-	mi.material_override = mat
+	if not _rock_meshes.is_empty():
+		mi.mesh = _rock_meshes[rock_nodes.size() % _rock_meshes.size()]
+		var bounds := mi.mesh.get_aabb()
+		mi.scale = shape.size * 0.65 / bounds.size
+		mi.position = -bounds.get_center() * mi.scale
 	body.add_child(mi)
 
 	return body

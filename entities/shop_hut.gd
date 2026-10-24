@@ -4,8 +4,20 @@ extends StaticBody3D
 @onready var round_manager = get_node_or_null("/root/main/RoundManager")
 
 func _ready() -> void:
+	_setup_visual()
 	interactable_component.interacted.connect(_on_interact)
 	_update_prompt()
+
+func _setup_visual() -> void:
+	var path := "res://entities/shop/assets/kenney_miniforest/building-roof.glb"
+	if not ResourceLoader.exists(path):
+		push_warning("Shop canopy missing or unimported: install Kenney Mini Forest building-roof.glb per ASSETS.md, then import in Godot.")
+		return
+	var model := (load(path) as PackedScene).instantiate() as Node3D
+	model.name = "Canopy"
+	model.scale = Vector3.ONE * 2.2
+	model.position.y = -1.0
+	$Mesh.add_child(model)
 
 func _process(_delta: float) -> void:
 	_update_prompt()
