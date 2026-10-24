@@ -17,6 +17,10 @@ build/
 /entities/player/assets/quaternius/
 /systems/danger/assets/quaternius/
 /world/assets/quaternius_pirate/
+/entities/storage/assets/kenney_watercraft/
+/entities/shop/assets/kenney_nature/
+/entities/shop/assets/kenney_miniforest/
+/entities/fireplace/assets/kenney_survival/
 
 # KayKit Adventurers (install locally; see ASSETS.md)
 /entities/player/assets/kaykit_adventurers/

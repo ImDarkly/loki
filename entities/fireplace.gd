@@ -10,11 +10,23 @@ var _seat_occupants: Dictionary = {}
 
 
 func _ready() -> void:
+	_setup_visual()
 	interactable_component.interacted.connect(_on_interact)
 	if coin_manager:
 		coin_manager.fireplace_updated.connect(_update_fireplace_visuals)
 	_update_fireplace_visuals()
 	_update_prompt()
+
+
+func _setup_visual() -> void:
+	var path := "res://entities/fireplace/assets/kenney_survival/campfire-pit.glb"
+	if not ResourceLoader.exists(path):
+		push_warning("Fireplace pit missing or unimported: install Kenney Survival campfire-pit.glb per ASSETS.md, then import in Godot.")
+		return
+	var model := (load(path) as PackedScene).instantiate() as Node3D
+	model.name = "CampfirePit"
+	model.scale = Vector3.ONE * 2.925
+	$Mesh.add_child(model)
 
 
 func _update_fireplace_visuals() -> void:
