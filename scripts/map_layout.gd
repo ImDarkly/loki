@@ -234,9 +234,8 @@ func ground_mesh() -> ArrayMesh:
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for polygon in land_polygons():
 		var triangles := Geometry2D.triangulate_polygon(polygon)
-		for i in range(0, triangles.size(), 3):
-			for index in [triangles[i], triangles[i + 1], triangles[i + 2]]:
-				surface.add_vertex(point3(polygon[index], deck_height))
+		for index in triangles:
+			surface.add_vertex(point3(polygon[index], deck_height))
 		for i in range(polygon.size()):
 			var a := point3(polygon[i], deck_height)
 			var b := point3(polygon[(i + 1) % polygon.size()], deck_height)
