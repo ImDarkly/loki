@@ -17,6 +17,8 @@ Install the five Quaternius rocks described in `ASSETS.md` before running. #334 
 
 Ladders are visual placeholders until #349. Creature-water instant death and highlights are deferred: the red footprint is a debug annotation. A water test still uses the existing floating behavior; **R** is the solo preview escape.
 
+For #336's prop review, install the blue Watercraft fishing boat, blue Mini Forest canopy, Survival campfire pit, and required textures from `ASSETS.md`. Use **3** for storage, **4** for the shop, and **7** for the fireplace. Check the fishing boat floating beside the ship deck, the storage count label and reachable deposit point on the pier, blue canopy/shop prompt, and sourced pit with the existing flames and seats. Rock pickups use the shared Pirate Kit rock model. Existing collisions and interaction anchors are unchanged. Fishing spots continue relocating; a future lantern reveal should follow their current positions.
+
 ## Shark Bait Placement — Water Test (`dev_shark_bait_flow.tscn`)
 
 **What it does:** Isolated placement without lobby → host → round. Tests `SharkBaitManager` server-authoritative placement: owned-gate (`shark_bait_owned`), `is_placed` single-bait guard, `MapConfig.ISLAND_RADIUS` water check (red torus at radius 10), `request_place_shark_bait → _sync_placed` broadcast + `shark_bait_placed` signal, and red `SharkBait` box at `placed_position`.
