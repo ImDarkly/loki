@@ -182,3 +182,21 @@ func test_sourced_pit_has_smaller_footprint() -> void:
 	assert_gt(bounds.size.z, 0.75)
 	assert_lt(bounds.size.x, 0.85, "Pit should stay within the smaller footprint")
 	assert_lt(bounds.size.z, 0.85)
+
+
+func test_primitive_base_stays_until_campfire_pit_is_loaded() -> void:
+	var fire := autofree(load("res://entities/fireplace.tscn").instantiate()) as StaticBody3D
+	var fallback := fire.get_node_or_null("Mesh/Fallback") as Node3D
+	assert_not_null(fallback, "Packed scene should provide the base before optional assets load")
+	if fallback == null:
+		return
+	assert_eq(fallback.find_children("*", "MeshInstance3D", true, false).size(), 4)
+	assert_eq(fallback.get_node("StoneRing").position, Vector3(0, 0.2, 0))
+	assert_eq(fallback.get_node("Pit").position, Vector3(0, 0.35, 0))
+	add_child(fire)
+	await get_tree().process_frame
+	if fire.has_node("Mesh/CampfirePit"):
+		assert_null(fire.get_node_or_null("Mesh/Fallback"), "Successful pit replaces the primitive base immediately")
+	else:
+		for mesh: MeshInstance3D in fallback.find_children("*", "MeshInstance3D", true, false):
+			assert_true(mesh.is_visible_in_tree(), "Failed pit load keeps the base visible before purchase")

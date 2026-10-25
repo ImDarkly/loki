@@ -155,16 +155,38 @@ func _update_rock_visuals() -> void:
 
 
 func _load_rock_meshes() -> void:
+	_rock_meshes.resize(5)
+	_rock_meshes.fill(null)
+	var missing_model := false
 	for variant in range(1, 6):
 		var path := "res://world/assets/quaternius_pirate/Environment_Rock_%d.gltf" % variant
 		if not ResourceLoader.exists(path):
-			push_warning("Pickup rocks missing or unimported: install Quaternius Pirate Kit Environment_Rock_1 through _5.gltf per ASSETS.md, then import in Godot.")
-			_rock_meshes.clear()
-			return
-		var model := (load(path) as PackedScene).instantiate()
-		var visual := model.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
-		_rock_meshes.append(visual.mesh)
+			missing_model = true
+			continue
+		var scene := load(path) as PackedScene
+		if not scene or not scene.can_instantiate():
+			missing_model = true
+			continue
+		var model := scene.instantiate()
+		var visuals := model.find_children("*", "MeshInstance3D", true, false)
+		if model is MeshInstance3D:
+			visuals.push_front(model)
+		for visual: MeshInstance3D in visuals:
+			if _is_usable_rock_mesh(visual.mesh):
+				_rock_meshes[variant - 1] = visual.mesh
+				break
+		if not _rock_meshes[variant - 1]:
+			missing_model = true
 		model.free()
+	if missing_model:
+		push_warning("Pickup rock models missing or unusable; keeping primitive visuals for those variants. Install and import Quaternius Pirate Kit Environment_Rock_1 through _5.gltf per ASSETS.md.")
+
+
+func _is_usable_rock_mesh(mesh: Mesh) -> bool:
+	if not mesh:
+		return false
+	var bounds := mesh.get_aabb()
+	return bounds.position.is_finite() and bounds.size.is_finite() and bounds.size.x > 0.0 and bounds.size.y > 0.0 and bounds.size.z > 0.0
 
 
 func _create_rock_node() -> StaticBody3D:
@@ -181,11 +203,21 @@ func _create_rock_node() -> StaticBody3D:
 
 	var mi := MeshInstance3D.new()
 	mi.name = "Mesh"
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.5, 0.3, 0.5)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.5, 0.5, 0.5)
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mi.mesh = mesh
+	mi.material_override = mat
 	if not _rock_meshes.is_empty():
-		mi.mesh = _rock_meshes[rock_nodes.size() % _rock_meshes.size()]
-		var bounds := mi.mesh.get_aabb()
-		mi.scale = shape.size * 0.65 / bounds.size
-		mi.position = -bounds.get_center() * mi.scale
+		var source_mesh := _rock_meshes[rock_nodes.size() % _rock_meshes.size()]
+		if _is_usable_rock_mesh(source_mesh):
+			mi.mesh = source_mesh
+			mi.material_override = null
+			var bounds := mi.mesh.get_aabb()
+			mi.scale = shape.size * 0.65 / bounds.size
+			mi.position = -bounds.get_center() * mi.scale
 	body.add_child(mi)
 
 	return body

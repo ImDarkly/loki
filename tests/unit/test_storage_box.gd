@@ -150,3 +150,20 @@ func test_fishing_boat_floats_beside_ship_after_parent_places_storage() -> void:
 	for x in [bounds.position.x, bounds.end.x]:
 		for z in [bounds.position.z, bounds.end.z]:
 			assert_false(layout.is_walkable(Vector3(x, layout.water_height, z)), "Boat corners should be over water")
+
+
+func test_primitive_box_stays_until_fishing_boat_is_loaded() -> void:
+	var storage := autofree(load("res://entities/storage_box.tscn").instantiate()) as StaticBody3D
+	var fallback := storage.get_node_or_null("Mesh/Fallback") as Node3D
+	assert_not_null(fallback, "Packed scene should provide a primitive before optional assets load")
+	if fallback == null:
+		return
+	var box := fallback.get_node("Box") as MeshInstance3D
+	assert_eq(box.mesh.size, Vector3(0.8, 0.6, 0.8))
+	assert_true(box.visible)
+	add_child(storage)
+	await get_tree().process_frame
+	if storage.has_node("Mesh/FishingBoat"):
+		assert_null(storage.get_node_or_null("Mesh/Fallback"), "Successful boat replaces the primitive immediately")
+	else:
+		assert_true(box.is_visible_in_tree(), "Failed boat load keeps storage visible")

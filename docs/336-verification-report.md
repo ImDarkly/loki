@@ -85,3 +85,49 @@ Rebased the existing branch onto freshly fetched `origin/master` at `f891d77`. T
 On rebased source commit `47bd914`, `scripts/verify.ps1 -Tier deep` passed import, load, fireplace 14/14, rocks 16/16, shop 2/2 and storage 12/12. `scripts/verify.ps1 -Tier deep -Final` passed boot and the full suite, exiting normally with code 0: **43 scripts, 678 total tests, 677 passing, 0 failing, 1 pending, 10,202 assertions**, in 93.165 seconds. The pending player mouse-direction test requires a rendered display with mouse capture. GUT reports seven warnings; this is not a warning-free run.
 
 Fresh logs are retained locally in `.godot/336-rebase-verification/` (`precheck.log`, `final.log`, and `chum_verify_gut_full.log` plus stderr). `git diff --check` passed. No new rendered playtest was performed for this rebase, and the PR was not merged.
+
+## Owner-requested missing-pack correction — October 25, 2026
+
+Storage, shop and fireplace scenes now contain their original primitive visuals under `Mesh/Fallback`. The loader retains that subtree until a replacement instantiates as a `Node3D` with visible mesh geometry; only then is that object's fallback freed. Missing, wrong-type, empty or invisible replacement scenes retain the primitives. The approved sourced-model transforms and all collision/interaction anchors are unchanged. Rock models occupy five independent slots; unavailable or unusable variants retain the original grey, unshaded box, while successfully loaded variants retain their sourced geometry. Pickup and respawn apply to both forms.
+
+These are local author-run checks, not an owner rerun or independent CI result. The independent source reviewer and architecture reviewer approved the correction; they did not rerun Godot.
+
+| Check | Fresh result |
+| --- | --- |
+| Installed-pack standard pre-check | Import/load and 52/52 scoped tests pass: fireplace 15, prop fallback startup 4, rocks 17, shop 3, storage 13 |
+| Before-fix isolated project, prop packs absent | All 4 new startup regression tests fail on invisible geometry; 11/23 assertions pass, process exit 1 |
+| Same missing-pack fixture with correction | 4/4 tests, 74 assertions, exit 0 |
+| Partial rock pack, only variant 3 absent | 4/4 tests, 66 assertions, exit 0; available variants keep their sourced meshes |
+| Rendered Compatibility fallback preview | Inspected storage box, shop body/roof, fireplace ring/pit/logs, and missing rock variant; capture exit 0 |
+| `scripts/verify.ps1 -Tier deep -Final` | Boot/full suite exit 0 normally: **44 scripts, 686 total, 685 passing, 0 failing, 1 pending, 10,305 assertions**, 120.699 seconds |
+| `git diff --check` | Pass |
+
+The eight additional tests cover the three scene fallback lifecycles, missing/unusable rock slots, and four real startup paths. The pending test remains `test_player.gd::test_vertical_mouse_motion_looks_in_the_same_world_direction_in_each_player_state`, which requires rendered mouse capture.
+
+### Seven GUT warnings, itemized
+
+| # | Origin | Warning |
+| --- | --- | --- |
+| 1 | Test discovery | `test_double_voice_chat_manager.gd` ignored because the helper does not extend `GutTest` |
+| 2 | Test discovery | Inner helper `TestSlapComponent` ignored because it does not extend `GutTest` |
+| 3 | `test_danger_manager.gd::test_spawn_position_rejects_close_points` | Float/int comparison: FLOAT actual versus INT expected |
+| 4 | `test_danger_manager.gd` teardown | Test script retains children, including its awaiter and player doubles |
+| 5 | `test_health_component.gd` teardown | Test script retains awaiter/health component children |
+| 6 | `test_player.gd` teardown | Test script retains an awaiter and `Players` children |
+| 7 | `test_shop_ui.gd` teardown | Test script retains awaiter/ShopUI children |
+
+This is not a diagnostic-free run. Separate full-suite engine stderr contains three connection-failure warnings from lobby failure tests, two collinear camera-vector warnings from the spectate camera, eight missing voice-bus warnings, and one missing-tools-animation `push_error` explicitly asserted by `test_a_missing_tools_asset_keeps_locomotion_available` (`test_player_fishing_animation.gd:42`). The same error appears in the previous run. There are no full-suite engine shutdown leak errors or script/parse errors in this run. The targeted isolated missing/partial-pack runs and preview still report shutdown ObjectDB/resource leak diagnostics; their passing assertions and exit codes do not certify clean resource teardown.
+
+### Retained evidence and reproduction
+
+Installed-pack logs are in `.godot/336-fallback-verification/`: `precheck-final.log`, `final.log`, and `chum_verify_gut_full.log` plus stderr. Isolated evidence is in `.godot/336-fallback-missing/`: `gut-before.log`, `gut-after.log`, `gut-partial.log`, and their stderr; the inspected screenshot is `.godot/fallback-preview.png` within that fixture. Raw logs, captures and third-party packs remain ignored.
+
+The isolated project was archived from previous published head `30d9778`, with the new startup test copied in. Installed addons and the existing player/fish/shark prerequisites were copied, while the storage/shop/fireplace prop directories and Pirate Kit were omitted. No installed user asset was renamed, moved or deleted. After the red run, only the corrected production files/tests were overlaid. For the partial-pack run, Pirate Kit files were copied except `Environment_Rock_3.gltf` and its import sidecar, then imported. The three actor prop packs stayed absent.
+
+To rerun the retained missing/partial-pack startup fixture:
+
+```powershell
+& C:\Godot\Godot_v4.6.2-stable_win64.exe --headless --path .godot/336-fallback-missing -s addons/gut/gut_cmdln.gd -gselect=test_prop_asset_fallbacks.gd
+```
+
+The fixture currently retains the partial-pack state. Its ignored `.godot/preview_fallbacks.gd` driver renders the fallback capture. An initial parse error in that throwaway driver was corrected with an explicit `Node3D` cast before the successful capture; no production retry was needed. The initial review missed the fresh-clone visibility path. Suggested instruction: require both installed-pack and missing-pack startup checks when replacing tracked primitives with ignored optional models. The owner-requested lesson was recorded as an idea in the Notion Knowledge Base. PR #365 remains unmerged for owner review.

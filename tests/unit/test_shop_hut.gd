@@ -52,3 +52,23 @@ func test_canopy_grounds_on_deck_after_parent_places_shop() -> void:
 	assert_gt(bounds.size.z, collision.shape.size.z)
 	assert_lt(bounds.size.x, collision.shape.size.x * 1.5, "Canopy overhang should remain modest")
 	assert_lt(bounds.size.z, collision.shape.size.z * 1.5)
+
+
+func test_primitive_hut_stays_until_canopy_is_loaded() -> void:
+	var shop := autofree(load("res://entities/shop_hut.tscn").instantiate()) as StaticBody3D
+	var fallback := shop.get_node_or_null("Mesh/Fallback") as Node3D
+	assert_not_null(fallback, "Packed scene should provide the hut before optional assets load")
+	if fallback == null:
+		return
+	var body := fallback.get_node("MeshInstance3D") as MeshInstance3D
+	var roof := fallback.get_node("Roof") as MeshInstance3D
+	assert_eq(body.mesh.size, Vector3(2, 2, 2))
+	assert_eq(roof.mesh.size, Vector3(2.2, 0.2, 2.2))
+	assert_eq(roof.position, Vector3(0, 1.1, 0))
+	add_child(shop)
+	await get_tree().process_frame
+	if shop.has_node("Mesh/Canopy"):
+		assert_null(shop.get_node_or_null("Mesh/Fallback"), "Successful canopy replaces both primitives immediately")
+	else:
+		assert_true(body.is_visible_in_tree(), "Failed canopy load keeps shop visible")
+		assert_true(roof.is_visible_in_tree())
