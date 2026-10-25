@@ -27,3 +27,4 @@ date,task,tier,attempts,tokens,result
 2026-10-23,#336 second boat-fire size adjustment,standard,1,unavailable,boat1.43 fire3.9 flames-stools48.75percent; import load focused26of26 review boot green; Compatibility inspected; owned demo closed normally and relaunched
 2026-10-24,#336 third boat-fire size adjustment preserve stools,standard,1,unavailable,boat1.859 pit2.925 flames36.5625percent stools unchanged; import load focused26of26 review boot green; player comparisons rendered
 2026-10-24,#336 boat waterline adjustment,standard,1,unavailable,visual draft .83655m; import load storage12of12 review boot green; Compatibility render inspected; gameplay anchors unchanged
+2026-10-25,#336 rebase onto current master,deep,1,unavailable,rebased onto f891d77; metrics conflict preserved both histories; fireplace and rocks applied unchanged; import load scoped44of44 boot full678total677pass0fail1pending10202asserts exit0; seven GUT warnings; no merge

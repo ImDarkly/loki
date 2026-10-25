@@ -77,3 +77,11 @@ Standard import, load, all 26 focused fireplace/storage tests, independent revie
 The owner requested that the boat sit lower in the water. Only its visual Y offset changes, from 0.15 m draft to 0.45 source units multiplied by its existing scale (0.83655 m). Scale, horizontal clearance, storage interaction on the pier, collision, prompts, labels, fireplace, and stools remain unchanged. ASSETS.md records the new draft.
 
 Standard import/load, 12 storage tests, independent review, and final boot passed on the first attempt. The refreshed player-comparison-boat.png was inspected and shows the hull sitting deeper in the water. The capture retains its existing shutdown ObjectDB/resource warnings, with no script or missing-resource errors.
+
+## Rebase verification — October 25, 2026
+
+Rebased the existing branch onto freshly fetched `origin/master` at `f891d77`. The only conflict was append-only history in `docs/pipeline-metrics.csv`; both histories were retained. `tests/unit/test_fireplace.gd` and `systems/rocks/rock_manager.gd` applied cleanly and are identical to their pre-rebase versions. Range-diff confirms no gameplay or test changes from conflict resolution. Local master and the watcher drafts were left untouched.
+
+On rebased source commit `47bd914`, `scripts/verify.ps1 -Tier deep` passed import, load, fireplace 14/14, rocks 16/16, shop 2/2 and storage 12/12. `scripts/verify.ps1 -Tier deep -Final` passed boot and the full suite, exiting normally with code 0: **43 scripts, 678 total tests, 677 passing, 0 failing, 1 pending, 10,202 assertions**, in 93.165 seconds. The pending player mouse-direction test requires a rendered display with mouse capture. GUT reports seven warnings; this is not a warning-free run.
+
+Fresh logs are retained locally in `.godot/336-rebase-verification/` (`precheck.log`, `final.log`, and `chum_verify_gut_full.log` plus stderr). `git diff --check` passed. No new rendered playtest was performed for this rebase, and the PR was not merged.
