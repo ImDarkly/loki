@@ -31,6 +31,11 @@ func test_initial_state_is_inactive() -> void:
 	assert_eq(manager.current_state, 0, "Should start INACTIVE (0)")
 
 
+func test_respawn_interval_defaults() -> void:
+	assert_eq(manager.respawn_interval_min, 45.0)
+	assert_eq(manager.respawn_interval_max, 90.0)
+
+
 func test_spawn_timer_transitions_from_inactive_to_approaching() -> void:
 	manager.current_state = 0
 	manager._on_spawn_timer_timeout()
