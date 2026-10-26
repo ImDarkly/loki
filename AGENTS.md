@@ -200,7 +200,8 @@ When writing markdown with backticks (`` ` ``) to files in PowerShell:
 
 ### Architecture Guardrails
 - Use `get_node_or_null("/root/...")` for cross-scene root lookups; avoid bare `get_node("/root/...")` calls.
-- Every `@export` in `systems/` must be read in the same file.
+- Every `@export` in `systems/` must be read in the same file by default. An owner-approved external-reader exception must be recorded in `EXTERNAL_EXPORT_READERS` in `tests/unit/test_architecture_guardrails.gd`, with its export key, reader path, and access expression; that guardrail verifies both the export declaration and the named reader access.
+- The nine owner-approved exceptions from #355 are `fighting_pull_strength`; `prompt_text`, `prompt_color`, `is_enabled`, and `show_prompt_without_carrying`; and `item_name`, `cost`, `description`, and `owned_flag_property`. Any new exception requires owner approval and a corresponding verified registry entry.
 
 ### Codex
 - Subagents live in `.codex/agents/*.toml`.
