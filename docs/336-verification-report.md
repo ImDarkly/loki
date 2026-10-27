@@ -1,0 +1,133 @@
+# #336 — sourced world props
+
+Branch: `feature/336-sourced-world-props`, based on clean `master` / `origin/master` at `93a3caa`. Prerequisites #325 (PR #327) and #348 (PR #352) were verified merged before planning. The issue had no comments.
+
+## Asked and implemented
+
+Replace the four placeholder props while preserving gameplay. Storage now loads Kenney Watercraft's blue small fishing boat beside the ship deck on the water; the shop loads Mini Forest's blue canopy with wooden posts; the fireplace loads Survival Kit's pit/log model under its existing ownership-controlled flames; pickups cycle through all five already installed Quaternius Pirate rock meshes. Gameplay roots, collision shapes/layers, prompts, labels, seat anchors, ownership logic, pickup cooldowns, and RPC snapshots are unchanged. Only cosmetic children are calibrated.
+
+The owner initially approved a red tent substitute, then identified Mini Forest as the correct source of the blue canopy shelter. The owner also confirmed that fishing spots keep relocating and any future lantern reveal uses their current positions. Lantern gameplay remains outside this ticket.
+
+Raw packs remain outside the checkout. Selected models and their required color textures are locally installed in ignored directories. `ASSETS.md` records provenance, paths, hashes, and setup; `git ls-files` reports no tracked GLB, glTF, or ZIP assets.
+
+## Verification
+
+- Attempt 1, standard: import and scene load passed. The new fireplace regression failed on exact comparison of Godot float shape properties (`1.1000000238` versus `1.1`, `0.8000000119` versus `0.8`). Changed those two assertions to tolerance comparisons; no product changes.
+- Attempt 2 escalated to deep according to repository routing: import, scene load, and 39/39 scoped tests passed (fireplace 12, rock manager 15, shop 1, storage 11; 215 assertions). Independent deep review approved with no blocking findings.
+- Rendered the existing island dev scene on OpenGL 3.3 Compatibility, AMD Radeon graphics, at 960 × 540. Inspected the boat/count label, tent, sourced pit/flames/seats, and rock pickup. No missing-resource or script errors were emitted. The ad hoc capture runner emitted an ObjectDB leak warning and seven resources still in use at shutdown; this is not a clean-teardown claim.
+- Multiplayer audit approved with no findings. Final boot and full suite passed: 43 scripts, 673 tests, 672 passing, zero failures, one existing pending mouse-capture/display test; 10,059 assertions, 110.518 seconds, normal exit code 0. Voice-bus and other fixture warnings remain in the logs.
+
+Attempt summary:
+
+```text
+attempt 1 | standard | gut:test_fireplace.gd | red (new exact-float assertion)
+attempt 2 | deep | import/load/scoped/review/audit/boot/full | green
+```
+
+Rendered evidence is outside Git in `../asset-cache-336/`: [initial rowboat storage](../../asset-cache-336/storage.png), [initial red-tent shop](../../asset-cache-336/shop.png), [fireplace](../../asset-cache-336/fireplace.png), [rock](../../asset-cache-336/rock.png). The existing `scenes/dev/dev_island_flow.tscn` remains the interactive preview; use its documented controls to judge prompts and traversal in play.
+
+## Owner-requested storage revision
+
+The owner selected `boat-fishing-small.glb` after inspection identified several blue boats in the Watercraft pack. It replaces the rowboat. The model alone moves waterward of the ship deck, with its long axis parallel to the edge and keel 0.15 m below the configured water surface. The root, collider, prompt, count label, and hint stay on the reachable pier. Placement uses layout-relative coordinates so the parent's later storage placement does not move the boat back onto the deck. No physics, gameplay movement, or ownership behavior is added.
+
+This continuation routes to standard tier. Import, load, 12/12 storage tests (39 assertions), independent standard review, and final boot passed on the first attempt. The new regression checks unchanged collider/label/hint transforms, deck reachability after the parent places storage, the full boat footprint beyond the deck edge, and shallow hull immersion. The full-suite result above applies to the prior four-prop revision.
+
+The updated [storage render](../../asset-cache-336/storage-blue-fishing-boat.png) was inspected at 960 × 540 in Compatibility. It shows the boat beside the deck with the original storage labels still above the pier; capture logged interaction root `(-17, 0, 0)`. There were no missing-resource or script errors; the same capture shutdown leak/resource warnings remain. `ASSETS.md` now records the chosen model and hash; model and texture files remain ignored.
+
+## Owner-requested Mini Forest shop revision
+
+Downloaded the official Mini Forest 1.0 ZIP outside the checkout and inspected its tent, roof, and bare-frame models. `building-roof.glb` is the requested blue canopy with its wooden posts already included. Installed only that model and its referenced `Textures/colormap.png` in the ignored `entities/shop/assets/kenney_miniforest/` directory. `ASSETS.md` records the official source, CC0 provenance, archive hash, model hash, and texture hash.
+
+Only the existing shop visual loader and model transform changed: uniform scale 2.2, local Y -1. No scene, root, collision, prompt, interaction, or hint behavior changed. Standard import, load, 2/2 shop tests (23 assertions), independent review, and final boot passed on the first attempt. The [updated shop render](../../asset-cache-336/shop-miniforest-canopy.png) was inspected at 960 × 540 in Compatibility: the blue canopy and wooden posts are grounded, with the existing Shop label visible. Capture logged the unchanged root `(-6, 1, 10.4)`. No script or missing-resource errors occurred; the same ad hoc capture shutdown resource warnings remain.
+
+## Pirate Kit pickup variety revision
+
+The owner requested Pirate Kit rocks after asking whether every pickup looked the same. The initial swap used only `Environment_Rock_1.gltf`; pickups now cycle through all five installed models by creation index. All meshes are cached once and retain their existing collider/bounds calibration. No gameplay randomness, collision, authority, RPC, or cooldown behavior changed. Existing provenance and hashes cover all five files; no new raw assets were installed.
+
+Standard import, load, 16/16 rock tests (211 assertions), independent review, and final boot passed on the first attempt. The [neutral comparison render](../../asset-cache-336/pirate-rock-pickup-variants.png) was inspected in Compatibility and shows five distinct sourced shapes. The comparison displays the actual pickup meshes without the island terrain hiding their lower halves. No script or missing-resource errors occurred; the same ad hoc capture shutdown resource warnings remain.
+
+## Live-demo proportion revision
+
+The owner found the rock pickups and fireplace too big and clarified that the blue storage boat was too small. Pickup visuals now render at 65% of their former bounds, retaining the same centered collision shapes. The sourced pit scales from 8 to 5.2; flame positions/scales and stool visuals also shrink to 65%, with stool bases grounded. Seat marker transforms, ownership feedback, collider, prompt, and hint remain unchanged.
+
+The fishing boat scales from 0.7 to 1.1 (about 57% larger). Its existing layout-derived placement automatically moves its center farther waterward to preserve 0.3 m deck clearance; keel draft remains 0.15 m. The dry storage interaction and all gameplay anchors remain unchanged. No new assets or hashes are introduced.
+
+Standard import, load, 42/42 focused tests (rocks 16, fireplace 14, storage 12; 321 assertions), independent review, and final boot passed on the first attempt. Fresh Compatibility renders were inspected: [boat](../../asset-cache-336/size-review-first-storage.png), [fireplace](../../asset-cache-336/size-review-first-fireplace.png), and [rocks](../../asset-cache-336/size-review-first-rocks.png). No script or missing-resource errors occurred; the same capture shutdown resource warnings remain. The live island demo was relaunched for owner review. Earlier recordings retain the pre-adjustment sizes.
+
+## Second proportion adjustment
+
+The owner requested a still larger boat and smaller fireplace. Boat scale increases from 1.1 to 1.43 (another 30%), giving a roughly 5.53 m hull length. Pit scale decreases from 5.2 to 3.9 (another 25%); flame and stool visual transforms also shrink by 25%, to 48.75% of the original size. Rock and shop sizes remain unchanged. Collider, seat, prompt, and hint anchors stay fixed; the boat retains its existing scale-aware water clearance and draft.
+
+Standard import, load, 26/26 focused tests (fireplace 14, storage 12; 105 assertions), independent review, and final boot passed on the first attempt. Compatibility renders were inspected: [larger boat](../../asset-cache-336/size-review-storage.png) and [smaller fireplace](../../asset-cache-336/size-review-fireplace.png). No script or missing-resource errors occurred; the same capture shutdown warnings remain. The prior owned demo closed normally and a fresh interactive island demo launched with these proportions.
+
+## Pipeline observations
+
+The planner and architect approved sequential cosmetic slices. The initial orchestration incorrectly assumed storage was raised 0.3 m and that GLBs embedded all textures; source inspection corrected the boat grounding before verification and installed both external atlases. The linked repository sourcing document is absent; the Notion source was read instead. No applicable engineering KB excerpt was identified.
+
+Suggested instruction improvement: require checking each selected model's external dependencies and the gameplay root's actual placement before prescribing visual offsets or declaring a model self-contained.
+
+## Third proportion adjustment: preserve approved stools
+
+The owner still found the boat too small and the fireplace too big, and explicitly liked the stools. Boat scale is now 1.859 (another 30%), giving measured visual bounds 7.194 x 3.318 m and 4.833 m total height. Pit scale is 2.925 (another 25% reduction), with measured footprint 0.812 x 0.788 m and height 0.319 m. Flames shrink by 25% to a top height of 0.468 m. All four stool transforms remain exactly at their approved size and positions. Gameplay collision, seat anchors, prompts, labels, ownership, and the dry storage interaction remain unchanged.
+
+Standard import, load, all 26 focused fireplace/storage tests, independent review, and final boot passed on the first attempt. Fresh player comparison renders are in ../../asset-cache-336/player-comparison-boat.png and player-comparison-fireplace.png. Capture retains the existing shutdown ObjectDB/resource warnings; no script or missing-resource errors occurred. ASSETS.md records the new calibration; sources and hashes are unchanged.
+
+## Boat waterline adjustment
+
+The owner requested that the boat sit lower in the water. Only its visual Y offset changes, from 0.15 m draft to 0.45 source units multiplied by its existing scale (0.83655 m). Scale, horizontal clearance, storage interaction on the pier, collision, prompts, labels, fireplace, and stools remain unchanged. ASSETS.md records the new draft.
+
+Standard import/load, 12 storage tests, independent review, and final boot passed on the first attempt. The refreshed player-comparison-boat.png was inspected and shows the hull sitting deeper in the water. The capture retains its existing shutdown ObjectDB/resource warnings, with no script or missing-resource errors.
+
+## Rebase verification — October 25, 2026
+
+Rebased the existing branch onto freshly fetched `origin/master` at `f891d77`. The only conflict was append-only history in `docs/pipeline-metrics.csv`; both histories were retained. `tests/unit/test_fireplace.gd` and `systems/rocks/rock_manager.gd` applied cleanly and are identical to their pre-rebase versions. Range-diff confirms no gameplay or test changes from conflict resolution. Local master and the watcher drafts were left untouched.
+
+On rebased source commit `47bd914`, `scripts/verify.ps1 -Tier deep` passed import, load, fireplace 14/14, rocks 16/16, shop 2/2 and storage 12/12. `scripts/verify.ps1 -Tier deep -Final` passed boot and the full suite, exiting normally with code 0: **43 scripts, 678 total tests, 677 passing, 0 failing, 1 pending, 10,202 assertions**, in 93.165 seconds. The pending player mouse-direction test requires a rendered display with mouse capture. GUT reports seven warnings; this is not a warning-free run.
+
+Fresh logs are retained locally in `.godot/336-rebase-verification/` (`precheck.log`, `final.log`, and `chum_verify_gut_full.log` plus stderr). `git diff --check` passed. No new rendered playtest was performed for this rebase, and the PR was not merged.
+
+## Owner-requested missing-pack correction — October 25, 2026
+
+Storage, shop and fireplace scenes now contain their original primitive visuals under `Mesh/Fallback`. The loader retains that subtree until a replacement instantiates as a `Node3D` with visible mesh geometry; only then is that object's fallback freed. Missing, wrong-type, empty or invisible replacement scenes retain the primitives. The approved sourced-model transforms and all collision/interaction anchors are unchanged. Rock models occupy five independent slots; unavailable or unusable variants retain the original grey, unshaded box, while successfully loaded variants retain their sourced geometry. Pickup and respawn apply to both forms.
+
+These are local author-run checks, not an owner rerun or independent CI result. The independent source reviewer and architecture reviewer approved the correction; they did not rerun Godot.
+
+| Check | Fresh result |
+| --- | --- |
+| Installed-pack standard pre-check | Import/load and 52/52 scoped tests pass: fireplace 15, prop fallback startup 4, rocks 17, shop 3, storage 13 |
+| Before-fix isolated project, prop packs absent | All 4 new startup regression tests fail on invisible geometry; 11/23 assertions pass, process exit 1 |
+| Same missing-pack fixture with correction | 4/4 tests, 74 assertions, exit 0 |
+| Partial rock pack, only variant 3 absent | 4/4 tests, 66 assertions, exit 0; available variants keep their sourced meshes |
+| Rendered Compatibility fallback preview | Inspected storage box, shop body/roof, fireplace ring/pit/logs, and missing rock variant; capture exit 0 |
+| `scripts/verify.ps1 -Tier deep -Final` | Boot/full suite exit 0 normally: **44 scripts, 686 total, 685 passing, 0 failing, 1 pending, 10,305 assertions**, 120.699 seconds |
+| `git diff --check` | Pass |
+
+The eight additional tests cover the three scene fallback lifecycles, missing/unusable rock slots, and four real startup paths. The pending test remains `test_player.gd::test_vertical_mouse_motion_looks_in_the_same_world_direction_in_each_player_state`, which requires rendered mouse capture.
+
+### Seven GUT warnings, itemized
+
+| # | Origin | Warning |
+| --- | --- | --- |
+| 1 | Test discovery | `test_double_voice_chat_manager.gd` ignored because the helper does not extend `GutTest` |
+| 2 | Test discovery | Inner helper `TestSlapComponent` ignored because it does not extend `GutTest` |
+| 3 | `test_danger_manager.gd::test_spawn_position_rejects_close_points` | Float/int comparison: FLOAT actual versus INT expected |
+| 4 | `test_danger_manager.gd` teardown | Test script retains children, including its awaiter and player doubles |
+| 5 | `test_health_component.gd` teardown | Test script retains awaiter/health component children |
+| 6 | `test_player.gd` teardown | Test script retains an awaiter and `Players` children |
+| 7 | `test_shop_ui.gd` teardown | Test script retains awaiter/ShopUI children |
+
+This is not a diagnostic-free run. Separate full-suite engine stderr contains three connection-failure warnings from lobby failure tests, two collinear camera-vector warnings from the spectate camera, eight missing voice-bus warnings, and one missing-tools-animation `push_error` explicitly asserted by `test_a_missing_tools_asset_keeps_locomotion_available` (`test_player_fishing_animation.gd:42`). The same error appears in the previous run. There are no full-suite engine shutdown leak errors or script/parse errors in this run. The targeted isolated missing/partial-pack runs and preview still report shutdown ObjectDB/resource leak diagnostics; their passing assertions and exit codes do not certify clean resource teardown.
+
+### Retained evidence and reproduction
+
+Installed-pack logs are in `.godot/336-fallback-verification/`: `precheck-final.log`, `final.log`, and `chum_verify_gut_full.log` plus stderr. Isolated evidence is in `.godot/336-fallback-missing/`: `gut-before.log`, `gut-after.log`, `gut-partial.log`, and their stderr; the inspected screenshot is `.godot/fallback-preview.png` within that fixture. Raw logs, captures and third-party packs remain ignored.
+
+The isolated project was archived from previous published head `30d9778`, with the new startup test copied in. Installed addons and the existing player/fish/shark prerequisites were copied, while the storage/shop/fireplace prop directories and Pirate Kit were omitted. No installed user asset was renamed, moved or deleted. After the red run, only the corrected production files/tests were overlaid. For the partial-pack run, Pirate Kit files were copied except `Environment_Rock_3.gltf` and its import sidecar, then imported. The three actor prop packs stayed absent.
+
+To rerun the retained missing/partial-pack startup fixture:
+
+```powershell
+& C:\Godot\Godot_v4.6.2-stable_win64.exe --headless --path .godot/336-fallback-missing -s addons/gut/gut_cmdln.gd -gselect=test_prop_asset_fallbacks.gd
+```
+
+The fixture currently retains the partial-pack state. Its ignored `.godot/preview_fallbacks.gd` driver renders the fallback capture. An initial parse error in that throwaway driver was corrected with an explicit `Node3D` cast before the successful capture; no production retry was needed. The initial review missed the fresh-clone visibility path. Suggested instruction: require both installed-pack and missing-pack startup checks when replacing tracked primitives with ignored optional models. The owner-requested lesson was recorded as an idea in the Notion Knowledge Base. PR #365 remains unmerged for owner review.

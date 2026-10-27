@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://entities/storage_box.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="2_comp"]
@@ -24,7 +24,11 @@ prompt_text = "Deposit Fish [Right Click]"
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("box_shape")
 
-[node name="Mesh" type="MeshInstance3D" parent="."]
+[node name="Mesh" type="Node3D" parent="."]
+
+[node name="Fallback" type="Node3D" parent="Mesh"]
+
+[node name="Box" type="MeshInstance3D" parent="Mesh/Fallback"]
 material_override = SubResource("box_mat")
 mesh = SubResource("box_mesh")
 

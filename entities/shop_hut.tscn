@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" uid="uid://dx57qtamk0dmg" path="res://systems/interaction/interactable_component.gd" id="1_comp"]
 [ext_resource type="Script" path="res://entities/shop_hut.gd" id="2_script"]
@@ -20,10 +20,14 @@ script = ExtResource("2_script")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("shape")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="Mesh" type="Node3D" parent="."]
+
+[node name="Fallback" type="Node3D" parent="Mesh"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Mesh/Fallback"]
 mesh = SubResource("mesh_body")
 
-[node name="Roof" type="MeshInstance3D" parent="."]
+[node name="Roof" type="MeshInstance3D" parent="Mesh/Fallback"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
 mesh = SubResource("mesh_roof")
 

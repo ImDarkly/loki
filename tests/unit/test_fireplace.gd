@@ -122,3 +122,81 @@ func test_fireplace_has_world_label_hint() -> void:
 	var hint = fireplace.get_node_or_null("WorldLabelHint") as WorldLabelHint
 	assert_not_null(hint, "Fireplace should have WorldLabelHint")
 	assert_eq(hint.label_text, "Fireplace")
+
+
+func test_sourced_pit_remains_visible_across_purchase() -> void:
+	assert_null(fireplace.get_node_or_null("StoneRing"), "Primitive ring should be replaced by the sourced pit")
+	var visual := fireplace.get_node_or_null("Mesh") as Node3D
+	assert_not_null(visual)
+	if not visual:
+		return
+	assert_true(visual.visible)
+	coin_manager.fireplace_owned = true
+	coin_manager.fireplace_updated.emit()
+	assert_true(visual.visible, "Purchase should only toggle flames and seats")
+	assert_almost_eq(fireplace.get_node("CollisionShape3D").shape.radius, 1.1, 0.001)
+	assert_almost_eq(fireplace.get_node("CollisionShape3D").shape.height, 0.8, 0.001)
+	assert_eq(fireplace.get_node("Seats/Seat1").position, Vector3(0, 0, 1.8))
+	if ResourceLoader.exists("res://entities/fireplace/assets/kenney_survival/campfire-pit.glb"):
+		assert_gt(visual.find_children("*", "MeshInstance3D", true, false).size(), 0, "Installed pit should render")
+
+
+func test_smaller_flames_preserve_stools_and_interaction_anchors() -> void:
+	assert_eq(fireplace.get_node("CollisionShape3D").position, Vector3(0, 0.4, 0))
+	assert_eq(fireplace.get_node("WorldLabelHint").position, Vector3(0, 0.6, 0))
+	assert_eq(fireplace.get_node("Seats").transform, Transform3D.IDENTITY)
+	for flame_name in ["FlameLow", "FlameMid", "FlameTip"]:
+		var flame := fireplace.get_node(flame_name) as MeshInstance3D
+		var bounds: AABB = flame.transform * flame.mesh.get_aabb()
+		assert_gt(bounds.position.y, 0.0)
+		assert_lt(bounds.end.y, 0.5, "Flame should stay below the smaller fire's height limit")
+		assert_gt(bounds.size.y, 0.07, "Flame should retain a visible volume")
+	var seat_positions := [Vector3(0, 0, 1.8), Vector3(0, 0, -1.8), Vector3(1.8, 0, 0), Vector3(-1.8, 0, 0)]
+	for i in range(4):
+		var seat := fireplace.get_node("Seats/Seat%d" % (i + 1)) as Node3D
+		assert_eq(seat.position, seat_positions[i])
+		assert_almost_eq(seat.scale, Vector3.ONE, Vector3.ONE * 0.001)
+		var stool := seat.get_node("Stool") as MeshInstance3D
+		assert_almost_eq(stool.scale, Vector3.ONE * 0.4875, Vector3.ONE * 0.000001, "Stool scale stays unchanged")
+		assert_almost_eq(stool.position, Vector3(0, 0.0609375, 0), Vector3.ONE * 0.000001, "Stool position stays unchanged")
+		assert_eq(stool.rotation, Vector3.ZERO, "Stool rotation stays unchanged")
+		var bounds: AABB = stool.transform * stool.mesh.get_aabb()
+		assert_almost_eq(bounds.position.y, 0.0, 0.001, "Stool base stays grounded")
+		assert_gt(bounds.size.x, 0.3)
+		assert_lt(bounds.size.x, 0.4, "Stool retains its approved width")
+
+
+func test_sourced_pit_has_smaller_footprint() -> void:
+	if not ResourceLoader.exists("res://entities/fireplace/assets/kenney_survival/campfire-pit.glb"):
+		pending("Install and import the sourced pit to check its smaller footprint")
+		return
+	var visuals := fireplace.get_node("Mesh").find_children("*", "MeshInstance3D", true, false)
+	assert_gt(visuals.size(), 0)
+	if visuals.is_empty():
+		return
+	var first := visuals[0] as MeshInstance3D
+	var bounds: AABB = first.global_transform * first.mesh.get_aabb()
+	for visual: MeshInstance3D in visuals:
+		bounds = bounds.merge(visual.global_transform * visual.mesh.get_aabb())
+	assert_gt(bounds.size.x, 0.75, "Pit should retain a readable footprint")
+	assert_gt(bounds.size.z, 0.75)
+	assert_lt(bounds.size.x, 0.85, "Pit should stay within the smaller footprint")
+	assert_lt(bounds.size.z, 0.85)
+
+
+func test_primitive_base_stays_until_campfire_pit_is_loaded() -> void:
+	var fire := autofree(load("res://entities/fireplace.tscn").instantiate()) as StaticBody3D
+	var fallback := fire.get_node_or_null("Mesh/Fallback") as Node3D
+	assert_not_null(fallback, "Packed scene should provide the base before optional assets load")
+	if fallback == null:
+		return
+	assert_eq(fallback.find_children("*", "MeshInstance3D", true, false).size(), 4)
+	assert_eq(fallback.get_node("StoneRing").position, Vector3(0, 0.2, 0))
+	assert_eq(fallback.get_node("Pit").position, Vector3(0, 0.35, 0))
+	add_child(fire)
+	await get_tree().process_frame
+	if fire.has_node("Mesh/CampfirePit"):
+		assert_null(fire.get_node_or_null("Mesh/Fallback"), "Successful pit replaces the primitive base immediately")
+	else:
+		for mesh: MeshInstance3D in fallback.find_children("*", "MeshInstance3D", true, false):
+			assert_true(mesh.is_visible_in_tree(), "Failed pit load keeps the base visible before purchase")

@@ -12,11 +12,13 @@ const ROCK_HALF_EXTENT: float = 0.25
 var rocks: Array[Dictionary] = []
 var rock_nodes: Array[StaticBody3D] = []
 var _cooldowns: Array[float] = []
+var _rock_meshes: Array[Mesh] = []
 
 @onready var respawn_timer: Timer = $RespawnTimer
 
 
 func _ready() -> void:
+	_load_rock_meshes()
 	var dbg = get_node_or_null("/root/DebugOverlay")
 	if dbg:
 		dbg.register_system(name, self)
@@ -152,6 +154,41 @@ func _update_rock_visuals() -> void:
 		rock_nodes[i].get_node("Collision").disabled = not available
 
 
+func _load_rock_meshes() -> void:
+	_rock_meshes.resize(5)
+	_rock_meshes.fill(null)
+	var missing_model := false
+	for variant in range(1, 6):
+		var path := "res://world/assets/quaternius_pirate/Environment_Rock_%d.gltf" % variant
+		if not ResourceLoader.exists(path):
+			missing_model = true
+			continue
+		var scene := load(path) as PackedScene
+		if not scene or not scene.can_instantiate():
+			missing_model = true
+			continue
+		var model := scene.instantiate()
+		var visuals := model.find_children("*", "MeshInstance3D", true, false)
+		if model is MeshInstance3D:
+			visuals.push_front(model)
+		for visual: MeshInstance3D in visuals:
+			if _is_usable_rock_mesh(visual.mesh):
+				_rock_meshes[variant - 1] = visual.mesh
+				break
+		if not _rock_meshes[variant - 1]:
+			missing_model = true
+		model.free()
+	if missing_model:
+		push_warning("Pickup rock models missing or unusable; keeping primitive visuals for those variants. Install and import Quaternius Pirate Kit Environment_Rock_1 through _5.gltf per ASSETS.md.")
+
+
+func _is_usable_rock_mesh(mesh: Mesh) -> bool:
+	if not mesh:
+		return false
+	var bounds := mesh.get_aabb()
+	return bounds.position.is_finite() and bounds.size.is_finite() and bounds.size.x > 0.0 and bounds.size.y > 0.0 and bounds.size.z > 0.0
+
+
 func _create_rock_node() -> StaticBody3D:
 	var body := StaticBody3D.new()
 	body.collision_layer = 4
@@ -173,6 +210,14 @@ func _create_rock_node() -> StaticBody3D:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mi.mesh = mesh
 	mi.material_override = mat
+	if not _rock_meshes.is_empty():
+		var source_mesh := _rock_meshes[rock_nodes.size() % _rock_meshes.size()]
+		if _is_usable_rock_mesh(source_mesh):
+			mi.mesh = source_mesh
+			mi.material_override = null
+			var bounds := mi.mesh.get_aabb()
+			mi.scale = shape.size * 0.65 / bounds.size
+			mi.position = -bounds.get_center() * mi.scale
 	body.add_child(mi)
 
 	return body

@@ -165,3 +165,27 @@ Open Godot and let the glTF models import before running. Missing or unimported 
 Use `scenes/dev/dev_island_flow.tscn` to inspect dressing and toggle fog; its controls and visual checks are in `scenes/dev/README.md`. Fog uses the regular Environment fog supported by Compatibility, without volumetric fog or new shaders.
 
 Fog now shares the sky's day, sunset, and night horizon palette and follows the existing light cycle, so distant water converges to the sky instead of a fixed purple band. Density remains `0.035`. Run the rendered regression with `C:\Godot\Godot_v4.6.2-stable_win64.exe --path . --rendering-method gl_compatibility --resolution 960x540 --script res://scripts/check_fog_horizon.gd`; it checks day/night horizon continuity and saves screenshots under `docs/`.
+
+## World interactable props (#336)
+
+The selected Kenney models were acquired on 2026-10-23. Each pack includes a CC0 license. The Watercraft, Mini Forest, and Survival GLBs require their own pack's `Models/GLB format/Textures/colormap.png`: copy it into `Textures/colormap.png` beside the corresponding GLB, preserving the relative directory. Keep downloaded ZIPs outside the repository and install only these files. The three local directories and generated imports are ignored by Git.
+
+| Prop | Source pack and model inside its ZIP | Local install path | SHA-256 |
+| --- | --- | --- | --- |
+| Fish storage | [Watercraft Kit 2.1](https://kenney.nl/assets/watercraft-kit), `Models/GLB format/boat-fishing-small.glb` | `entities/storage/assets/kenney_watercraft/boat-fishing-small.glb` | `F6A03C86E7147764DE6AAC135433A428EE503D42852ECD101C1795A278480742` |
+| Shop | [Mini Forest 1.0](https://kenney.nl/assets/mini-forest), `Models/GLB format/building-roof.glb` | `entities/shop/assets/kenney_miniforest/building-roof.glb` | `1CD53687108AE5A21EC8392E9B1C588E912262F0AE63A569C494D627C3C05009` |
+| Fireplace pit and logs | [Survival Kit 2.0](https://kenney.nl/assets/survival-kit), `Models/GLB format/campfire-pit.glb` | `entities/fireplace/assets/kenney_survival/campfire-pit.glb` | `A78CE38DE408456649146077E1917D70BB39F7C87C3C7370276D809D2409B0AB` |
+
+Required texture hashes: Watercraft `Textures/colormap.png` is `311138350E74E35C5497A1BD8076A01740B7C302BED11027639FA553459A68DE`; Mini Forest `Textures/colormap.png` is `319F1087D8ED50A8794F9A8179F64671D5595F2365FDF3E47EC2D4EB74DBA20F`; Survival `Textures/colormap.png` is `6CA023BE9F12E8C2358FCF94320C8A894B4C05A3DD0BAD1F5C268312053CACA1`. These are different atlases; keep each beside its own model.
+
+The owner selected the blue `boat-fishing-small.glb` after inspecting the pack's blue boat options. It replaces the initial rowboat. Only this visual is offset beside the ship deck on the water; the storage gameplay root, collider, deposit prompt, count label, and hint remain at their reachable pier location. No floating physics or movement is introduced.
+
+The owner identified the blue canopy shelter's correct source as Mini Forest, a different pack from Nature Kit. `building-roof.glb` includes both the blue canopy and its wooden posts; no separate structure model is needed. It replaces the earlier red Nature tent. Download the [official Mini Forest 1.0 ZIP](https://kenney.nl/media/pages/assets/mini-forest/44a89aed7f-1784024079/kenney_mini-forest_1.0.zip), SHA-256 `8691614018075A66458E35915B8C358C2E6178648AEDADAFCDF313B924AA6581`, outside the repository. Install only the listed GLB and its texture. The pack's `License.txt` records CC0 and Kenney as creator/distributor. The visual is grounded beneath the existing elevated shop root; collision, interaction, and hint stay untouched.
+
+Rock pickups reuse all five documented `world/assets/quaternius_pirate/Environment_Rock_1.gltf` through `_5.gltf` models; do not install duplicates. Their QAL provenance and hashes are recorded above. Pickup instances cycle through the five meshes by creation index, keeping the same appearance through pickup and respawn without consuming gameplay randomness or adding synchronized state. Pickup visuals are centered at 65% of the existing collision bounds; collision sizes remain unchanged.
+
+Proportion adjustments after owner feedback: the fishing boat uses uniform scale 1.859 (approximately 7.19 m long) and keeps its hull 0.3 m clear of the deck with an approximately 0.84 m keel draft (0.45 source units multiplied by model scale). The campfire pit uses scale 2.925 (approximately 0.81 m across), with flames reduced to 36.5625% of their initial size (approximately 0.47 m tall overall). The approved stools retain their 48.75% visual scale and original placement. Pickup rocks remain at 65% size; shop proportions are unchanged. These are visual calibrations only: storage interaction remains on the pier, and fireplace seat markers, prompts, hints, and colliders keep their original transforms.
+
+Download each pack from its linked page, extract the listed model outside the repository, create its local install directory, and copy the model there. Open Godot and allow import before running. Missing or unimported models log installation instructions. No primitive visual fallback is supplied. Existing collision, prompts, storage count, seat anchors, and ownership-controlled flames remain in place; only visual children are calibrated.
+
+Planning decision: fishing spots keep their existing relocation behavior. A future lantern reveal must use each spot's current position, rather than its initial layout position. This ticket introduces no lantern gameplay.

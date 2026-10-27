@@ -98,3 +98,72 @@ func test_quota_update_leaves_world_label_hint_unchanged() -> void:
 	quota_manager.shared_quota = 5
 	quota_manager.quota_updated.emit(5)
 	assert_eq(hint.label_text, "Storage", "WorldLabelHint text should remain 'Storage' when quota updates")
+
+
+func test_fishing_boat_replaces_box_without_changing_deposit_collision() -> void:
+	var visual := storage_box.get_node("Mesh")
+	assert_false(visual is MeshInstance3D, "Storage visual should no longer be a primitive box")
+	assert_eq(storage_box.collision_layer, 32)
+	assert_eq(storage_box.get_node("CollisionShape3D").shape.size, Vector3(0.8, 0.6, 0.8))
+	assert_eq(storage_box.interactable_component.prompt_text, "Deposit Fish [Right Click]")
+	if ResourceLoader.exists("res://entities/storage/assets/kenney_watercraft/boat-fishing-small.glb"):
+		assert_gt(visual.find_children("*", "MeshInstance3D", true, false).size(), 0, "Installed fishing boat should render")
+
+
+func test_fishing_boat_floats_beside_ship_after_parent_places_storage() -> void:
+	var path := "res://entities/storage/assets/kenney_watercraft/boat-fishing-small.glb"
+	if not ResourceLoader.exists(path):
+		pending("Install and import the storage fishing boat to check its water placement")
+		return
+	var collision := storage_box.get_node("CollisionShape3D") as CollisionShape3D
+	var label := _get_label()
+	var hint := storage_box.get_node("WorldLabelHint") as Node3D
+	assert_eq(collision.position, Vector3.ZERO)
+	assert_eq(label.position, Vector3(0, 0.9, 0))
+	assert_eq(hint.position, Vector3(0, 0.4, 0))
+	var collision_transform := collision.transform
+	var label_transform := label.transform
+	var hint_transform := hint.transform
+	var layout := MapConfig.layout
+	storage_box.position = layout.storage_position()
+	await get_tree().process_frame
+	assert_eq(storage_box.position, layout.storage_position())
+	assert_eq(collision.transform, collision_transform)
+	assert_eq(label.transform, label_transform)
+	assert_eq(hint.transform, hint_transform)
+	assert_true(layout.is_walkable(storage_box.global_position), "Deposit interaction stays reachable on deck")
+	var visuals := storage_box.get_node("Mesh").find_children("*", "MeshInstance3D", true, false)
+	assert_eq(visuals.size(), 1, "Fishing boat should render its complete sourced mesh")
+	if visuals.is_empty():
+		return
+	var mesh := visuals[0] as MeshInstance3D
+	var bounds: AABB = mesh.global_transform * mesh.mesh.get_aabb()
+	var ship: Rect2 = layout.decks["Ship"]
+	assert_gt(bounds.size.x, 7.0, "Storage boat should have a substantial fishing boat silhouette")
+	assert_lt(bounds.size.x, 7.4, "Storage boat should remain within its intended length")
+	assert_lt(bounds.end.z, ship.position.y, "Entire hull should clear the ship deck")
+	assert_almost_eq(bounds.get_center().x, storage_box.global_position.x, 0.001)
+	assert_lt(bounds.position.y, layout.water_height, "Keel should sit below the waterline")
+	assert_gte(bounds.position.y, layout.water_height - 0.95, "Keel draft should stay within the intended waterline")
+	assert_lte(bounds.position.y, layout.water_height - 0.75, "Hull should sit sufficiently below the waterline")
+	assert_gt(bounds.end.y, layout.water_height, "Boat should remain above water")
+	for x in [bounds.position.x, bounds.end.x]:
+		for z in [bounds.position.z, bounds.end.z]:
+			assert_false(layout.is_walkable(Vector3(x, layout.water_height, z)), "Boat corners should be over water")
+
+
+func test_primitive_box_stays_until_fishing_boat_is_loaded() -> void:
+	var storage := autofree(load("res://entities/storage_box.tscn").instantiate()) as StaticBody3D
+	var fallback := storage.get_node_or_null("Mesh/Fallback") as Node3D
+	assert_not_null(fallback, "Packed scene should provide a primitive before optional assets load")
+	if fallback == null:
+		return
+	var box := fallback.get_node("Box") as MeshInstance3D
+	assert_eq(box.mesh.size, Vector3(0.8, 0.6, 0.8))
+	assert_true(box.visible)
+	add_child(storage)
+	await get_tree().process_frame
+	if storage.has_node("Mesh/FishingBoat"):
+		assert_null(storage.get_node_or_null("Mesh/Fallback"), "Successful boat replaces the primitive immediately")
+	else:
+		assert_true(box.is_visible_in_tree(), "Failed boat load keeps storage visible")
